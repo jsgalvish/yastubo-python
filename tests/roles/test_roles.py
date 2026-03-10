@@ -418,3 +418,73 @@ class TestPermissionMiddleware:
         assert r.status_code == 403
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-role-403"]
+
+    @pytest.mark.asyncio
+    async def test_require_permission_via_rol_en_endpoint(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Permiso otorgado vía rol (no directo) es reconocido por require_permission."""
+        from fastapi import Depends
+        from app.http.middleware.permission import require_permission
+
+        @app.get("/test-perm-viarole")
+        async def _ep(u: User = Depends(require_permission("reports.export"))):
+            return {"ok": True}
+
+        user = _make_user(email="mw_viarole@test.com", realm="admin")
+        role = _make_role(name="reporter", guard_name="admin")
+        perm = _make_permission(name="reports.export", guard_name="admin")
+        db_session.add(user)
+        db_session.add(role)
+        db_session.add(perm)
+        await db_session.commit()
+
+        svc = PermissionService(db_session)
+        await svc.give_permission_to_role(role, perm)  # permiso al rol
+        await svc.assign_role(user, role)               # rol al usuario
+        await db_session.commit()
+
+        token = create_access_token(user.id, "admin")
+        r = await client.get(
+            "/test-perm-viarole", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert r.status_code == 200
+
+        app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-perm-viarole"]
+
+    @pytest.mark.asyncio
+    async def test_token_expirado_retorna_401(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Token expirado en endpoint protegido retorna 401."""
+        from datetime import datetime, timedelta, timezone
+        from fastapi import Depends
+        from jose import jwt as _jose_jwt
+        from app.config import settings
+        from app.services.token_service import ALGORITHM
+        from app.http.middleware.permission import require_permission
+
+        @app.get("/test-expired")
+        async def _ep(u: User = Depends(require_permission("any.perm"))):
+            return {"ok": True}
+
+        user = _make_user(email="mw_expired@test.com", realm="admin")
+        db_session.add(user)
+        await db_session.commit()
+
+        expired_payload = {
+            "sub": str(user.id),
+            "realm": "admin",
+            "force_password_change": False,
+            "exp": datetime.now(timezone.utc) - timedelta(seconds=10),
+        }
+        expired_token = _jose_jwt.encode(
+            expired_payload, settings.secret_key, algorithm=ALGORITHM
+        )
+
+        r = await client.get(
+            "/test-expired", headers={"Authorization": f"Bearer {expired_token}"}
+        )
+        assert r.status_code == 401
+
+        app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-expired"]
