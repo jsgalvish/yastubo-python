@@ -1,0 +1,25 @@
+class CapitatedRejectionCodes:
+    # Errores de archivo / plan
+    PLAN_INVALID_PRODUCT          = "PLAN_INVALID_PRODUCT"
+    PLAN_NO_ACTIVE_VERSION        = "PLAN_NO_ACTIVE_VERSION"
+    PLAN_STRUCTURE_INVALID        = "PLAN_STRUCTURE_INVALID"
+
+    # Errores por persona
+    PERSON_SEX_INVALID            = "PERSON_SEX_INVALID"
+    PERSON_AGE_INVALID            = "PERSON_AGE_INVALID"
+
+    PERSON_COUNTRY_CODE_NOT_FOUND   = "PERSON_COUNTRY_CODE_NOT_FOUND"
+    PERSON_RESIDENCE_NOT_ALLOWED    = "PERSON_RESIDENCE_NOT_ALLOWED"
+    PERSON_REPATRIATION_NOT_ALLOWED = "PERSON_REPATRIATION_NOT_ALLOWED"
+
+    PERSON_INCONGRUENCE           = "PERSON_INCONGRUENCE"
+    PERSON_DUPLICATED             = "PERSON_DUPLICATED"
+
+    CONTINUITY_BREAK              = "CONTINUITY_BREAK"
+    RETROACTIVE_NOT_ALLOWED       = "RETROACTIVE_NOT_ALLOWED"
+
+    # Catch-all
+    UNKNOWN_ERROR                 = "UNKNOWN_ERROR"
+
+    def __init__(self):
+        raise TypeError("No se puede instanciar esta clase")
