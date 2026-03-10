@@ -243,9 +243,11 @@ class TestProductModel:
         p.name = json.dumps({"es": "Plan Básico", "en": "Basic Plan"})
         assert p.name_es == "Plan Básico"
 
-    def test_soft_delete_column(self):
+    def test_columns_exist(self):
         cols = {c.name for c in Product.__table__.columns}
-        assert "deleted_at" in cols
+        assert "product_type" in cols
+        assert "show_in_widget" in cols
+        assert "status" in cols
 
 
 # ─────────────────────────── PlanVersion ─────────────────────────────────────
@@ -388,19 +390,19 @@ class TestConfigItemModel:
 
     def test_get_value_int(self):
         ci = ConfigItem()
-        ci.value_type = "int"
+        ci.type = "int"
         ci.value_int = 42
         assert ci.get_value() == 42
 
     def test_get_value_decimal(self):
         ci = ConfigItem()
-        ci.value_type = "decimal"
+        ci.type = "decimal"
         ci.value_decimal = 3.14
         assert ci.get_value() == 3.14
 
     def test_get_value_text(self):
         ci = ConfigItem()
-        ci.value_type = "text"
+        ci.type = "text"
         ci.value_text = "hello"
         assert ci.get_value() == "hello"
 

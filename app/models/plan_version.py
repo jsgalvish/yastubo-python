@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.product import Product
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from app.models.zone import Zone
 
 
-class PlanVersion(SoftDeleteMixin, TimestampMixin, Base):
+class PlanVersion(TimestampMixin, Base):
     """
     Versión de un plan de seguro.
 
@@ -35,23 +35,43 @@ class PlanVersion(SoftDeleteMixin, TimestampMixin, Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False)
-    version_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     terms_html: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Precios
-    price_adult: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
-    price_child: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
-    price_senior: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    public_price: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    cost_price: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    price_1: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    price_2: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    price_3: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    price_4: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
 
-    # Zona
+    # Edad
+    max_entry_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_renewal_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Tiempos de espera (días)
+    wtime_preexisting_conditions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    wtime_accident: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    wtime_suicide: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Archivos de términos
+    terms_file_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("files.id"), nullable=True
+    )
+    terms_file_es_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("files.id"), nullable=True
+    )
+    terms_file_en_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("files.id"), nullable=True
+    )
+
+    # Zona / País
     zone_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("zones.id"), nullable=True
     )
-
-    # Config
-    has_age_surcharge: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_repatriation: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    country_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("countries.id"), nullable=True
+    )
 
     # Relaciones
     product: Mapped[Product] = relationship("Product", back_populates="versions")
@@ -62,6 +82,7 @@ class PlanVersion(SoftDeleteMixin, TimestampMixin, Base):
         "PlanVersionAgeSurcharge", back_populates="plan_version"
     )
     zone: Mapped[Zone | None] = relationship("Zone")
+    country: Mapped[Country | None] = relationship("Country")
 
     def can_be_activated(self) -> bool:
         """Retorna True si la versión puede activarse (está en draft)."""

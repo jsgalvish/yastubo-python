@@ -23,4 +23,6 @@ class TemplateVersion(TimestampMixin, Base):
     test_data_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relaciones
-    template: Mapped[Template] = relationship("Template", back_populates="versions")
+    template: Mapped[Template] = relationship(
+        "Template", back_populates="versions", foreign_keys="[TemplateVersion.template_id]"
+    )

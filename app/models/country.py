@@ -25,7 +25,6 @@ class Country(HasTranslatableJson, TimestampMixin, Base):
     name: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
     iso2: Mapped[str | None] = mapped_column(String(2), nullable=True, index=True)
     iso3: Mapped[str | None] = mapped_column(String(3), nullable=True)
-    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
 
     # Relaciones
     zones: Mapped[list[Zone]] = relationship(
