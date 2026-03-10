@@ -327,7 +327,7 @@ async def store(
     user = User(
         realm="admin",
         first_name=body.first_name,
-        last_name=body.last_name or "",
+        last_name=body.last_name,
         display_name=body.display_name,
         email=body.email,
         status=body.status,
