@@ -317,7 +317,7 @@ class TestCreateUser:
     ):
         r = await client.post(
             "/admin/users",
-            json={"first_name": "Maria", "email": "create_min@admintest.com"},
+            json={"first_name": "Maria", "last_name": "García", "email": "create_min@admintest.com"},
             headers=_auth(actor_token),
         )
         assert r.status_code == 201
@@ -325,9 +325,21 @@ class TestCreateUser:
         assert body["email"] == "create_min@admintest.com"
         assert body["realm"] == "admin"
         assert body["force_password_change"] is True
-        assert body["last_name"] == ""  # last_name NOT NULL: se guarda como ""
+        assert body["last_name"] == "García"
         assert body["roles"] == []
         assert body["staff_profile"] is None
+
+    @pytest.mark.asyncio
+    async def test_sin_last_name_retorna_422(
+        self, client: AsyncClient, actor_token: str
+    ):
+        """last_name es obligatorio (NOT NULL en MySQL)."""
+        r = await client.post(
+            "/admin/users",
+            json={"first_name": "Maria", "email": "create_nolast@admintest.com"},
+            headers=_auth(actor_token),
+        )
+        assert r.status_code == 422
 
     @pytest.mark.asyncio
     async def test_crear_con_todos_los_campos(
@@ -356,7 +368,7 @@ class TestCreateUser:
     async def test_email_duplicado_retorna_422(
         self, client: AsyncClient, actor_token: str
     ):
-        payload = {"first_name": "Dup", "email": "create_dup@admintest.com"}
+        payload = {"first_name": "Dup", "last_name": "Test", "email": "create_dup@admintest.com"}
         r1 = await client.post("/admin/users", json=payload, headers=_auth(actor_token))
         assert r1.status_code == 201
         r2 = await client.post("/admin/users", json=payload, headers=_auth(actor_token))
@@ -368,7 +380,7 @@ class TestCreateUser:
     ):
         r = await client.post(
             "/admin/users",
-            json={"first_name": "Up", "email": "CREATE_UPPER@ADMINTEST.COM"},
+            json={"first_name": "Up", "last_name": "Case", "email": "CREATE_UPPER@ADMINTEST.COM"},
             headers=_auth(actor_token),
         )
         assert r.status_code == 201
@@ -392,6 +404,7 @@ class TestCreateUser:
             "/admin/users",
             json={
                 "first_name": "Vendor",
+                "last_name": "Regular",
                 "email": "create_vendor@admintest.com",
                 "roles": ["vendedor_regular"],
                 # sin comisiones → debe fallar

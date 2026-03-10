@@ -11,7 +11,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 class CreateUserRequest(BaseModel):
     first_name: str = Field(..., max_length=100)
-    last_name: Optional[str] = Field(None, max_length=100)
+    last_name: str = Field(..., max_length=100)
     display_name: Optional[str] = Field(None, max_length=150)
     email: EmailStr
     status: Literal["active", "suspended", "locked"] = "active"
