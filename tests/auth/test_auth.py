@@ -423,3 +423,121 @@ class TestPasswordEndpoints:
             },
         )
         assert r.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_token_realm_cruzado_retorna_403(self, client: AsyncClient, db_session: AsyncSession):
+        """Token de admin no puede acceder a endpoints de customer y viceversa."""
+        admin = _make_user(email="cross_admin@test.com", realm="admin")
+        customer = _make_user(email="cross_cust@test.com", realm="customer")
+        db_session.add(admin)
+        db_session.add(customer)
+        await db_session.commit()
+
+        admin_token = create_access_token(admin.id, "admin")
+        cust_token = create_access_token(customer.id, "customer")
+
+        # Token admin → endpoint customer: 403
+        r = await client.post(
+            "/customer/password/change",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "current_password": "TestPass123!",
+                "password": "NewPass456@",
+                "password_confirmation": "NewPass456@",
+            },
+        )
+        assert r.status_code == 403
+
+        # Token customer → endpoint admin: 403
+        r = await client.post(
+            "/admin/password/change",
+            headers={"Authorization": f"Bearer {cust_token}"},
+            json={
+                "current_password": "TestPass123!",
+                "password": "NewPass456@",
+                "password_confirmation": "NewPass456@",
+            },
+        )
+        assert r.status_code == 403
+
+
+# ─────────────────────────── Historial de passwords ──────────────────────────
+
+
+class TestPasswordHistory:
+    @pytest.mark.asyncio
+    async def test_no_puede_reutilizar_password_actual(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Cambiar contraseña a la misma actual debe rechazarse (historial)."""
+        user = _make_user(email="hist_current@test.com", realm="admin")
+        db_session.add(user)
+        await db_session.commit()
+
+        token = create_access_token(user.id, "admin")
+        r = await client.post(
+            "/admin/password/change",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "current_password": "TestPass123!",
+                "password": "TestPass123!",   # misma contraseña
+                "password_confirmation": "TestPass123!",
+            },
+        )
+        assert r.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_no_puede_reutilizar_password_reciente(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Contraseña usada antes (guardada en historial) debe rechazarse."""
+        user = _make_user(email="hist_reuse@test.com", realm="admin")
+        db_session.add(user)
+        await db_session.commit()
+
+        token = create_access_token(user.id, "admin")
+
+        # Primer cambio: TestPass123! → NewPass456@
+        r = await client.post(
+            "/admin/password/change",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "current_password": "TestPass123!",
+                "password": "NewPass456@",
+                "password_confirmation": "NewPass456@",
+            },
+        )
+        assert r.status_code == 200
+
+        # Segundo cambio: NewPass456@ → TestPass123! (contraseña anterior)
+        r = await client.post(
+            "/admin/password/change",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "current_password": "NewPass456@",
+                "password": "TestPass123!",   # fue usada antes → rechazar
+                "password_confirmation": "TestPass123!",
+            },
+        )
+        assert r.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_puede_usar_password_nueva(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Contraseña completamente nueva debe aceptarse."""
+        user = _make_user(email="hist_new@test.com", realm="admin")
+        db_session.add(user)
+        await db_session.commit()
+
+        token = create_access_token(user.id, "admin")
+        r = await client.post(
+            "/admin/password/change",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "current_password": "TestPass123!",
+                "password": "BrandNew789#",
+                "password_confirmation": "BrandNew789#",
+            },
+        )
+        assert r.status_code == 200
