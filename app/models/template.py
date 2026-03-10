@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
@@ -29,10 +29,12 @@ class Template(SoftDeleteMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     type: Mapped[str] = mapped_column(String(10), default="html", nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    active: Mapped[bool | None] = mapped_column(default=True, nullable=True)
+    test_data_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active_template_version_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("template_versions.id"), nullable=True
+    )
 
     # Relaciones
     versions: Mapped[list[TemplateVersion]] = relationship(
-        "TemplateVersion", back_populates="template"
+        "TemplateVersion", back_populates="template", foreign_keys="[TemplateVersion.template_id]"
     )

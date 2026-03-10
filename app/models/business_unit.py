@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+from app.models.base import Base, TimestampMixin
 from app.models.concerns.has_directory import HasDirectory
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.business_unit_commission_user import BusinessUnitCommissionUser
 
 
-class BusinessUnit(HasDirectory, SoftDeleteMixin, TimestampMixin, Base):
+class BusinessUnit(HasDirectory, TimestampMixin, Base):
     """
     Unidad de negocio (estructura de árbol vía parent_id).
     Equivale a BusinessUnit.php con relación parent/children recursiva.
@@ -26,10 +26,17 @@ class BusinessUnit(HasDirectory, SoftDeleteMixin, TimestampMixin, Base):
         Integer, ForeignKey("business_units.id"), nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    code: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    primary_color: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    secondary_color: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    # Branding
+    branding_logo_file_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("files.id"), nullable=True
+    )
+    branding_bg_light: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    branding_bg_dark: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    branding_text_light: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    branding_text_dark: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Árbol
     parent: Mapped[BusinessUnit | None] = relationship(

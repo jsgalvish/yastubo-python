@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 from app.models.concerns.has_translatable_json import HasTranslatableJson
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.coverage import Coverage
 
 
-class PlanVersionCoverage(HasTranslatableJson, TimestampMixin, Base):
+class PlanVersionCoverage(HasTranslatableJson, SoftDeleteMixin, TimestampMixin, Base):
     """
     Cobertura específica de una versión de plan.
     El valor se almacena en la columna que corresponda según el tipo de unidad.

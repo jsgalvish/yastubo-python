@@ -44,8 +44,7 @@ class CapitatedContract(TimestampMixin, Base):
     terminated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     termination_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Hash único (agregado en migración posterior)
-    hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    uuid: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
 
     # Relaciones
     company: Mapped[Company] = relationship("Company")
@@ -54,7 +53,7 @@ class CapitatedContract(TimestampMixin, Base):
 
 
 @event.listens_for(CapitatedContract, "before_insert")
-def _set_contract_hash(mapper, connection, target: CapitatedContract) -> None:
-    """Genera hash UUID antes de insertar si no está definido."""
-    if not target.hash:
-        target.hash = str(uuid_lib.uuid4()).replace("-", "")
+def _set_contract_uuid(mapper, connection, target: CapitatedContract) -> None:
+    """Genera UUID antes de insertar si no está definido."""
+    if not target.uuid:
+        target.uuid = str(uuid_lib.uuid4()).replace("-", "")
