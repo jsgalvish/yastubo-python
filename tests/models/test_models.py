@@ -415,6 +415,7 @@ class TestSQLiteCRUD:
             name=json.dumps({"es": "Chile", "en": "Chile"}),
             iso2="CL",
             iso3="CHL",
+            continent_code="SA",
         )
         db_session.add(country)
         await db_session.flush()
