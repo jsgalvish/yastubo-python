@@ -1,22 +1,25 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 from app.models.concerns.has_translatable_json import HasTranslatableJson
+
+if TYPE_CHECKING:
+    from app.models.permission import Permission
 
 
 class Role(HasTranslatableJson, TimestampMixin, Base):
     """
     Rol del sistema (equivale a Spatie\\Permission\\Models\\Role extendido).
 
-    Tablas de permisos de Spatie:
-      - roles                  (esta clase)
-      - permissions
-      - model_has_roles
-      - model_has_permissions
-      - role_has_permissions
+    Campos extra respecto a Spatie base:
+      - scope  — 'system' o 'unit'
+      - level  — jerarquía (0 = más importante)
+      - label  — JSON traducible {"es": ..., "en": ...}
     """
 
     __tablename__ = "roles"
@@ -30,6 +33,13 @@ class Role(HasTranslatableJson, TimestampMixin, Base):
     scope: Mapped[str | None] = mapped_column(String(20), nullable=True)
     level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     label: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+
+    # Relación con permisos (vía role_has_permissions)
+    permissions: Mapped[list[Permission]] = relationship(
+        "Permission",
+        secondary="role_has_permissions",
+        back_populates="roles",
+    )
 
     def is_scope(self, scope: str) -> bool:
         return self.scope == scope
