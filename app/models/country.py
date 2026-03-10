@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text
+from sqlalchemy import Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -25,6 +25,9 @@ class Country(HasTranslatableJson, TimestampMixin, Base):
     name: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
     iso2: Mapped[str | None] = mapped_column(String(2), nullable=True, index=True)
     iso3: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    continent_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    phone_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Relaciones
     zones: Mapped[list[Zone]] = relationship(
