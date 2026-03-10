@@ -101,3 +101,23 @@ class User(HasDirectory, SoftDeleteMixin, TimestampMixin, Base):
 
     def is_customer(self) -> bool:
         return self.realm == REALM_CUSTOMER
+
+    # ── Helpers de permisos (trabajan sobre colecciones ya cargadas) ──────────
+
+    def has_role(self, role_name: str, guard_name: str | None = None) -> bool:
+        """
+        Verifica si el usuario tiene un rol por nombre.
+        Requiere que PermissionService.load_roles(user) haya sido llamado.
+        """
+        roles = getattr(self, "_roles_cache", [])
+        return any(
+            r.name == role_name and (guard_name is None or r.guard_name == guard_name)
+            for r in roles
+        )
+
+    def can(self, permission_name: str) -> bool:
+        """
+        Verifica si el usuario tiene un permiso (directo o vía roles).
+        Requiere que PermissionService.load_permissions(user) haya sido llamado.
+        """
+        return permission_name in getattr(self, "_permissions_cache", set())

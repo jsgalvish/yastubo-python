@@ -18,6 +18,7 @@ from app.models.user_preference import UserPreference
 
 # ── Roles y permisos ──────────────────────────────────────────────────────────
 from app.models.role import Role
+from app.models.permission import Permission, model_has_roles, model_has_permissions, role_has_permissions
 
 # ── Empresa ───────────────────────────────────────────────────────────────────
 from app.models.company import Company
@@ -78,8 +79,12 @@ __all__ = [
     "CustomerProfile",
     "PasswordHistory",
     "UserPreference",
-    # Roles
+    # Roles y permisos
     "Role",
+    "Permission",
+    "model_has_roles",
+    "model_has_permissions",
+    "role_has_permissions",
     # Empresa
     "Company",
     "CompanyUser",

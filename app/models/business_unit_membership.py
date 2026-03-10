@@ -9,11 +9,15 @@ from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.business_unit import BusinessUnit
+    from app.models.role import Role
     from app.models.user import User
 
 
 class BusinessUnitMembership(TimestampMixin, Base):
-    """Membresía de un usuario en una unidad de negocio."""
+    """
+    Membresía de un usuario en una unidad de negocio con un rol específico.
+    Equivale a la tabla memberships_business_unit de PHP.
+    """
 
     __tablename__ = "memberships_business_unit"
 
@@ -22,10 +26,12 @@ class BusinessUnitMembership(TimestampMixin, Base):
         ForeignKey("business_units.id"), nullable=False
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("roles.id"), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Relaciones
     business_unit: Mapped[BusinessUnit] = relationship(
         "BusinessUnit", back_populates="memberships"
     )
     user: Mapped[User] = relationship("User", back_populates="business_unit_memberships")
+    role: Mapped[Role | None] = relationship("Role")
