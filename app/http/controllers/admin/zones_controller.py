@@ -8,10 +8,10 @@ Endpoints:
   GET    /admin/zones/{id}                         → show
   PUT    /admin/zones/{id}                         → update
   PUT    /admin/zones/{id}/toggle-active           → toggleActive
-  GET    /admin/zones/{id}/countries               → countries (zonas de países)
+  GET    /admin/zones/{id}/countries               → countries
   GET    /admin/zones/{id}/countries/available     → availableCountries
-  POST   /admin/zones/{id}/countries/{country_id} → attachCountry
-  DELETE /admin/zones/{id}/countries/{country_id} → detachCountry
+  POST   /admin/zones/{id}/countries/{country_id}  → attachCountry
+  DELETE /admin/zones/{id}/countries/{country_id}  → detachCountry
 
 Sin permiso explícito: solo requiere autenticación admin (get_admin_user).
 """
@@ -19,10 +19,10 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete, select
-from sqlalchemy.orm import selectinload
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.http.middleware.auth import get_admin_user
@@ -32,6 +32,7 @@ from app.http.requests.admin.geo_request import (
     StoreZoneRequest,
     UpdateZoneRequest,
     ZoneOut,
+    ZoneSimpleOut,
 )
 from app.models.country import Country
 from app.models.zone import Zone, country_zone
@@ -40,31 +41,48 @@ from config.continents import CONTINENTS
 router = APIRouter(prefix="/admin/zones", tags=["admin:zones"])
 
 
-def _build_country_for_zone(country: Country) -> CountryForZoneOut:
-    data = CountryForZoneOut.model_validate(country)
-    data.continent_label = CONTINENTS.get(country.continent_code, country.continent_code)
-    return data
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _build_zone_out(zone: Zone) -> ZoneOut:
-    """Construye ZoneOut con países y contador."""
-    countries_out = [_build_country_for_zone(c) for c in zone.countries]
-    return ZoneOut(
-        id=zone.id,
-        name=zone.name,
-        description=zone.description,
-        is_active=zone.is_active,
-        countries=countries_out,
-        countries_count=len(countries_out),
-    )
+def _transform_country_for_zone(c: Country) -> dict:
+    """Serializa un país en el contexto de zona. Equivale a transformCountryForZone() de PHP."""
+    name_data: dict = {"es": None, "en": None}
+    if c.name:
+        try:
+            parsed = json.loads(c.name) if isinstance(c.name, str) else c.name
+            if isinstance(parsed, dict):
+                name_data = {**name_data, **parsed}
+        except Exception:
+            name_data = {"es": c.name, "en": c.name}
+
+    return {
+        "id": c.id,
+        "name": name_data,
+        "continent_code": c.continent_code,
+        "continent_label": CONTINENTS.get(c.continent_code, c.continent_code),
+        "phone_code": c.phone_code,
+        "is_active": bool(c.is_active),
+    }
 
 
-async def _get_zone_with_countries(zone_id: int, db: AsyncSession) -> Zone:
-    """Carga una zona con sus países (eager load). 404 si no existe."""
+def _transform_zone(z: Zone) -> dict:
+    """Serializa una zona con sus países. Equivale a transformZone() de PHP."""
+    countries = sorted(z.countries, key=lambda c: c.name or "")
+    countries_out = [_transform_country_for_zone(c) for c in countries]
+    return {
+        "id": z.id,
+        "name": z.name,
+        "description": z.description,
+        "is_active": bool(z.is_active),
+        "countries": countries_out,
+        "countries_count": len(countries_out),
+    }
+
+
+async def _load_zone_or_404(db: AsyncSession, zone_id: int) -> Zone:
+    """Carga la zona con países (selectinload). 404 si no existe."""
     result = await db.execute(
-        select(Zone)
-        .options(selectinload(Zone.countries))
-        .where(Zone.id == zone_id)
+        select(Zone).options(selectinload(Zone.countries)).where(Zone.id == zone_id)
     )
     zone = result.scalar_one_or_none()
     if zone is None:
@@ -72,30 +90,44 @@ async def _get_zone_with_countries(zone_id: int, db: AsyncSession) -> Zone:
     return zone
 
 
-# ─────────────────────────── Endpoints ───────────────────────────────────────
+# ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=list[ZoneOut])
+
+@router.get("")
 async def index(
+    status: str = Query("active", alias="status"),
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Lista todas las zonas con sus países."""
-    result = await db.execute(
-        select(Zone)
-        .options(selectinload(Zone.countries))
-        .order_by(Zone.id)
-    )
+    """
+    Lista zonas con sus países.
+    Devuelve JSON con {zones, filters, continents}.
+    """
+    query = select(Zone).options(selectinload(Zone.countries))
+
+    if status == "active":
+        query = query.where(Zone.is_active.is_(True))
+    elif status == "inactive":
+        query = query.where(Zone.is_active.is_(False))
+
+    query = query.order_by(Zone.name)
+    result = await db.execute(query)
     zones = list(result.scalars().all())
-    return [_build_zone_out(z) for z in zones]
+
+    return {
+        "zones": [_transform_zone(z) for z in zones],
+        "filters": {"status": status},
+        "continents": CONTINENTS,
+    }
 
 
-@router.post("", response_model=ZoneOut, status_code=201)
+@router.post("", status_code=201)
 async def store(
     body: StoreZoneRequest,
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Crea una nueva zona."""
+    """Crea una nueva zona (siempre activa)."""
     zone = Zone()
     zone.name = body.name
     zone.description = body.description
@@ -105,96 +137,139 @@ async def store(
     await db.commit()
     await db.refresh(zone)
 
-    # Recargar con países (vacía en creación)
-    zone = await _get_zone_with_countries(zone.id, db)
-    return _build_zone_out(zone)
+    zone = await _load_zone_or_404(db, zone.id)
+    return {"message": "Zona creada correctamente.", "data": _transform_zone(zone)}
 
 
-@router.get("/{zone_id}", response_model=ZoneOut)
+@router.get("/{zone_id}")
 async def show(
     zone_id: int,
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retorna una zona por ID."""
-    zone = await _get_zone_with_countries(zone_id, db)
-    return _build_zone_out(zone)
+    """
+    Retorna datos básicos de la zona (sin cargar países completos).
+    Equivale a show() de PHP — devuelve solo name, description, is_active.
+    """
+    result = await db.execute(select(Zone).where(Zone.id == zone_id))
+    zone = result.scalar_one_or_none()
+    if zone is None:
+        raise HTTPException(status_code=404, detail="Zona no encontrada.")
+
+    return {
+        "data": {
+            "id": zone.id,
+            "name": zone.name,
+            "description": zone.description,
+            "is_active": bool(zone.is_active),
+        }
+    }
 
 
-@router.put("/{zone_id}", response_model=ZoneOut)
+@router.put("/{zone_id}")
 async def update(
     zone_id: int,
     body: UpdateZoneRequest,
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Actualiza una zona (partial update con model_fields_set)."""
-    zone = await _get_zone_with_countries(zone_id, db)
+    """Actualiza nombre y descripción de una zona."""
+    zone = await _load_zone_or_404(db, zone_id)
 
-    if "name" in body.model_fields_set and body.name is not None:
-        zone.name = body.name
-
-    if "description" in body.model_fields_set:
-        zone.description = body.description
+    zone.name = body.name
+    zone.description = body.description
 
     await db.commit()
     await db.refresh(zone)
 
-    zone = await _get_zone_with_countries(zone_id, db)
-    return _build_zone_out(zone)
+    zone = await _load_zone_or_404(db, zone_id)
+    return {"message": "Zona actualizada correctamente.", "data": _transform_zone(zone)}
 
 
-@router.put("/{zone_id}/toggle-active", response_model=ZoneOut)
+@router.put("/{zone_id}/toggle-active")
 async def toggle_active(
     zone_id: int,
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Activa o desactiva una zona."""
-    zone = await _get_zone_with_countries(zone_id, db)
+    zone = await _load_zone_or_404(db, zone_id)
+
     zone.is_active = not zone.is_active
     await db.commit()
     await db.refresh(zone)
 
-    zone = await _get_zone_with_countries(zone_id, db)
-    return _build_zone_out(zone)
+    zone = await _load_zone_or_404(db, zone_id)
+    msg = "Zona activada correctamente." if zone.is_active else "Zona desactivada correctamente."
+    return {"message": msg, "data": _transform_zone(zone)}
 
 
-@router.get("/{zone_id}/countries", response_model=list[CountryForZoneOut])
+@router.get("/{zone_id}/countries")
 async def zone_countries(
     zone_id: int,
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Lista los países de una zona."""
-    zone = await _get_zone_with_countries(zone_id, db)
-    return [_build_country_for_zone(c) for c in zone.countries]
+    """
+    Países actualmente asociados a la zona.
+    Equivale a countries() de PHP.
+    """
+    zone = await _load_zone_or_404(db, zone_id)
+    countries = sorted(zone.countries, key=lambda c: c.name or "")
+
+    return {
+        "zone_id": zone.id,
+        "countries": [_transform_country_for_zone(c) for c in countries],
+    }
 
 
-@router.get("/{zone_id}/countries/available", response_model=list[CountryAvailableOut])
+@router.get("/{zone_id}/countries/available")
 async def available_countries(
     zone_id: int,
+    search: str = Query("", alias="search"),
+    continent: str | None = Query(None, alias="continent"),
+    status: str = Query("active", alias="status"),
     _actor=Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Retorna todos los países con la bandera 'attached' indicando
-    si ya pertenecen a la zona. Equivale a availableCountries() en PHP.
+    Lista de países con bandera 'attached'.
+    Soporta filtros search, continent, status.
+    Equivale a availableCountries() de PHP.
     """
-    zone = await _get_zone_with_countries(zone_id, db)
+    zone = await _load_zone_or_404(db, zone_id)
     attached_ids = {c.id for c in zone.countries}
 
-    all_result = await db.execute(select(Country).order_by(Country.id))
-    all_countries = list(all_result.scalars().all())
+    query = select(Country)
 
-    out = []
-    for country in all_countries:
-        item = CountryAvailableOut.model_validate(country)
-        item.continent_label = CONTINENTS.get(country.continent_code, country.continent_code)
-        item.attached = country.id in attached_ids
-        out.append(item)
+    search = search.strip()
+    if search:
+        query = query.where(Country.name.like(f"%{search}%"))
 
-    return out
+    if continent:
+        query = query.where(Country.continent_code == continent)
+
+    if status == "active":
+        query = query.where(Country.is_active.is_(True))
+    elif status == "inactive":
+        query = query.where(Country.is_active.is_(False))
+
+    query = query.order_by(Country.name)
+    result = await db.execute(query)
+    all_countries = list(result.scalars().all())
+
+    items = []
+    for c in all_countries:
+        data = _transform_country_for_zone(c)
+        data["attached"] = c.id in attached_ids
+        items.append(data)
+
+    return {
+        "zone_id": zone_id,
+        "countries": items,
+        "filters": {"search": search, "continent": continent, "status": status},
+        "continents": CONTINENTS,
+    }
 
 
 @router.post("/{zone_id}/countries/{country_id}", status_code=200)
@@ -207,11 +282,14 @@ async def attach_country(
     """
     Asocia un país a una zona (idempotente, equivale a syncWithoutDetaching).
     """
-    zone = await _get_zone_with_countries(zone_id, db)
+    # Verificar zona
+    zone_result = await db.execute(select(Zone).where(Zone.id == zone_id))
+    if zone_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Zona no encontrada.")
 
+    # Verificar país
     country_result = await db.execute(select(Country).where(Country.id == country_id))
-    country = country_result.scalar_one_or_none()
-    if country is None:
+    if country_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="País no encontrado.")
 
     # Idempotente: insertar solo si no existe
@@ -227,7 +305,7 @@ async def attach_country(
         )
         await db.commit()
 
-    return {"message": "País asociado correctamente."}
+    return {"message": "País añadido a la zona."}
 
 
 @router.delete("/{zone_id}/countries/{country_id}", status_code=200)
@@ -238,7 +316,6 @@ async def detach_country(
     db: AsyncSession = Depends(get_db),
 ):
     """Desasocia un país de una zona."""
-    # Verificar que la zona existe
     zone_result = await db.execute(select(Zone).where(Zone.id == zone_id))
     if zone_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Zona no encontrada.")
@@ -251,4 +328,4 @@ async def detach_country(
     )
     await db.commit()
 
-    return {"message": "País desasociado correctamente."}
+    return {"message": "País quitado de la zona."}

@@ -6,25 +6,46 @@ StoreZoneRequest, UpdateZoneRequest en PHP.
 from __future__ import annotations
 
 import json as _json
+import re
 from typing import Any, Optional
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from config.continents import CONTINENTS
+
+_CONTINENT_KEYS = set(CONTINENTS.keys())
 
 
 # ─────────────────────────── Country Schemas ─────────────────────────────────
 
+
 class TranslatableNameIn(BaseModel):
     """Nombre traducible: {es, en}."""
-    es: str
-    en: Optional[str] = None
+
+    es: str = Field(..., max_length=255)
+    en: str = Field(..., max_length=255)
 
 
 class StoreCountryRequest(BaseModel):
     name: TranslatableNameIn
-    iso2: str
-    iso3: str
-    continent_code: str
-    phone_code: Optional[str] = None
+    iso2: str = Field(..., min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")
+    iso3: str = Field(..., min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
+    continent_code: str = Field(..., min_length=2, max_length=2)
+    phone_code: Optional[str] = Field(None, max_length=10)
+
+    @field_validator("continent_code")
+    @classmethod
+    def validate_continent(cls, v: str) -> str:
+        if v not in _CONTINENT_KEYS:
+            raise ValueError(f"Continente inválido. Valores permitidos: {sorted(_CONTINENT_KEYS)}")
+        return v
+
+    @field_validator("phone_code")
+    @classmethod
+    def validate_phone_code(cls, v: str | None) -> str | None:
+        if v is not None and not re.match(r"^[0-9]+$", v):
+            raise ValueError("El código telefónico debe contener solo dígitos.")
+        return v
 
     @model_validator(mode="after")
     def uppercase_iso(self) -> "StoreCountryRequest":
@@ -34,18 +55,30 @@ class StoreCountryRequest(BaseModel):
 
 
 class UpdateCountryRequest(BaseModel):
-    name: Optional[TranslatableNameIn] = None
-    iso2: Optional[str] = None
-    iso3: Optional[str] = None
-    continent_code: Optional[str] = None
-    phone_code: Optional[str] = None
+    name: TranslatableNameIn
+    iso2: str = Field(..., min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")
+    iso3: str = Field(..., min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
+    continent_code: str = Field(..., min_length=2, max_length=2)
+    phone_code: Optional[str] = Field(None, max_length=10)
+
+    @field_validator("continent_code")
+    @classmethod
+    def validate_continent(cls, v: str) -> str:
+        if v not in _CONTINENT_KEYS:
+            raise ValueError(f"Continente inválido. Valores permitidos: {sorted(_CONTINENT_KEYS)}")
+        return v
+
+    @field_validator("phone_code")
+    @classmethod
+    def validate_phone_code(cls, v: str | None) -> str | None:
+        if v is not None and not re.match(r"^[0-9]+$", v):
+            raise ValueError("El código telefónico debe contener solo dígitos.")
+        return v
 
     @model_validator(mode="after")
     def uppercase_iso(self) -> "UpdateCountryRequest":
-        if self.iso2 is not None:
-            self.iso2 = self.iso2.upper()
-        if self.iso3 is not None:
-            self.iso3 = self.iso3.upper()
+        self.iso2 = self.iso2.upper()
+        self.iso3 = self.iso3.upper()
         return self
 
 
@@ -74,6 +107,7 @@ class CountryOut(BaseModel):
 
 class CountryForZoneOut(BaseModel):
     """Resumen de país en respuestas de zona."""
+
     id: int
     name: Optional[Any] = None
     continent_code: Optional[str] = None
@@ -96,19 +130,30 @@ class CountryForZoneOut(BaseModel):
 
 class CountryAvailableOut(CountryForZoneOut):
     """País con bandera 'attached' para endpoint availableCountries."""
+
     attached: bool = False
 
 
 # ─────────────────────────── Zone Schemas ────────────────────────────────────
 
+
 class StoreZoneRequest(BaseModel):
-    name: str
+    name: str = Field(..., max_length=255)
     description: Optional[str] = None
 
 
 class UpdateZoneRequest(BaseModel):
-    name: Optional[str] = None
+    name: str = Field(..., max_length=255)
     description: Optional[str] = None
+
+
+class ZoneSimpleOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    is_active: bool = True
+
+    model_config = {"from_attributes": True}
 
 
 class ZoneOut(BaseModel):

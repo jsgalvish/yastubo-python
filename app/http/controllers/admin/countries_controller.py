@@ -3,10 +3,10 @@ Controlador de países (admin).
 Equivale a CountryController.php en Laravel.
 
 Endpoints:
-  GET    /admin/countries              → index
-  POST   /admin/countries              → store
-  GET    /admin/countries/{id}         → show
-  PUT    /admin/countries/{id}         → update
+  GET    /admin/countries                    → index
+  POST   /admin/countries                    → store
+  GET    /admin/countries/{id}               → show
+  PUT    /admin/countries/{id}               → update
   PUT    /admin/countries/{id}/toggle-active → toggleActive
 
 Permiso requerido: admin.countries.manage
@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -34,46 +34,111 @@ router = APIRouter(prefix="/admin/countries", tags=["admin:countries"])
 _PERMISSION = "admin.countries.manage"
 
 
-def _build_country_out(country: Country) -> CountryOut:
-    """Construye CountryOut agregando continent_label (equivale a transformCountry)."""
-    data = CountryOut.model_validate(country)
-    data.continent_label = CONTINENTS.get(country.continent_code, country.continent_code)
-    return data
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-# ─────────────────────────── Endpoints ───────────────────────────────────────
+def _transform_country(country: Country) -> dict:
+    """
+    Serializa un país para el frontend.
+    Equivale a transformCountry() en PHP.
+    """
+    name_data: dict = {"es": None, "en": None}
+    if country.name:
+        try:
+            parsed = json.loads(country.name) if isinstance(country.name, str) else country.name
+            if isinstance(parsed, dict):
+                name_data = {**name_data, **parsed}
+        except Exception:
+            name_data = {"es": country.name, "en": country.name}
 
-@router.get("", response_model=list[CountryOut])
+    return {
+        "id": country.id,
+        "name": name_data,
+        "iso2": country.iso2,
+        "iso3": country.iso3,
+        "continent_code": country.continent_code,
+        "continent_label": CONTINENTS.get(country.continent_code, country.continent_code),
+        "phone_code": country.phone_code,
+        "is_active": bool(country.is_active),
+    }
+
+
+async def _get_country_or_404(db: AsyncSession, country_id: int) -> Country:
+    result = await db.execute(select(Country).where(Country.id == country_id))
+    country = result.scalar_one_or_none()
+    if country is None:
+        raise HTTPException(status_code=404, detail="País no encontrado.")
+    return country
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
+
+@router.get("")
 async def index(
+    search: str = Query("", alias="search"),
+    continent: str | None = Query(None, alias="continent"),
+    status: str = Query("active", alias="status"),
     _actor=Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
-    """Lista todos los países ordenados por nombre."""
-    result = await db.execute(select(Country).order_by(Country.id))
+    """
+    Lista países con filtros opcionales.
+    Devuelve JSON con {countries, filters, continents}.
+    """
+    query = select(Country)
+
+    search = search.strip()
+    if search:
+        like = f"%{search}%"
+        query = query.where(
+            or_(
+                Country.name.like(like),
+                Country.phone_code.like(like),
+                Country.iso2.like(like),
+                Country.iso3.like(like),
+            )
+        )
+
+    if continent:
+        query = query.where(Country.continent_code == continent)
+
+    if status == "active":
+        query = query.where(Country.is_active.is_(True))
+    elif status == "inactive":
+        query = query.where(Country.is_active.is_(False))
+
+    query = query.order_by(Country.name)
+    result = await db.execute(query)
     countries = list(result.scalars().all())
-    return [_build_country_out(c) for c in countries]
+
+    return {
+        "countries": [_transform_country(c) for c in countries],
+        "filters": {"search": search, "continent": continent, "status": status},
+        "continents": CONTINENTS,
+    }
 
 
-@router.post("", response_model=CountryOut, status_code=201)
+@router.post("", status_code=201)
 async def store(
     body: StoreCountryRequest,
     _actor=Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Crea un nuevo país."""
-    # Validar unicidad iso2
-    existing_iso2 = await db.execute(select(Country).where(Country.iso2 == body.iso2))
-    if existing_iso2.scalar_one_or_none() is not None:
+    # Unicidad iso2
+    existing = await db.execute(
+        select(Country).where(Country.iso2 == body.iso2)
+    )
+    if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=422, detail="El código ISO2 ya existe.")
 
-    # Validar unicidad iso3
-    existing_iso3 = await db.execute(select(Country).where(Country.iso3 == body.iso3))
-    if existing_iso3.scalar_one_or_none() is not None:
+    # Unicidad iso3
+    existing = await db.execute(
+        select(Country).where(Country.iso3 == body.iso3)
+    )
+    if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=422, detail="El código ISO3 ya existe.")
-
-    # Validar continent_code
-    if body.continent_code not in CONTINENTS:
-        raise HTTPException(status_code=422, detail="Código de continente no válido.")
 
     country = Country()
     country.name = json.dumps({"es": body.name.es, "en": body.name.en})
@@ -87,83 +152,68 @@ async def store(
     await db.commit()
     await db.refresh(country)
 
-    return _build_country_out(country)
+    return {"message": "País creado correctamente.", "data": _transform_country(country)}
 
 
-@router.get("/{country_id}", response_model=CountryOut)
+@router.get("/{country_id}")
 async def show(
     country_id: int,
     _actor=Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Retorna un país por ID."""
-    result = await db.execute(select(Country).where(Country.id == country_id))
-    country = result.scalar_one_or_none()
-    if country is None:
-        raise HTTPException(status_code=404, detail="País no encontrado.")
-    return _build_country_out(country)
+    country = await _get_country_or_404(db, country_id)
+    return {"data": _transform_country(country)}
 
 
-@router.put("/{country_id}", response_model=CountryOut)
+@router.put("/{country_id}")
 async def update(
     country_id: int,
     body: UpdateCountryRequest,
     _actor=Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
-    """Actualiza un país (partial update con model_fields_set)."""
-    result = await db.execute(select(Country).where(Country.id == country_id))
-    country = result.scalar_one_or_none()
-    if country is None:
-        raise HTTPException(status_code=404, detail="País no encontrado.")
+    """Actualiza un país."""
+    country = await _get_country_or_404(db, country_id)
 
-    if "name" in body.model_fields_set and body.name is not None:
-        country.name = json.dumps({"es": body.name.es, "en": body.name.en})
+    # Unicidad iso2 (excluyendo el propio país)
+    existing = await db.execute(
+        select(Country).where(Country.iso2 == body.iso2, Country.id != country_id)
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=422, detail="El código ISO2 ya existe.")
 
-    if "iso2" in body.model_fields_set and body.iso2 is not None:
-        existing = await db.execute(
-            select(Country).where(Country.iso2 == body.iso2, Country.id != country_id)
-        )
-        if existing.scalar_one_or_none() is not None:
-            raise HTTPException(status_code=422, detail="El código ISO2 ya existe.")
-        country.iso2 = body.iso2
+    # Unicidad iso3
+    existing = await db.execute(
+        select(Country).where(Country.iso3 == body.iso3, Country.id != country_id)
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=422, detail="El código ISO3 ya existe.")
 
-    if "iso3" in body.model_fields_set and body.iso3 is not None:
-        existing = await db.execute(
-            select(Country).where(Country.iso3 == body.iso3, Country.id != country_id)
-        )
-        if existing.scalar_one_or_none() is not None:
-            raise HTTPException(status_code=422, detail="El código ISO3 ya existe.")
-        country.iso3 = body.iso3
-
-    if "continent_code" in body.model_fields_set and body.continent_code is not None:
-        if body.continent_code not in CONTINENTS:
-            raise HTTPException(status_code=422, detail="Código de continente no válido.")
-        country.continent_code = body.continent_code
-
-    if "phone_code" in body.model_fields_set:
-        country.phone_code = body.phone_code
+    country.name = json.dumps({"es": body.name.es, "en": body.name.en})
+    country.iso2 = body.iso2
+    country.iso3 = body.iso3
+    country.continent_code = body.continent_code
+    country.phone_code = body.phone_code
 
     await db.commit()
     await db.refresh(country)
 
-    return _build_country_out(country)
+    return {"message": "País actualizado correctamente.", "data": _transform_country(country)}
 
 
-@router.put("/{country_id}/toggle-active", response_model=CountryOut)
+@router.put("/{country_id}/toggle-active")
 async def toggle_active(
     country_id: int,
     _actor=Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Activa o desactiva un país."""
-    result = await db.execute(select(Country).where(Country.id == country_id))
-    country = result.scalar_one_or_none()
-    if country is None:
-        raise HTTPException(status_code=404, detail="País no encontrado.")
+    country = await _get_country_or_404(db, country_id)
 
     country.is_active = not country.is_active
     await db.commit()
     await db.refresh(country)
 
-    return _build_country_out(country)
+    msg = "País activado correctamente." if country.is_active else "País desactivado correctamente."
+    return {"message": msg, "data": _transform_country(country)}
