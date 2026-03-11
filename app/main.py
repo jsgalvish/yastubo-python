@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.http.controllers.admin import acl_controller as admin_acl
+from app.http.controllers.admin import companies_controller as admin_companies
 from app.http.controllers.admin import countries_controller as admin_countries
 from app.http.controllers.admin import users_controller as admin_users
 from app.http.controllers.admin import zones_controller as admin_zones
@@ -19,6 +20,7 @@ app.include_router(admin_users.router)
 app.include_router(admin_acl.router)
 app.include_router(admin_countries.router)
 app.include_router(admin_zones.router)
+app.include_router(admin_companies.router)
 
 
 @app.get("/")

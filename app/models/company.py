@@ -20,6 +20,10 @@ class Company(HasDirectory, TimestampMixin, Base):
 
     __tablename__ = "companies"
 
+    STATUS_ACTIVE = "active"
+    STATUS_INACTIVE = "inactive"
+    STATUS_ARCHIVED = "archived"
+
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     short_code: Mapped[str | None] = mapped_column(String(50), nullable=True)

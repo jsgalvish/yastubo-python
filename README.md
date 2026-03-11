@@ -103,3 +103,28 @@ ruff check .
 npm install
 npm run dev
 ```
+
+## Plan de migración (Fase 2)
+
+Espejo funcional 1:1 del monolito PHP. Cada step corresponde a uno o varios controladores del sistema original.
+
+| #  | Descripción | Controladores PHP | Estado | Commit |
+|----|-------------|-------------------|--------|--------|
+| 1  | Support / Utils | — | ✅ | `46de497` |
+| 2  | Modelos SQLAlchemy | — | ✅ | `780f80b` |
+| 3  | Auth JWT | `LoginController`, `PasswordController`, `ForcedPasswordController` | ✅ | `e1b8c7d` |
+| 4  | Roles y permisos | — | ✅ | `14285ee` |
+| 5  | Usuarios admin | `UsersController` | ✅ | `8b8cbf8` |
+| 6  | ACL | `RolesPermissionsController` | ✅ | `419555a` |
+| 7  | Catálogos geográficos | `CountryController`, `ZoneController` | ✅ | `89e64ea` |
+| 8  | Empresas | `CompanyController`, `CompanyCommissionUserController` | ⏳ | — |
+| 9  | Unidades de negocio | `BusinessUnitController`, `BusinessUnitApiController` | ⏳ | — |
+| 10 | Catálogo de coberturas | `CoverageCatalogController` | ⏳ | — |
+| 11 | Productos | `ProductController` | ⏳ | — |
+| 12 | Versiones de plan | `PlanVersionController`, `PlanVersionCoverageController`, `PlanVersionAgeSurchargeController` | ⏳ | — |
+| 13 | Países de plan | `PlanVersionCountryController`, `PlanVersionRepatriationCountryController` | ⏳ | — |
+| 14 | Plantillas | `TemplateController`, `TemplateVersionController` | ⏳ | — |
+| 15 | Regalías y configuración | `RegaliasController`, `ConfigController` | ⏳ | — |
+| 16 | Capitados | `CapitatedBatchController`, `CapitatedContractController`, `CapitatedMonthlyReportController`, `CapitatedPersonController` | ⏳ | — |
+| 17 | Archivos | `FileController` | ⏳ | — |
+| 18 | Dashboard | `DashboardController` | ⏳ | — |
