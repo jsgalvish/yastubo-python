@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.models.user import User
 from app.http.middleware.auth import get_admin_user
 from app.http.requests.admin.geo_request import (
     CountryAvailableOut,
@@ -96,7 +97,7 @@ async def _load_zone_or_404(db: AsyncSession, zone_id: int) -> Zone:
 @router.get("")
 async def index(
     status: str = Query("active", alias="status"),
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -124,7 +125,7 @@ async def index(
 @router.post("", status_code=201)
 async def store(
     body: StoreZoneRequest,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Crea una nueva zona (siempre activa)."""
@@ -144,7 +145,7 @@ async def store(
 @router.get("/{zone_id}")
 async def show(
     zone_id: int,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -170,7 +171,7 @@ async def show(
 async def update(
     zone_id: int,
     body: UpdateZoneRequest,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Actualiza nombre y descripción de una zona."""
@@ -189,7 +190,7 @@ async def update(
 @router.put("/{zone_id}/toggle-active")
 async def toggle_active(
     zone_id: int,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Activa o desactiva una zona."""
@@ -207,7 +208,7 @@ async def toggle_active(
 @router.get("/{zone_id}/countries")
 async def zone_countries(
     zone_id: int,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -229,7 +230,7 @@ async def available_countries(
     search: str = Query("", alias="search"),
     continent: str | None = Query(None, alias="continent"),
     status: str = Query("active", alias="status"),
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -276,7 +277,7 @@ async def available_countries(
 async def attach_country(
     zone_id: int,
     country_id: int,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -312,7 +313,7 @@ async def attach_country(
 async def detach_country(
     zone_id: int,
     country_id: int,
-    _actor=Depends(get_admin_user),
+    _current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Desasocia un país de una zona."""

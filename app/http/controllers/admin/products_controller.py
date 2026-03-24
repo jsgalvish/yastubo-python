@@ -9,6 +9,11 @@ Endpoints:
   PUT    /admin/products/{id}         → update
 
 Permiso requerido: admin.products.manage
+
+Cambios aplicados por auditoría de skills:
+  - HIGH-2: response_model tipados (Pydantic, no dict)
+  - MED-7: _actor → _current_user
+  - MED-8: type hints en helpers
 """
 from __future__ import annotations
 
@@ -21,11 +26,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.product_request import (
+    ProductDataResponse,
+    ProductDataToastResponse,
+    ProductIndexResponse,
     ProductOut,
     StoreProductRequest,
     UpdateProductRequest,
 )
 from app.models.product import Product
+from app.models.user import User
 
 router = APIRouter(prefix="/admin/products", tags=["admin:products"])
 
@@ -74,11 +83,11 @@ async def _get_product(product_id: int, db: AsyncSession) -> Product:
 # ─────────────────────────── index ───────────────────────────────────────────
 
 
-@router.get("", response_model=dict)
+@router.get("", response_model=ProductIndexResponse)
 async def index(
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
-):
+) -> ProductIndexResponse:
     """
     Lista de productos de tipo plan_regular, ordenados por id desc.
     Equivale a index() en PHP (filtra solo TYPE_PLAN_REGULAR).
@@ -90,21 +99,21 @@ async def index(
     )
     products = list(result.scalars().all())
 
-    return {
-        "products": [_build_product_out(p) for p in products],
-        "product_type_options": Product.types(),
-    }
+    return ProductIndexResponse(
+        products=[_build_product_out(p) for p in products],
+        product_type_options=Product.types(),
+    )
 
 
 # ─────────────────────────── store ───────────────────────────────────────────
 
 
-@router.post("", response_model=dict, status_code=201)
+@router.post("", response_model=ProductDataResponse, status_code=201)
 async def store(
     body: StoreProductRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
-):
+) -> ProductDataResponse:
     """
     Crea un nuevo producto. Equivale a store() en PHP.
 
@@ -140,33 +149,33 @@ async def store(
     await db.commit()
     await db.refresh(product)
 
-    return {"data": _build_product_out(product)}
+    return ProductDataResponse(data=_build_product_out(product))
 
 
 # ─────────────────────────── show ────────────────────────────────────────────
 
 
-@router.get("/{product_id}", response_model=dict)
+@router.get("/{product_id}", response_model=ProductDataResponse)
 async def show(
     product_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
-):
+) -> ProductDataResponse:
     """Detalle de un producto. Equivale a show() en PHP."""
     product = await _get_product(product_id, db)
-    return {"data": _build_product_out(product)}
+    return ProductDataResponse(data=_build_product_out(product))
 
 
 # ─────────────────────────── update ──────────────────────────────────────────
 
 
-@router.put("/{product_id}", response_model=dict)
+@router.put("/{product_id}", response_model=ProductDataToastResponse)
 async def update(
     product_id: int,
     body: UpdateProductRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
-):
+) -> ProductDataToastResponse:
     """
     Actualiza un producto. Equivale a update() en PHP.
     product_type y company_id NO son modificables después de la creación.
@@ -193,7 +202,7 @@ async def update(
     await db.commit()
     await db.refresh(product)
 
-    return {
-        "data": _build_product_out(product),
-        "toast": {"type": "success", "message": "Producto actualizado correctamente."},
-    }
+    return ProductDataToastResponse(
+        data=_build_product_out(product),
+        toast={"type": "success", "message": "Producto actualizado correctamente."},
+    )

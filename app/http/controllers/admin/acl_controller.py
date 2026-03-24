@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.user import User
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.acl_request import (
     MatrixDataOut,
@@ -39,7 +40,7 @@ def _validate_guard(guard: str) -> str:
 @router.get("/{guard}/matrix", response_model=MatrixDataOut)
 async def matrix_data(
     guard: str,
-    _actor=Depends(require_permission("system.roles")),
+    _current_user: User = Depends(require_permission("system.roles")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -85,7 +86,7 @@ async def matrix_data(
 async def store_role(
     guard: str,
     body: StoreRoleRequest,
-    _actor=Depends(require_permission("system.roles")),
+    _current_user: User = Depends(require_permission("system.roles")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -121,7 +122,7 @@ async def update_role(
     guard: str,
     role_id: int,
     body: UpdateRoleRequest,
-    _actor=Depends(require_permission("system.roles")),
+    _current_user: User = Depends(require_permission("system.roles")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -166,7 +167,7 @@ async def update_role(
 async def store_permission(
     guard: str,
     body: StorePermissionRequest,
-    _actor=Depends(require_permission("system.roles")),
+    _current_user: User = Depends(require_permission("system.roles")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -201,7 +202,7 @@ async def update_permission(
     guard: str,
     permission_id: int,
     body: UpdatePermissionRequest,
-    _actor=Depends(require_permission("system.roles")),
+    _current_user: User = Depends(require_permission("system.roles")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -243,7 +244,7 @@ async def update_permission(
 async def toggle_assignment(
     guard: str,
     body: ToggleAssignmentRequest,
-    _actor=Depends(require_permission("system.roles")),
+    _current_user: User = Depends(require_permission("system.roles")),
     db: AsyncSession = Depends(get_db),
 ):
     """

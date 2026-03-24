@@ -57,7 +57,7 @@ from app.models.company import Company
 from app.models.company_commission_user import CompanyCommissionUser
 from app.models.company_user import CompanyUser
 from app.models.template import Template
-from app.models.user import User
+from app.models.user import User  # usado en type hints de _current_user
 
 router = APIRouter(prefix="/admin/companies", tags=["admin:companies"])
 
@@ -150,7 +150,7 @@ async def _get_company(company_id: int, db: AsyncSession) -> Company:
 async def check_short_code(
     short_code: str = Query(default=""),
     company_id: Optional[int] = Query(default=None),
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -180,7 +180,7 @@ async def check_short_code(
 async def index(
     status: str = Query(default="active"),
     search: str = Query(default=""),
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -216,7 +216,7 @@ async def index(
 @router.post("", response_model=dict, status_code=201)
 async def store(
     body: StoreCompanyRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Crea una nueva empresa. Equivale a store() en PHP."""
@@ -244,7 +244,7 @@ async def store(
 @router.get("/{company_id}", response_model=CompanyDetailOut)
 async def show(
     company_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -301,7 +301,7 @@ async def show(
 async def update(
     company_id: int,
     body: UpdateCompanyRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -358,7 +358,7 @@ async def update(
 @router.put("/{company_id}/suspend", response_model=dict)
 async def suspend(
     company_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Suspende una empresa (status → inactive). Equivale a suspend() en PHP."""
@@ -376,7 +376,7 @@ async def suspend(
 @router.put("/{company_id}/archive", response_model=dict)
 async def archive(
     company_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Archiva una empresa (status → archived). Equivale a archive() en PHP."""
@@ -393,7 +393,7 @@ async def archive(
 @router.put("/{company_id}/activate", response_model=dict)
 async def activate(
     company_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Activa una empresa (status → active). Equivale a activate() en PHP."""
@@ -415,7 +415,7 @@ async def search_users(
     search: str = Query(default=""),
     per_page: int = Query(default=10, ge=5, le=50),
     page: int = Query(default=1, ge=1),
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -464,7 +464,7 @@ async def search_users(
 async def attach_user(
     company_id: int,
     user_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -496,7 +496,7 @@ async def attach_user(
 async def detach_user(
     company_id: int,
     user_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -560,7 +560,7 @@ async def commission_users_available(
     q: str = Query(default=""),
     per_page: int = Query(default=20, ge=1),
     page: int = Query(default=1, ge=1),
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -609,7 +609,7 @@ async def commission_users_available(
 @router.get("/{company_id}/commission-users", response_model=dict)
 async def commission_users_index(
     company_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Lista usuarios de comisiones de una empresa. Equivale a index() en PHP."""
@@ -629,7 +629,7 @@ async def commission_users_index(
 async def commission_users_store(
     company_id: int,
     body: StoreCommissionUserRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -676,7 +676,7 @@ async def commission_users_update(
     company_id: int,
     ccu_id: int,
     body: UpdateCommissionRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -698,7 +698,7 @@ async def commission_users_update(
 async def commission_users_destroy(
     company_id: int,
     ccu_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """

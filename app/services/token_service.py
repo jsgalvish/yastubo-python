@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from jose import JWTError, jwt
 
@@ -35,7 +36,7 @@ def create_access_token(
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
 
-def decode_token(token: str) -> dict:
+def decode_token(token: str) -> dict[str, Any]:
     """
     Decodifica y valida un JWT.
     Lanza JWTError si el token es inválido o expiró.

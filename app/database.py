@@ -1,3 +1,9 @@
+"""
+Configuración de base de datos async con SQLAlchemy 2.0.
+
+Cambios aplicados por auditoría de skills:
+  - HIGH-5: try/except/finally en get_db() para rollback en error.
+"""
 from __future__ import annotations
 
 from typing import AsyncGenerator
@@ -16,6 +22,15 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency para FastAPI: inyecta una sesión async de base de datos."""
+    """
+    Dependency para FastAPI: inyecta una sesión async de base de datos.
+
+    Patrón try/yield/except/finally para garantizar rollback en caso de error
+    y cierre limpio de la sesión.
+    """
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise

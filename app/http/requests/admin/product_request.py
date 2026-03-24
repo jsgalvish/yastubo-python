@@ -1,27 +1,33 @@
 """
 Schemas Pydantic para endpoints de Products (admin).
 Equivale a la validación inline de ProductController.php en Laravel.
+
+Cambios aplicados por auditoría de skills:
+  - HIGH-2: Response models tipados (no dict)
+  - MED-6: Literal types para status y product_type
+  - Pydantic skill: ConfigDict, Field constraints, schema separation
 """
 from __future__ import annotations
 
-import json
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-_VALID_STATUSES = {"active", "inactive"}
-_VALID_TYPES = {"plan_regular", "plan_capitado"}
+ProductStatus = Literal["active", "inactive"]
+ProductType = Literal["plan_regular", "plan_capitado"]
 
 
 # ─────────────────────────── Translatable helper ─────────────────────────────
 
 
 class TranslatableField(BaseModel):
+    """Campo traducible requerido (es obligatorio, en opcional)."""
     es: str = Field(..., max_length=255)
     en: Optional[str] = Field(None, max_length=255)
 
 
 class TranslatableText(BaseModel):
+    """Campo traducible opcional (ambos idiomas opcionales)."""
     es: Optional[str] = None
     en: Optional[str] = None
 
@@ -30,6 +36,7 @@ class TranslatableText(BaseModel):
 
 
 class ProductOut(BaseModel):
+    """Representación de un producto en respuestas API."""
     id: int
     company_id: Optional[int] = None
     status: Optional[str] = None
@@ -38,39 +45,44 @@ class ProductOut(BaseModel):
     name: Optional[dict] = None
     description: Optional[dict] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductDataResponse(BaseModel):
+    """Respuesta estándar con data de producto."""
+    data: ProductOut
+
+
+class ProductDataToastResponse(BaseModel):
+    """Respuesta con data de producto + toast notification."""
+    data: ProductOut
+    toast: dict
+
+
+class ProductIndexResponse(BaseModel):
+    """Respuesta del listado de productos."""
+    products: list[ProductOut]
+    product_type_options: list[str]
 
 
 # ─────────────────────────── Store request ───────────────────────────────────
 
 
 class StoreProductRequest(BaseModel):
+    """Request para crear un producto."""
     name: TranslatableField
     description: Optional[TranslatableText] = None
-    product_type: str
+    product_type: ProductType
     show_in_widget: bool = False
     company_id: Optional[int] = None
-
-    @field_validator("product_type")
-    @classmethod
-    def validate_product_type(cls, v: str) -> str:
-        if v not in _VALID_TYPES:
-            raise ValueError(f"Tipo de producto inválido. Valores permitidos: {sorted(_VALID_TYPES)}")
-        return v
 
 
 # ─────────────────────────── Update request ──────────────────────────────────
 
 
 class UpdateProductRequest(BaseModel):
+    """Request para actualizar un producto (product_type y company_id inmutables)."""
     name: Optional[TranslatableField] = None
     description: Optional[TranslatableText] = None
     show_in_widget: Optional[bool] = None
-    status: Optional[str] = None
-
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, v: str | None) -> str | None:
-        if v is not None and v not in _VALID_STATUSES:
-            raise ValueError(f"Estado inválido. Valores permitidos: {sorted(_VALID_STATUSES)}")
-        return v
+    status: Optional[ProductStatus] = None

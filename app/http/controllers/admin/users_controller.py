@@ -138,7 +138,7 @@ async def index(
     role: str | None = Query(None),
     per_page: int = Query(15, ge=1, le=100),
     page: int = Query(1, ge=1),
-    _actor: User = Depends(require_permission("users.viewAny")),
+    _current_user: User = Depends(require_permission("users.viewAny")),
     db: AsyncSession = Depends(get_db),
 ) -> PaginatedUsersOut:
     """
@@ -226,7 +226,7 @@ async def search(
     filter_status: str | None = Query(None, alias="status"),
     per_page: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
-    _actor: User = Depends(require_permission("users.viewAny")),
+    _current_user: User = Depends(require_permission("users.viewAny")),
     db: AsyncSession = Depends(get_db),
 ) -> SearchUsersOut:
     """
@@ -287,7 +287,7 @@ async def search(
 @router.post("", response_model=UserDetailOut, status_code=status.HTTP_201_CREATED)
 async def store(
     body: CreateUserRequest,
-    _actor: User = Depends(require_permission("users.create")),
+    _current_user: User = Depends(require_permission("users.create")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -368,7 +368,7 @@ async def store(
 @router.get("/{user_id}", response_model=UserDetailOut)
 async def show(
     user_id: int,
-    _actor: User = Depends(require_permission("users.view")),
+    _current_user: User = Depends(require_permission("users.view")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -401,7 +401,7 @@ async def show(
 async def update(
     user_id: int,
     body: UpdateUserRequest,
-    _actor: User = Depends(require_permission("users.update")),
+    _current_user: User = Depends(require_permission("users.update")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -489,7 +489,7 @@ async def update(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def destroy(
     user_id: int,
-    _actor: User = Depends(require_permission("users.delete")),
+    _current_user: User = Depends(require_permission("users.delete")),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """
@@ -514,7 +514,7 @@ async def destroy(
 @router.post("/{user_id}/restore", response_model=UserDetailOut)
 async def restore(
     user_id: int,
-    _actor: User = Depends(require_permission("users.restore")),
+    _current_user: User = Depends(require_permission("users.restore")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -548,7 +548,7 @@ async def restore(
 async def update_status(
     user_id: int,
     body: UpdateStatusRequest,
-    _actor: User = Depends(require_permission("users.update")),
+    _current_user: User = Depends(require_permission("users.update")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """

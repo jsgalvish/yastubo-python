@@ -20,6 +20,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.user import User
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.geo_request import (
     CountryOut,
@@ -79,7 +80,7 @@ async def index(
     search: str = Query("", alias="search"),
     continent: str | None = Query(None, alias="continent"),
     status: str = Query("active", alias="status"),
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -122,7 +123,7 @@ async def index(
 @router.post("", status_code=201)
 async def store(
     body: StoreCountryRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Crea un nuevo país."""
@@ -158,7 +159,7 @@ async def store(
 @router.get("/{country_id}")
 async def show(
     country_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Retorna un país por ID."""
@@ -170,7 +171,7 @@ async def show(
 async def update(
     country_id: int,
     body: UpdateCountryRequest,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Actualiza un país."""
@@ -205,7 +206,7 @@ async def update(
 @router.put("/{country_id}/toggle-active")
 async def toggle_active(
     country_id: int,
-    _actor=Depends(require_permission(_PERMISSION)),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
     """Activa o desactiva un país."""
