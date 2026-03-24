@@ -16,6 +16,7 @@ from app.config import settings
 from app.http.controllers.admin import acl_controller as admin_acl
 from app.http.controllers.admin import business_units_controller as admin_business_units
 from app.http.controllers.admin import capitated_batch_controller as admin_capitated_batches
+from app.http.controllers.admin import config_controller as admin_config
 from app.http.controllers.admin import capitated_controller as admin_capitated
 from app.http.controllers.admin import companies_controller as admin_companies
 from app.http.controllers.admin import coverages_controller as admin_coverages
@@ -72,6 +73,7 @@ app.include_router(admin_business_units.router)
 app.include_router(admin_capitated.router)
 app.include_router(admin_capitated_batches.router)
 app.include_router(admin_templates.router)
+app.include_router(admin_config.router)
 
 
 @app.get("/")
