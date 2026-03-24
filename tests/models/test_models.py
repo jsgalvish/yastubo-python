@@ -257,19 +257,19 @@ class TestPlanVersionModel:
         assert PlanVersion.__tablename__ == "plan_versions"
 
     def test_status_constants(self):
-        assert PlanVersion.STATUS_DRAFT == "draft"
-        assert PlanVersion.STATUS_ACTIVE == "active"
         assert PlanVersion.STATUS_INACTIVE == "inactive"
+        assert PlanVersion.STATUS_ACTIVE == "active"
+        assert PlanVersion.STATUS_ARCHIVED == "archived"
 
-    def test_can_be_activated_draft(self):
+    def test_can_be_activated(self):
         pv = PlanVersion()
-        pv.status = "draft"
+        pv.status = "inactive"
         assert pv.can_be_activated() is True
 
-    def test_can_be_activated_active_false(self):
+    def test_can_be_activated_active_also_true(self):
         pv = PlanVersion()
         pv.status = "active"
-        assert pv.can_be_activated() is False
+        assert pv.can_be_activated() is True  # PHP: siempre true
 
     def test_is_active(self):
         pv = PlanVersion()

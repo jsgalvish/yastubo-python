@@ -36,7 +36,7 @@ from app.models.zone import Zone
 
 # ── Productos y planes ────────────────────────────────────────────────────────
 from app.models.product import Product
-from app.models.plan_version import PlanVersion
+from app.models.plan_version import PlanVersion, plan_version_countries, plan_version_repatriation_countries
 from app.models.plan_version_coverage import PlanVersionCoverage
 from app.models.plan_version_age_surcharge import PlanVersionAgeSurcharge
 
@@ -99,6 +99,8 @@ __all__ = [
     # Productos y planes
     "Product",
     "PlanVersion",
+    "plan_version_countries",
+    "plan_version_repatriation_countries",
     "PlanVersionCoverage",
     "PlanVersionAgeSurcharge",
     # Coberturas

@@ -2,39 +2,57 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.product import Product
-    from app.models.plan_version_coverage import PlanVersionCoverage
-    from app.models.plan_version_age_surcharge import PlanVersionAgeSurcharge
     from app.models.country import Country
+    from app.models.plan_version_age_surcharge import PlanVersionAgeSurcharge
+    from app.models.plan_version_coverage import PlanVersionCoverage
+    from app.models.product import Product
     from app.models.zone import Zone
+
+
+# ─── Pivot tables (many-to-many countries) ───────────────────────────────────
+
+plan_version_countries = Table(
+    "plan_version_countries",
+    Base.metadata,
+    Column("plan_version_id", Integer, ForeignKey("plan_versions.id"), primary_key=True),
+    Column("country_id", Integer, ForeignKey("countries.id"), primary_key=True),
+    Column("price", Numeric(10, 2), nullable=True),
+)
+
+plan_version_repatriation_countries = Table(
+    "plan_version_repatriation_countries",
+    Base.metadata,
+    Column("plan_version_id", Integer, ForeignKey("plan_versions.id"), primary_key=True),
+    Column("country_id", Integer, ForeignKey("countries.id"), primary_key=True),
+)
 
 
 class PlanVersion(TimestampMixin, Base):
     """
     Versión de un plan de seguro.
 
-    Estados:
-      - STATUS_DRAFT:    borrador (editable)
+    Estados (alineados con PHP):
+      - STATUS_INACTIVE: inactivo (por defecto al crear)
       - STATUS_ACTIVE:   activo (publicado)
-      - STATUS_INACTIVE: inactivo (archivado)
+      - STATUS_ARCHIVED: archivado
     """
 
     __tablename__ = "plan_versions"
 
-    STATUS_DRAFT = "draft"
-    STATUS_ACTIVE = "active"
     STATUS_INACTIVE = "inactive"
+    STATUS_ACTIVE = "active"
+    STATUS_ARCHIVED = "archived"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="inactive", nullable=False)
     terms_html: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Precios
@@ -65,7 +83,7 @@ class PlanVersion(TimestampMixin, Base):
         Integer, ForeignKey("files.id"), nullable=True
     )
 
-    # Zona / País
+    # Zona / País (scope general del plan)
     zone_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("zones.id"), nullable=True
     )
@@ -73,20 +91,40 @@ class PlanVersion(TimestampMixin, Base):
         Integer, ForeignKey("countries.id"), nullable=True
     )
 
-    # Relaciones
+    # ─── Relaciones ──────────────────────────────────────────────────────────
+
     product: Mapped[Product] = relationship("Product", back_populates="versions")
     coverages: Mapped[list[PlanVersionCoverage]] = relationship(
         "PlanVersionCoverage", back_populates="plan_version"
     )
     age_surcharges: Mapped[list[PlanVersionAgeSurcharge]] = relationship(
-        "PlanVersionAgeSurcharge", back_populates="plan_version"
+        "PlanVersionAgeSurcharge", back_populates="plan_version",
+        cascade="all, delete-orphan",
     )
     zone: Mapped[Zone | None] = relationship("Zone")
     country: Mapped[Country | None] = relationship("Country")
 
+    # Many-to-many countries (con precio)
+    countries: Mapped[list[Country]] = relationship(
+        "Country", secondary=plan_version_countries, lazy="selectin",
+    )
+    # Many-to-many repatriation countries (sin precio)
+    repatriation_countries: Mapped[list[Country]] = relationship(
+        "Country", secondary=plan_version_repatriation_countries, lazy="selectin",
+    )
+
+    # ─── Helpers ─────────────────────────────────────────────────────────────
+
     def can_be_activated(self) -> bool:
-        """Retorna True si la versión puede activarse (está en draft)."""
-        return self.status == self.STATUS_DRAFT
+        """Retorna True si la versión puede activarse."""
+        return True  # PHP: actualmente siempre true
+
+    def is_in_use(self) -> bool:
+        """Retorna True si la versión está en uso."""
+        return False  # PHP: actualmente siempre false
+
+    def is_deletable(self) -> bool:
+        return not self.is_in_use()
 
     def is_active(self) -> bool:
         return self.status == self.STATUS_ACTIVE
