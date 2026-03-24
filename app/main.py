@@ -18,6 +18,7 @@ from app.http.controllers.admin import companies_controller as admin_companies
 from app.http.controllers.admin import coverages_controller as admin_coverages
 from app.http.controllers.admin import plan_versions_controller as admin_plan_versions
 from app.http.controllers.admin import products_controller as admin_products
+from app.http.controllers.admin import regalias_controller as admin_regalias
 from app.http.controllers.admin import countries_controller as admin_countries
 from app.http.controllers.admin import users_controller as admin_users
 from app.http.controllers.admin import zones_controller as admin_zones
@@ -62,6 +63,7 @@ app.include_router(admin_products.router)
 app.include_router(admin_plan_versions.router)
 app.include_router(admin_coverages.catalog_router)
 app.include_router(admin_coverages.pv_cov_router)
+app.include_router(admin_regalias.router)
 
 
 @app.get("/")
