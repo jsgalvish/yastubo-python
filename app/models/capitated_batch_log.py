@@ -28,7 +28,9 @@ class CapitatedBatchLog(TimestampMixin, Base):
 
     STATUS_DRAFT = "draft"
     STATUS_PROCESSED = "processed"
+    STATUS_PROCESSED_ZERO = "processed_zero"
     STATUS_FAILED = "failed"
+    STATUS_ROLLED_BACK = "rolled_back"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)
@@ -59,9 +61,15 @@ class CapitatedBatchLog(TimestampMixin, Base):
     )
     cutoff_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    total_rolled_back: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
     # Resumen
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     summary_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Rollback
+    rolled_back_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rolled_back_by_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relaciones
     company: Mapped[Company] = relationship("Company")

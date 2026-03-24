@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -65,6 +65,14 @@ class CapitatedMonthlyRecord(TimestampMixin, Base):
     age_surcharge_percent: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     age_surcharge_amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
     price_final: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+
+    # Status y rollback
+    status: Mapped[str | None] = mapped_column(String(32), nullable=True, default="active")
+    rolled_back_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rolled_back_by_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    STATUS_ACTIVE = "active"
+    STATUS_ROLLED_BACK = "rolled_back"
 
     # Relaciones
     company: Mapped[Company] = relationship("Company")
