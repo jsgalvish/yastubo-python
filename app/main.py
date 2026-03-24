@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.http.controllers.admin import acl_controller as admin_acl
 from app.http.controllers.admin import business_units_controller as admin_business_units
+from app.http.controllers.admin import capitated_controller as admin_capitated
 from app.http.controllers.admin import companies_controller as admin_companies
 from app.http.controllers.admin import coverages_controller as admin_coverages
 from app.http.controllers.admin import plan_versions_controller as admin_plan_versions
@@ -66,6 +67,7 @@ app.include_router(admin_coverages.catalog_router)
 app.include_router(admin_coverages.pv_cov_router)
 app.include_router(admin_regalias.router)
 app.include_router(admin_business_units.router)
+app.include_router(admin_capitated.router)
 
 
 @app.get("/")

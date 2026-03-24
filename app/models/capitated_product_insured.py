@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.capitated_contract import CapitatedContract
     from app.models.company import Company
-    from app.models.product import Product
     from app.models.country import Country
+    from app.models.product import Product
 
 
 class CapitatedProductInsured(TimestampMixin, Base):
@@ -41,6 +43,12 @@ class CapitatedProductInsured(TimestampMixin, Base):
         Integer, ForeignKey("countries.id"), nullable=True
     )
     age_reported: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str | None] = mapped_column(String(32), nullable=True, default="active")
+    rolled_back_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rolled_back_by_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    STATUS_ACTIVE = "active"
+    STATUS_ROLLED_BACK = "rolled_back"
 
     # Relaciones
     company: Mapped[Company] = relationship("Company")
@@ -50,4 +58,7 @@ class CapitatedProductInsured(TimestampMixin, Base):
     )
     repatriation_country: Mapped[Country | None] = relationship(
         "Country", foreign_keys=[repatriation_country_id]
+    )
+    contracts: Mapped[list[CapitatedContract]] = relationship(
+        "CapitatedContract", back_populates="person"
     )

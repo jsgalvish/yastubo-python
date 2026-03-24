@@ -49,7 +49,9 @@ class CapitatedContract(TimestampMixin, Base):
     # Relaciones
     company: Mapped[Company] = relationship("Company")
     product: Mapped[Product] = relationship("Product")
-    person: Mapped[CapitatedProductInsured] = relationship("CapitatedProductInsured")
+    person: Mapped[CapitatedProductInsured] = relationship(
+        "CapitatedProductInsured", back_populates="contracts"
+    )
 
 
 @event.listens_for(CapitatedContract, "before_insert")
