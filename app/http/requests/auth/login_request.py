@@ -13,7 +13,16 @@ class LoginRequest(BaseModel):
         return v.strip().lower()
 
 
+class UserInfo(BaseModel):
+    id: int
+    name: str
+    email: str
+    roles: list[str] = []
+    permissions: list[str] = []
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     force_password_change: bool = False
+    user: UserInfo | None = None

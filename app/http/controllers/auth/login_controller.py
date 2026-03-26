@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.http.middleware.auth import get_admin_user, get_customer_user
-from app.http.requests.auth.login_request import LoginRequest, TokenResponse
+from app.http.requests.auth.login_request import LoginRequest, TokenResponse, UserInfo
 from app.models.user import User
 from app.services.auth_service import AuthService
+from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
 
 router = APIRouter(tags=["auth"])
@@ -36,14 +37,32 @@ async def _do_login(
 
     await db.commit()
 
+    # Load roles and permissions for the response
+    perm_service = PermissionService(db)
+    await perm_service.load_roles(user)
+    await perm_service.load_permissions(user)
+
+    roles_list = [r.name for r in getattr(user, "_roles_cache", [])]
+    perms_set = getattr(user, "_permissions_cache", set())
+
     token = create_access_token(
         user_id=user.id,
         realm=realm,
         force_password_change=bool(user.force_password_change),
     )
+
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or user.email
+
     return TokenResponse(
         access_token=token,
         force_password_change=bool(user.force_password_change),
+        user=UserInfo(
+            id=user.id,
+            name=full_name,
+            email=user.email,
+            roles=roles_list,
+            permissions=list(perms_set),
+        ),
     )
 
 

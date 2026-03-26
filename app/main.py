@@ -28,6 +28,7 @@ from app.http.controllers.admin import countries_controller as admin_countries
 from app.http.controllers.admin import users_controller as admin_users
 from app.http.controllers.admin import zones_controller as admin_zones
 from app.http.controllers.auth import login_controller, password_controller
+from app.http.controllers.public import capitated_contract_pdf_controller as public_capitated_pdf
 
 
 @asynccontextmanager
@@ -74,6 +75,9 @@ app.include_router(admin_capitated.router)
 app.include_router(admin_capitated_batches.router)
 app.include_router(admin_templates.router)
 app.include_router(admin_config.router)
+
+# ── Public routes (no auth) ──────────────────────────────────────────────────
+app.include_router(public_capitated_pdf.router)
 
 
 @app.get("/")

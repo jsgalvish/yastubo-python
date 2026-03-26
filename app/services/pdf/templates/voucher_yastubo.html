@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+	/* Font faces for WeasyPrint */
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-Regular.ttf');
+		font-weight: normal;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-Bold.ttf');
+		font-weight: bold;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-Italic.ttf');
+		font-weight: normal;
+		font-style: italic;
+	}
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-BoldItalic.ttf');
+		font-weight: bold;
+		font-style: italic;
+	}
+	@font-face {
+		font-family: 'urbanistblack';
+		src: url('pdf/assets/fonts/UrbanistBlack-Regular.ttf');
+		font-weight: normal;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanistblack';
+		src: url('pdf/assets/fonts/UrbanistBlack-Bold.ttf');
+		font-weight: bold;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanistthin';
+		src: url('pdf/assets/fonts/UrbanistThin-Regular.ttf');
+		font-weight: normal;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanistthin';
+		src: url('pdf/assets/fonts/UrbanistThin-Bold.ttf');
+		font-weight: bold;
+		font-style: normal;
+	}
+
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+		font-family: 'urbanist', sans-serif;
+	}
+
+	/* --- WeasyPrint @page rules --- */
+
+	@page {
+		size: letter;
+		margin-top: 30mm;
+		margin-bottom: 40mm;
+		margin-left: 10mm;
+		margin-right: 10mm;
+		background: url("pdf/assets/fondo.jpg") no-repeat center/cover;
+		/* Extend background into margins */
+		-weasyprint-crop: auto;
+
+		@top-center {
+			content: element(header);
+		}
+		@bottom-center {
+			content: element(footer);
+		}
+	}
+
+	@page terms {
+		size: letter;
+		margin-top: 45mm;
+		margin-bottom: 40mm;
+		margin-left: 10mm;
+		margin-right: 10mm;
+		background: url("pdf/assets/fondo-blanco.jpg") no-repeat center/cover;
+		-weasyprint-crop: auto;
+
+		@top-center {
+			content: element(header-terms);
+		}
+		@bottom-center {
+			content: element(footer-terms);
+		}
+	}
+
+	/* Running header/footer elements */
+	.running-header {
+		position: running(header);
+	}
+	.running-footer {
+		position: running(footer);
+	}
+	.running-header-terms {
+		position: running(header-terms);
+	}
+	.running-footer-terms {
+		position: running(footer-terms);
+	}
+
+	.mb {
+		margin-bottom: 10mm;
+	}
+
+	.mb-sm {
+		margin-bottom: 5mm;
+	}
+
+	/* Header info bubble (green bubble with plan name) */
+	.header-bubble {
+		background-image: url("pdf/assets/header-title.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		padding-top: 3mm;
+		padding-bottom: 3mm;
+		padding-left: 25mm;
+		padding-right: 15mm;
+		color: #FFF;
+		font-size: 11pt;
+	}
+
+	.header-bubble .plan_titulo {
+		font-weight: bold;
+	}
+
+	.header-bubble .plan_titulo .nombre {
+		color: #55D78E;
+	}
+
+	/* Contact/assistance bar - CSS chips instead of background image */
+	.caja-contacto-asistencia {
+		display: flex;
+		gap: 3mm;
+		align-items: stretch;
+	}
+
+	.chip-email {
+		flex: 1.3;
+		background: linear-gradient(135deg, #8251F9, #55D78E);
+		border-radius: 25mm;
+		padding: 3mm 5mm;
+		color: white;
+	}
+
+	.chip-email .chip-label {
+		font-size: 2.5mm;
+		color: rgba(255,255,255,0.8);
+	}
+
+	.chip-email .chip-value {
+		font-weight: bold;
+		font-size: 4mm;
+		color: white;
+	}
+
+	.chip-contact {
+		flex: 1;
+		background: white;
+		border: 1.5pt solid #8251F9;
+		border-radius: 25mm;
+		padding: 3mm 4mm;
+		text-align: center;
+	}
+
+	.chip-contact .chip-label {
+		font-size: 2.5mm;
+		font-weight: bold;
+		color: #555;
+	}
+
+	.chip-contact .chip-value {
+		font-weight: bold;
+		font-size: 3.5mm;
+		color: #333;
+	}
+
+	.chip-contact .chip-icon {
+		width: 5mm;
+		height: 5mm;
+		vertical-align: middle;
+		margin-right: 1mm;
+	}
+
+	/* Card */
+	.card-header {
+		background-image: url("pdf/assets/card-top.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		color: white;
+		font-size: 5mm;
+		font-weight: bold;
+	}
+
+	.card-header-title {
+		padding-top: 7mm;
+		padding-bottom: 7mm;
+		padding-left: 6mm;
+		font-weight: bold;
+		font-family: 'urbanistblack', sans-serif;
+		font-size: 16pt;
+		color: white;
+	}
+
+	.card-body {
+		background-color: white;
+		margin-top: -1pt;
+		padding: 5mm 5mm;
+		border-left: 1px solid #e0e0e0;
+		border-right: 1px solid #e0e0e0;
+	}
+
+	.card-footer-img {
+		margin-top: -1pt;
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.titulo-oscuro {
+		color: #8251F9;
+		font-size: 5mm;
+		font-weight: bold;
+		font-family: urbanistblack;
+	}
+
+	.datos-oscuro {
+		color: #3E2234;
+		font-size: 5mm;
+		font-family: urbanistblack;
+	}
+
+	/* Cobertura date row */
+	.tabla_fecha_coberturas .titulo {
+		font-size: 15pt;
+		font-weight: bold;
+		color: #3E2234;
+		font-family: urbanistblack;
+	}
+
+	.tabla_fecha_coberturas .fecha {
+		color: #666;
+		font-size: 14pt;
+		font-weight: bold;
+		font-family: urbanistthin;
+	}
+
+	.tabla_fecha_coberturas .fecha_color {
+		color: #8251F9;
+	}
+
+	/* Coverage tables */
+	.tabla_coberturas {
+		width: 100%;
+	}
+
+	/* Coverage category header row with dark background image */
+	.coverage-title-row {
+		background-image: url("pdf/assets/coverages/title.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		height: 11mm;
+		display: flex;
+		align-items: center;
+	}
+
+	.coverage-title-row .check-icon {
+		width: 7mm;
+		height: auto;
+		margin-left: 8mm;
+		margin-right: 4mm;
+		vertical-align: middle;
+	}
+
+	.tabla_coberturas .titulo_categoria {
+		display: inline;
+		vertical-align: middle;
+		font-weight: bold;
+		color: white;
+		font-size: 13pt;
+	}
+
+	/* Coverage body row with background image */
+	.coverage-body-row {
+		background-image: url("pdf/assets/coverages/body.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+	}
+
+	.tabla_coberturas .cobertura {
+		padding: 1.5mm 0 1.5mm 18mm;
+		width: 64%;
+		height: 14mm;
+		text-align: left;
+		vertical-align: middle;
+		color: #3E2234;
+		font-size: 11pt;
+	}
+
+	.tabla_coberturas .alcance {
+		padding: 1.5mm 10mm 1.5mm 0;
+		width: 22%;
+		height: 14mm;
+		text-align: right;
+		vertical-align: middle;
+		color: #8251F9;
+		font-size: 11pt;
+		font-weight: bold;
+	}
+
+	/* Coverage head/foot decorations */
+	.coverage-head-img,
+	.coverage-foot-img {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.coverage-foot-img {
+		margin-top: -0.5pt;
+	}
+
+	/* Footer bar */
+	.footer-bar {
+		background-image: url("pdf/assets/footer.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		width: 100%;
+		height: 18mm;
+		text-align: center;
+		line-height: 18mm;
+		color: #FFF;
+		font-size: 12pt;
+		font-weight: bold;
+	}
+
+	.footer-meta {
+		text-align: right;
+		padding-top: 3mm;
+		font-size: 9pt;
+	}
+
+	/**************/
+	/* Para debug */
+	/**************/
+	.debug table {
+		border: solid 0.5pt yellow;
+	}
+	.debug td {
+		border: dashed 0.5pt #F00;
+	}
+	.debug div {
+		border: dotted 0.5pt #0F0;
+	}
+	.debug div div {
+		border: dotted 0.5pt yellow;
+	}
+
+	.page-break {
+		page-break-before: always;
+	}
+
+	/* Terms styles */
+	.terminos {
+		line-height: 18pt;
+		font-size: 12pt;
+		background: white;
+		padding: 10mm;
+		border-radius: 5mm;
+		border: 1pt solid #e0d8f0;
+	}
+	.terminos li {
+		padding-bottom: 10pt;
+	}
+	.terminos br {
+		line-height: 20pt;
+	}
+	.terminos h1 {
+		font-size: 16pt;
+		line-height: 20pt;
+		text-align: center;
+		margin-top: 2mm;
+		margin-bottom: 2mm;
+	}
+	.terminos h2 {
+		font-size: 14pt;
+		line-height: 18pt;
+		text-align: left;
+		margin-top: 2mm;
+		margin-bottom: 2mm;
+	}
+</style>
+</head>
+<body>
+
+<!-- Running header for main pages -->
+<div class="running-header">
+	<table cellpadding="0" cellspacing="0" style="width: 100%;">
+		<tbody>
+			<tr>
+				<td style="width: 50%; text-align: center; vertical-align: middle; height: 20mm;">
+					<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm; margin-right: 20mm;">
+				</td>
+				<td style="width: 50%; height: 20mm; vertical-align: middle;">
+					<div class="header-bubble">
+						<div class="plan_titulo">
+							PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
+						</div>
+						<div class="plan_codigo">
+							#{{ contrato['id'] }}
+						</div>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+<!-- Running footer for main pages -->
+<div class="running-footer">
+	<div class="footer-bar">
+		WWW.YASTUBO.COM
+	</div>
+	<div class="footer-meta">
+		Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}
+	</div>
+</div>
+
+<!-- Main page content -->
+<div>
+
+	<div class="card mb">
+		<div class="card-header">
+			<div class="card-header-title">
+				INFORMACIÓN BENEFICIARIO
+			</div>
+		</div>
+
+		<div class="card-body">
+			<table cellpadding="0" cellspacing="0" style="width: 100%; margin-top: 2mm;">
+				<tr>
+					<td style="width: 24%; text-align: left; vertical-align: top;">
+						<img src="pdf/assets/icons/usuario.png" alt="" style="width: 31mm; height: auto; margin-left: 7mm; margin-bottom: 0; margin-right: 2mm;" />
+					</td>
+					<td style="width: 38%">
+						<div class="titulo-oscuro">Nombre:</div>
+						<div class="datos-oscuro">{{ contrato['full_name']|title }}</div>
+						<div></div>
+						<div class="titulo-oscuro">N° Identificación:</div>
+						<div class="datos-oscuro">{{ contrato['document'] }}</div>
+					</td>
+					<td style="width: 38%">
+						<div class="titulo-oscuro">Nacionalidad:</div>
+						<div class="datos-oscuro">{{ contrato['repatriation'] }}</div>
+						<div></div>
+
+						{% if contrato['fecha_nacimiento'] %}
+							<div class="titulo-oscuro">Fecha Nacimiento:</div>
+							<div class="datos-oscuro">{{ contrato['fecha_nacimiento'] }}</div>
+						{% elif contrato['age'] %}
+							<div class="titulo-oscuro">Edad:</div>
+							<div class="datos-oscuro">{{ contrato['age'] }}</div>
+						{% endif %}
+
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<img src="pdf/assets/card-bottom.png" alt="" class="card-footer-img" />
+
+	</div>
+
+
+	<div class="caja-contacto-asistencia mb">
+		<div class="chip-email">
+			<div class="chip-label">¿NECESITAS ASISTENCIA?</div>
+			<div class="chip-value">Asistencias@yastubo.com</div>
+		</div>
+		<div class="chip-contact">
+			<div class="chip-label">WHATSAPP</div>
+			<div class="chip-value"><span style="color: #55D78E; font-size: 4.5mm;">&#9742;</span> +1 305 447 7669</div>
+		</div>
+		<div class="chip-contact">
+			<div class="chip-label">ALARM CENTER</div>
+			<div class="chip-value"><span style="color: #55D78E; font-size: 4.5mm;">&#9742;</span> +1 305 447 7669</div>
+		</div>
+	</div>
+
+
+	<table cellpadding='0' cellspacing='0' class="tabla_fecha_coberturas mb-sm" style="width: 100%;">
+		<tbody>
+			<tr>
+				<td style="width: 50%; text-align: left;" class="titulo">COBERTURA</td>
+				<td style="width: 50%; text-align: right;" class="fecha">Fecha de suscripción: <span class="fecha_color">{{ contrato['date_start'] }}</span></td>
+			</tr>
+		</tbody>
+	</table>
+
+	{% set notes = [] %}
+	{% for category in coverageCategories %}
+	<table cellpadding='0' cellspacing='0' class="tabla_coberturas mb-sm">
+		<thead>
+			<tr>
+				<th colspan="2" style="width: 100%; padding: 0;">
+					<img src="pdf/assets/coverages/head.png" class="coverage-head-img" />
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td colspan="2" style="width: 100%; padding: 0;">
+					<div class="coverage-title-row" style="margin-top: -0.5pt;">
+						<img src="pdf/assets/coverages/check-verde.png" class="check-icon" />
+						<div class="titulo_categoria">{{ category['name'] }}</div>
+					</div>
+				</td>
+			</tr>
+			{% for coverage in category['coverages'] %}
+				{% set n = namespace() %}
+{% set n.val = none %}
+{% if coverage.get("notes_t") %}
+{% set _ = notes.append(coverage["notes_t"]) %}
+{% set n.val = notes|length %}
+{% endif %}
+			<tr class="coverage-body-row" style="margin-top: -0.3pt;">
+				<td class="cobertura">
+					{{ coverage['coverage_name'] }} {{ "*(%d)"|format(n.val) if n.val else "" }}
+				</td>
+				<td class="alcance">{{ coverage['display_value'] }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="2" style="width: 100%; padding: 0;">
+					<img src="pdf/assets/coverages/foot.png" class="coverage-foot-img" />
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+	{% endfor %}
+
+
+	{% if notes|length %}
+		<hr/>
+		<div>Notas</div>
+		{% for note in notes %}
+		<div>*({{ loop.index }}) {{ note }}</div>
+		{% endfor %}
+	{% endif %}
+
+</div>
+
+{% if planVersion.terms_html %}
+<!-- Running header for terms pages -->
+<div class="running-header-terms">
+	<table cellpadding="0" cellspacing="0" style="width: 100%;">
+		<tbody>
+			<tr>
+				<td style="width: 50%; text-align: center; vertical-align: middle; height: 20mm;">
+					<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm; margin-right: 20mm;">
+				</td>
+				<td style="width: 50%; height: 20mm; vertical-align: middle;">
+					<div class="header-bubble">
+						<div class="plan_titulo">
+							PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
+						</div>
+						<div class="plan_codigo">
+							#{{ contrato['id'] }}
+						</div>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+<!-- Running footer for terms pages -->
+<div class="running-footer-terms">
+	<div class="footer-bar">
+		WWW.YASTUBO.COM
+	</div>
+	<div class="footer-meta">
+		Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}
+	</div>
+</div>
+
+<!-- Terms page content -->
+<div class="terminos" style="page: terms;">
+	{{ planVersion.terms_html }}
+</div>
+{% endif %}
+
+</body>
+</html>

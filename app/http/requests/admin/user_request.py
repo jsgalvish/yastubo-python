@@ -77,6 +77,7 @@ class UserOut(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
     roles: list[str] = []
 
     model_config = {"from_attributes": True}

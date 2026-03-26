@@ -123,6 +123,7 @@ def _build_user_out(
         created_at=user.created_at,
         updated_at=user.updated_at,
         deleted_at=user.deleted_at,
+        last_login_at=user.last_login_at,
         roles=roles,
         staff_profile=StaffProfileOut.model_validate(staff_profile) if staff_profile else None,
     )
@@ -200,6 +201,7 @@ async def index(
             created_at=u.created_at,
             updated_at=u.updated_at,
             deleted_at=u.deleted_at,
+            last_login_at=u.last_login_at,
             roles=roles_map.get(u.id, []),
         )
         for u in users
