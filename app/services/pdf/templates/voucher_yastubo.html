@@ -64,27 +64,46 @@
 
 	@page {
 		size: letter;
-		margin: 0;
+		margin: 25mm 10mm 30mm 10mm;
 		background: url("pdf/assets/fondo.jpg") no-repeat 0 0 / 100% 100%;
+
+		@top-center {
+			content: element(running-header);
+		}
+		@bottom-center {
+			content: element(running-footer);
+		}
 	}
 
 	@page terms {
 		size: letter;
-		margin: 0;
+		margin: 25mm 10mm 30mm 10mm;
 		background: url("pdf/assets/fondo-blanco.jpg") no-repeat 0 0 / 100% 100%;
+
+		@top-center {
+			content: element(running-header-terms);
+		}
+		@bottom-center {
+			content: element(running-footer-terms);
+		}
 	}
 
-	/* Page wrapper with internal padding */
-	.page-wrapper {
-		padding: 10mm 10mm 5mm 10mm;
+	/* Running header/footer for @page margin areas */
+	.running-header {
+		position: running(running-header);
+		width: 100%;
 	}
-
-	.page-header {
-		margin-bottom: 5mm;
+	.running-footer {
+		position: running(running-footer);
+		width: 100%;
 	}
-
-	.page-footer {
-		margin-top: 5mm;
+	.running-header-terms {
+		position: running(running-header-terms);
+		width: 100%;
+	}
+	.running-footer-terms {
+		position: running(running-footer-terms);
+		width: 100%;
 	}
 
 	.mb {
@@ -327,17 +346,15 @@
 		margin-top: -0.5pt;
 	}
 
-	/* Footer bar - extends full width */
+	/* Footer bar in margin area */
 	.footer-bar {
 		background-image: url("pdf/assets/footer.png");
 		background-size: 100% 100%;
 		background-repeat: no-repeat;
-		width: calc(100% + 20mm);
-		margin-left: -10mm;
-		margin-right: -10mm;
-		height: 20mm;
+		width: 100%;
+		height: 16mm;
 		text-align: center;
-		line-height: 20mm;
+		line-height: 16mm;
 		color: #FFF;
 		font-size: 12pt;
 		font-weight: bold;
@@ -345,9 +362,9 @@
 
 	.footer-meta {
 		text-align: right;
-		padding-top: 2mm;
-		font-size: 8pt;
+		font-size: 7pt;
 		color: #666;
+		padding-top: 1mm;
 	}
 
 	/**************/
@@ -403,31 +420,35 @@
 </head>
 <body>
 
-<!-- Main page content -->
-<div class="page-wrapper">
+<!-- Running header (goes into @page top margin) -->
+<div class="running-header">
+	<table cellpadding="0" cellspacing="0" style="width: 100%;">
+		<tr>
+			<td style="width: 50%; text-align: left; vertical-align: middle;">
+				<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
+			</td>
+			<td style="width: 50%; vertical-align: middle;">
+				<div class="header-bubble">
+					<div class="plan_titulo">
+						PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
+					</div>
+					<div class="plan_codigo">
+						#{{ contrato['id'] }}
+					</div>
+				</div>
+			</td>
+		</tr>
+	</table>
+</div>
 
-	<!-- Header -->
-	<div class="page-header">
-		<table cellpadding="0" cellspacing="0" style="width: 100%;">
-			<tbody>
-				<tr>
-					<td style="width: 50%; text-align: left; vertical-align: middle; height: 20mm;">
-						<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
-					</td>
-					<td style="width: 50%; height: 20mm; vertical-align: middle;">
-						<div class="header-bubble">
-							<div class="plan_titulo">
-								PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
-							</div>
-							<div class="plan_codigo">
-								#{{ contrato['id'] }}
-							</div>
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
+<!-- Running footer (goes into @page bottom margin) -->
+<div class="running-footer">
+	<div class="footer-bar">WWW.YASTUBO.COM</div>
+	<div class="footer-meta">Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}</div>
+</div>
+
+<!-- Main page content -->
+<div>
 
 	<div class="card mb">
 		<div class="card-header">
@@ -556,60 +577,38 @@
 		{% endfor %}
 	{% endif %}
 
-	<!-- Footer -->
-	<div class="page-footer">
-		<div class="footer-bar">
-			WWW.YASTUBO.COM
-		</div>
-		<div class="footer-meta">
-			Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}
-		</div>
-	</div>
 
 </div>
 
 {% if planVersion.terms_html %}
-<!-- Terms pages -->
-<div class="page-wrapper" style="page: terms;">
+<!-- Running header for terms (same design) -->
+<div class="running-header-terms">
+	<table cellpadding="0" cellspacing="0" style="width: 100%;">
+		<tr>
+			<td style="width: 50%; text-align: left; vertical-align: middle;">
+				<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
+			</td>
+			<td style="width: 50%; vertical-align: middle;">
+				<div class="header-bubble">
+					<div class="plan_titulo">
+						PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
+					</div>
+					<div class="plan_codigo">
+						#{{ contrato['id'] }}
+					</div>
+				</div>
+			</td>
+		</tr>
+	</table>
+</div>
+<div class="running-footer-terms">
+	<div class="footer-bar">WWW.YASTUBO.COM</div>
+	<div class="footer-meta">Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}</div>
+</div>
 
-	<!-- Header -->
-	<div class="page-header">
-		<table cellpadding="0" cellspacing="0" style="width: 100%;">
-			<tbody>
-				<tr>
-					<td style="width: 50%; text-align: left; vertical-align: middle; height: 20mm;">
-						<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
-					</td>
-					<td style="width: 50%; height: 20mm; vertical-align: middle;">
-						<div class="header-bubble">
-							<div class="plan_titulo">
-								PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
-							</div>
-							<div class="plan_codigo">
-								#{{ contrato['id'] }}
-							</div>
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
-
-	<!-- Terms content -->
-	<div class="terminos">
-		{{ planVersion.terms_html }}
-	</div>
-
-	<!-- Footer -->
-	<div class="page-footer">
-		<div class="footer-bar">
-			WWW.YASTUBO.COM
-		</div>
-		<div class="footer-meta">
-			Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}
-		</div>
-	</div>
-
+<!-- Terms content -->
+<div class="terminos" style="page: terms;">
+	{{ planVersion.terms_html }}
 </div>
 {% endif %}
 
