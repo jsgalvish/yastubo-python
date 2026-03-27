@@ -4,23 +4,29 @@ Equivale a CapitatedBatchController.php + CapitatedMonthlyReportController.php.
 
 Endpoints Batches:
   GET    /admin/companies/{cid}/capitados/batches                              → index
+  GET    /admin/companies/{cid}/capitados/batches/template                     → template
   GET    /admin/companies/{cid}/capitados/batches/{bid}                        → show
   GET    /admin/companies/{cid}/capitados/batches/{bid}/items                  → items
   GET    /admin/companies/{cid}/capitados/batches/{bid}/monthly-records        → monthlyRecords
   POST   /admin/companies/{cid}/capitados/batches/{bid}/rollback              → rollback
   POST   .../batches/{bid}/monthly-records/{rid}/rollback                      → rollbackMonthlyRecord
+  POST   /admin/companies/{cid}/capitados/batches/upload                       → upload
 
 Endpoints Reports:
   GET    /admin/companies/{cid}/capitados/reportes/mensuales                   → months
+  GET    /admin/companies/{cid}/capitados/reportes/mensuales/{month}/download  → download
 """
 from __future__ import annotations
 
+import io
 import math
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.http.middleware.permission import require_permission
@@ -41,7 +47,9 @@ from app.models.capitated_batch_item_log import CapitatedBatchItemLog
 from app.models.capitated_batch_log import CapitatedBatchLog
 from app.models.capitated_monthly_record import CapitatedMonthlyRecord
 from app.models.company import Company
+from app.models.product import Product
 from app.models.user import User
+from app.services.capitated.capitated_batch_processor import CapitatedBatchProcessor
 
 router = APIRouter(
     prefix="/admin/companies/{company_id}/capitados",
@@ -129,6 +137,27 @@ def _mr_out(mr: CapitatedMonthlyRecord) -> MonthlyRecordBatchOut:
     )
 
 
+def _make_unique_excel_sheet_title(base_title: str, used_titles: set[str]) -> str:
+    """Normaliza, acota a 31 caracteres, evita caracteres inválidos y asegura unicidad."""
+    import re as _re
+
+    title = _re.sub(r'[\\/?*\[\]:]', ' ', base_title)
+    title = _re.sub(r'\s+', ' ', title).strip() or "Hoja"
+    title = title[:31]
+
+    candidate = title
+    i = 2
+    while candidate in used_titles:
+        suffix = f" ({i})"
+        max_len = 31 - len(suffix)
+        prefix = title[:max_len] if max_len > 0 else ""
+        candidate = prefix + suffix
+        i += 1
+
+    used_titles.add(candidate)
+    return candidate
+
+
 def _pagination_meta(total: int, page: int, per_page: int) -> PaginationMeta:
     return PaginationMeta(
         current_page=page,
@@ -168,6 +197,132 @@ async def batch_index(
         data=[_batch_out(b) for b in items],
         meta=_pagination_meta(total, page, per_page),
     )
+
+
+@router.get("/batches/template")
+async def batch_template(
+    company_id: int,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Descarga plantilla Excel con una hoja por producto capitado activo."""
+    import openpyxl
+    from openpyxl.utils import get_column_letter
+
+    company = await _get_company(company_id, db)
+
+    # Buscar productos capitados activos con versión de plan activa
+    from app.models.plan_version import PlanVersion
+
+    r = await db.execute(
+        select(Product)
+        .where(
+            Product.company_id == company.id,
+            Product.product_type == "capitated",
+            Product.status == "active",
+        )
+        .order_by(Product.id)
+    )
+    all_products = list(r.scalars().all())
+
+    # Filtrar solo los que tienen versión activa
+    products = []
+    for p in all_products:
+        pv_r = await db.execute(
+            select(PlanVersion).where(
+                PlanVersion.product_id == p.id,
+                PlanVersion.status == PlanVersion.STATUS_ACTIVE,
+            ).limit(1)
+        )
+        if pv_r.scalar_one_or_none() is not None:
+            products.append(p)
+
+    headers = ["ID", "NOMBRE", "RESIDENCIA", "NACIONALIDAD", "SEXO", "EDAD"]
+    column_widths = [10, 38, 18, 18, 19, 12]
+
+    wb = openpyxl.Workbook()
+    # Eliminar hoja por defecto
+    wb.remove(wb.active)
+
+    if not products:
+        ws = wb.create_sheet(title="Sin productos")
+        ws.append(headers)
+        for idx, w in enumerate(column_widths, 1):
+            ws.column_dimensions[get_column_letter(idx)].width = w
+        for cell in ws[1]:
+            cell.font = openpyxl.styles.Font(bold=True)
+        ws.freeze_panes = "A2"
+    else:
+        used_titles: set[str] = set()
+        for product in products:
+            product_name = (product.name or "Producto").strip() or "Producto"
+            base_title = f"({product.id}) {product_name}"
+            title = _make_unique_excel_sheet_title(base_title, used_titles)
+
+            ws = wb.create_sheet(title=title)
+            ws.append(headers)
+            for idx, w in enumerate(column_widths, 1):
+                ws.column_dimensions[get_column_letter(idx)].width = w
+            for cell in ws[1]:
+                cell.font = openpyxl.styles.Font(bold=True)
+            ws.freeze_panes = "A2"
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    now_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    filename = f"capitados_estructura_company_{company.id}_{now_str}.xlsx"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/batches/upload")
+async def batch_upload(
+    company_id: int,
+    file: UploadFile = File(...),
+    coverage_month: str | None = Query(default=None),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Sube un Excel y procesa el lote de capitados."""
+    company = await _get_company(company_id, db)
+
+    # Validar extensión
+    original = file.filename or ""
+    if not original.lower().endswith((".xls", ".xlsx")):
+        raise HTTPException(status_code=422, detail="El archivo debe ser .xls o .xlsx.")
+
+    # Mes de cobertura
+    if coverage_month:
+        try:
+            cm = datetime.strptime(coverage_month, "%Y-%m-%d").date()
+        except ValueError:
+            try:
+                cm = datetime.strptime(coverage_month, "%Y-%m").date()
+            except ValueError:
+                raise HTTPException(status_code=422, detail="Formato de mes inválido.")
+    else:
+        cm = date.today()
+
+    # Normalizar a primer día del mes
+    cm = cm.replace(day=1)
+
+    processor = CapitatedBatchProcessor(db)
+    batch = await processor.process_excel(
+        company=company,
+        uploaded_file=file,
+        coverage_month=cm,
+        is_any_month_allowed=True,
+        cutoff_day=15,
+        user_id=_current_user.id,
+    )
+
+    return {"batch": _batch_out(batch).model_dump()}
 
 
 @router.get("/batches/{batch_id}", response_model=BatchDetailResponse)
@@ -365,3 +520,119 @@ async def report_months(
         ))
 
     return MonthlyReportMonthsResponse(months=months)
+
+
+@router.get("/reportes/mensuales/{month}/download")
+async def report_download(
+    company_id: int,
+    month: str,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Descarga el reporte mensual en Excel."""
+    import openpyxl
+    from openpyxl.utils import get_column_letter
+
+    await _get_company(company_id, db)
+
+    try:
+        coverage_month = datetime.strptime(month, "%Y-%m-%d").date().replace(day=1)
+    except ValueError:
+        try:
+            coverage_month = datetime.strptime(month, "%Y-%m").date().replace(day=1)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Formato de mes inválido.")
+
+    from app.models.country import Country
+
+    r = await db.execute(
+        select(CapitatedMonthlyRecord)
+        .options(
+            selectinload(CapitatedMonthlyRecord.product),
+            selectinload(CapitatedMonthlyRecord.residence_country),
+            selectinload(CapitatedMonthlyRecord.repatriation_country),
+            selectinload(CapitatedMonthlyRecord.contract),
+        )
+        .where(
+            CapitatedMonthlyRecord.company_id == company_id,
+            CapitatedMonthlyRecord.coverage_month == coverage_month,
+        )
+        .order_by(CapitatedMonthlyRecord.product_id, CapitatedMonthlyRecord.id)
+    )
+    records = list(r.scalars().all())
+
+    # Agrupar por product_id|status
+    groups: dict[str, list] = {}
+    for rec in records:
+        key = f"{rec.product_id}|{rec.status}"
+        groups.setdefault(key, []).append(rec)
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+
+    headers = [
+        "ID", "# Contrato", "Mes", "ID Persona", "Persona",
+        "Genero", "Edad reportada",
+        "Residencia ISO3", "Residencia ISO2", "Residencia",
+        "Repatriacion ISO3", "Repatriacion ISO2", "Repatriacion",
+        "Fuente del precio", "Precio base", "Recargo por edad", "Precio total",
+    ]
+
+    for key, rows in groups.items():
+        first = rows[0]
+        product = first.product
+        status = first.status
+
+        product_name = product.name if product else "Producto"
+        title = f"({product.id if product else '?'}) {product_name}"
+        if status == CapitatedMonthlyRecord.STATUS_ROLLED_BACK:
+            title = f"({product.id if product else '?'}) ROLLED BACK - {product_name}"
+
+        ws = wb.create_sheet(title=title[:31])
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font = openpyxl.styles.Font(bold=True)
+
+        for rec in rows:
+            age_surcharge = rec.age_surcharge_percent
+            if not age_surcharge:
+                age_surcharge = "0.00"
+
+            res_c = rec.residence_country
+            rep_c = rec.repatriation_country
+
+            ws.append([
+                rec.id,
+                rec.contract_id,
+                rec.coverage_month.strftime("%m/%Y") if rec.coverage_month else "",
+                rec.person_id,
+                rec.full_name,
+                rec.sex,
+                rec.age_reported,
+                res_c.iso3 if res_c else None,
+                res_c.iso2 if res_c else None,
+                res_c.name if res_c else None,
+                rep_c.iso3 if rep_c else None,
+                rep_c.iso2 if rep_c else None,
+                rep_c.name if rep_c else None,
+                rec.price_source,
+                float(rec.price_base) if rec.price_base is not None else None,
+                age_surcharge,
+                float(rec.price_final) if rec.price_final is not None else None,
+            ])
+
+    if not wb.sheetnames:
+        ws = wb.create_sheet(title="Sin datos")
+        ws.append(headers)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"capitados_reporte_{coverage_month.strftime('%Y_%m')}.xlsx"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

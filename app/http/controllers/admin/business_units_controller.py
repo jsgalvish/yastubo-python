@@ -9,10 +9,18 @@ Endpoints Unit:
   GET    /admin/business-units/api/units/{id}/children        → children
   PATCH  /admin/business-units/api/units/{id}/basic           → updateBasic
   PATCH  /admin/business-units/api/units/{id}/status          → updateStatus
+  POST   .../units/{id}/change-type                           → changeType
+  POST   .../units/{id}/move                                  → move
+  POST   .../units/{id}/branding                              → updateBranding
+
+Endpoints Users / Roles:
+  GET    .../users/active                                     → usersSearchActive
+  GET    .../roles/unit                                       → rolesUnitScope
 
 Endpoints Members:
   GET    .../units/{id}/members                               → members
   POST   .../units/{id}/members                               → memberLink
+  POST   .../units/{id}/members/create-user                   → memberCreateUser
   PATCH  .../units/{id}/members/{mid}                         → memberUpdateRole
   PATCH  .../units/{id}/members/{mid}/status                  → memberUpdateStatus
   DELETE .../units/{id}/members/{mid}                         → memberRemove
@@ -38,8 +46,13 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.business_unit_request import (
+    ActiveUserOut,
+    ActiveUsersResponse,
     AvailableGSAUserItem,
+    ChangeTypeRequest,
     ChildrenResponse,
+    CreateUserMemberRequest,
+    CreateUserMemberResponse,
     GSACommissionDataResponse,
     GSACommissionOut,
     GSACommissionsResponse,
@@ -47,8 +60,11 @@ from app.http.requests.admin.business_unit_request import (
     MemberDataResponse,
     MemberOut,
     MembersResponse,
+    MoveUnitRequest,
     PaginatedAvailableGSAResponse,
     PaginationMeta,
+    RoleOut,
+    RolesResponse,
     StoreGSACommissionRequest,
     StoreUnitRequest,
     UnitDataResponse,
@@ -57,6 +73,7 @@ from app.http.requests.admin.business_unit_request import (
     UnitListResponse,
     UnitOut,
     UpdateBasicRequest,
+    UpdateBrandingRequest,
     UpdateGSACommissionRequest,
     UpdateMemberRoleRequest,
     UpdateMemberStatusRequest,
@@ -65,6 +82,7 @@ from app.http.requests.admin.business_unit_request import (
 from app.models.business_unit import BusinessUnit
 from app.models.business_unit_membership import BusinessUnitMembership
 from app.models.regalia import Regalia
+from app.models.role import Role
 from app.models.user import User
 
 router = APIRouter(prefix="/admin/business-units/api", tags=["admin:business-units"])
@@ -281,6 +299,196 @@ async def update_status(
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# CHANGE TYPE / MOVE / BRANDING
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/units/{unit_id}/change-type", response_model=UnitDataResponse)
+async def change_type(
+    unit_id: int,
+    body: ChangeTypeRequest,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> UnitDataResponse:
+    """Cambia el tipo de una unidad con reglas de conversión."""
+    unit = await _get_unit(unit_id, db)
+
+    from_type = unit.type
+    to_type = body.target_type
+
+    if from_type == "freelance" and to_type == "office":
+        unit.type = "office"
+        unit.parent_id = None
+    elif from_type == "office" and to_type == "consolidator":
+        if unit.parent_id is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Solo una office sin padre puede convertirse en consolidator.",
+            )
+        unit.type = "consolidator"
+        unit.parent_id = None
+    elif from_type == "office" and to_type == "office" and body.detach_parent:
+        if unit.parent_id is None:
+            raise HTTPException(status_code=422, detail="La office ya es independiente.")
+        unit.parent_id = None
+    elif from_type == "counter" and to_type == "office":
+        unit.type = "office"
+        unit.parent_id = None
+    else:
+        raise HTTPException(status_code=422, detail="Conversión no permitida.")
+
+    _validate_parent_rules(unit.type, unit.parent_id)
+
+    await db.commit()
+    unit = await _get_unit(unit_id, db)
+    return UnitDataResponse(data=_unit_out(unit))
+
+
+@router.post("/units/{unit_id}/move", response_model=UnitDataResponse)
+async def move(
+    unit_id: int,
+    body: MoveUnitRequest,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> UnitDataResponse:
+    """Mueve una unidad a un nuevo padre en la jerarquía."""
+    unit = await _get_unit(unit_id, db)
+
+    new_parent: BusinessUnit | None = None
+    if body.parent_id is not None:
+        pr = await db.execute(select(BusinessUnit).where(BusinessUnit.id == body.parent_id))
+        new_parent = pr.scalar_one_or_none()
+        if new_parent is None:
+            raise HTTPException(status_code=422, detail="Unidad padre no encontrada.")
+
+    _validate_parent_rules(unit.type, body.parent_id)
+
+    if new_parent is not None:
+        if new_parent.id == unit.id:
+            raise HTTPException(status_code=422, detail="Parent inválido.")
+
+        # Verificar referencia circular: recorrer ancestros del nuevo padre
+        node_id: int | None = new_parent.parent_id
+        visited: set[int] = {new_parent.id}
+        while node_id is not None:
+            if node_id == unit.id:
+                raise HTTPException(status_code=422, detail="Parent inválido (ciclo).")
+            if node_id in visited:
+                break
+            visited.add(node_id)
+            nr = await db.execute(
+                select(BusinessUnit.parent_id).where(BusinessUnit.id == node_id)
+            )
+            row = nr.one_or_none()
+            node_id = row[0] if row else None
+
+    unit.parent_id = new_parent.id if new_parent else None
+    await db.commit()
+    unit = await _get_unit(unit_id, db)
+    return UnitDataResponse(data=_unit_out(unit))
+
+
+@router.post("/units/{unit_id}/branding", response_model=UnitDetailResponse)
+async def update_branding(
+    unit_id: int,
+    body: UpdateBrandingRequest,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> UnitDetailResponse:
+    """Actualiza campos de branding (colores). Freelance no permite branding."""
+    unit = await _get_unit(unit_id, db)
+
+    if unit.type == "freelance":
+        raise HTTPException(status_code=422, detail="Freelance no permite editar branding.")
+
+    for field in ("branding_text_dark", "branding_bg_light", "branding_text_light", "branding_bg_dark"):
+        value = getattr(body, field, None)
+        if value is not None:
+            value = value.strip() or None
+        setattr(unit, field, value)
+
+    if body.remove_logo:
+        unit.branding_logo_file_id = None
+
+    await db.commit()
+    unit = await _get_unit(unit_id, db)
+    return UnitDetailResponse(data=_unit_detail_out(unit))
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ACTIVE USERS / ROLES
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/users/active", response_model=ActiveUsersResponse)
+async def users_search_active(
+    q: str = Query(default=""),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> ActiveUsersResponse:
+    """Lista usuarios admin activos para asignación de miembros."""
+    base_q = select(User).where(
+        User.realm == "admin",
+        User.status == "active",
+        User.deleted_at.is_(None),
+    )
+
+    search = q.strip()
+    if search:
+        like = f"%{search}%"
+        base_q = base_q.where(
+            User.email.ilike(like)
+            | User.first_name.ilike(like)
+            | User.last_name.ilike(like)
+            | User.display_name.ilike(like)
+        )
+
+    base_q = base_q.order_by(User.email)
+    total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
+    users = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
+
+    data = [
+        ActiveUserOut(
+            id=u.id,
+            email=u.email,
+            display_name=u.full_name,
+            status=u.status,
+        )
+        for u in users
+    ]
+    return ActiveUsersResponse(data=data, meta=_pagination_meta(total, page, per_page))
+
+
+@router.get("/roles/unit", response_model=RolesResponse)
+async def roles_unit_scope(
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> RolesResponse:
+    """Lista roles disponibles con scope=unit y guard=admin."""
+    r = await db.execute(
+        select(Role)
+        .where(Role.scope == Role.SCOPE_UNIT, Role.guard_name == "admin")
+        .order_by(Role.name)
+    )
+    roles = r.scalars().all()
+    data = [
+        RoleOut(
+            id=role.id,
+            name=role.name,
+            scope=role.scope,
+            level=role.level,
+            role_name=role.role_name,
+        )
+        for role in roles
+    ]
+    return RolesResponse(data=data)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # MEMBERS
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -346,6 +554,85 @@ async def member_link(
     return MemberDataResponse(
         data=_member_out(m),
         toast={"type": "success", "message": "Miembro vinculado correctamente."},
+    )
+
+
+@router.post("/units/{unit_id}/members/create-user", response_model=CreateUserMemberResponse, status_code=201)
+async def member_create_user(
+    unit_id: int,
+    body: CreateUserMemberRequest,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> CreateUserMemberResponse:
+    """Crea un nuevo usuario admin y lo vincula como miembro de la unidad."""
+    unit = await _get_unit(unit_id, db)
+
+    if unit.type == "freelance":
+        raise HTTPException(
+            status_code=422,
+            detail="Freelance no permite crear usuarios desde esta unidad.",
+        )
+
+    # Validar rol (scope=unit, guard=admin)
+    role_r = await db.execute(
+        select(Role).where(
+            Role.id == body.role_id,
+            Role.guard_name == "admin",
+            Role.scope == Role.SCOPE_UNIT,
+        )
+    )
+    role = role_r.scalar_one_or_none()
+    if role is None:
+        raise HTTPException(status_code=422, detail="Rol inválido o fuera de alcance.")
+
+    # Verificar email no duplicado
+    email = body.email.strip().lower()
+    existing_user = await db.execute(select(User).where(User.email == email))
+    if existing_user.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=422, detail="Ya existe un usuario con ese email.")
+
+    first_name = body.first_name.strip()
+    last_name = body.last_name.strip()
+    if not first_name or not last_name or not email:
+        raise HTTPException(
+            status_code=422,
+            detail="Nombre, apellido y correo son requeridos.",
+        )
+
+    # Crear usuario
+    new_user = User()
+    new_user.realm = "admin"
+    new_user.email = email
+    new_user.first_name = first_name
+    new_user.last_name = last_name
+    new_user.display_name = f"{first_name} {last_name}".strip()
+    new_user.status = "active"
+    new_user.password = ""
+
+    db.add(new_user)
+    await db.flush()
+
+    # Crear membresía
+    membership = BusinessUnitMembership()
+    membership.business_unit_id = unit_id
+    membership.user_id = new_user.id
+    membership.role_id = role.id
+    membership.status = "active"
+
+    db.add(membership)
+    await db.commit()
+
+    # Recargar con relaciones
+    r = await db.execute(
+        select(BusinessUnitMembership)
+        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .where(BusinessUnitMembership.id == membership.id)
+    )
+    m = r.scalar_one()
+
+    return CreateUserMemberResponse(
+        data=_member_out(m),
+        toast={"type": "success", "message": "Usuario creado y vinculado."},
     )
 
 

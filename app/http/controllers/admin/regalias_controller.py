@@ -43,12 +43,12 @@ from app.http.requests.admin.regalia_request import (
 from app.models.business_unit import BusinessUnit
 from app.models.regalia import Regalia
 from app.models.user import User
+from app.services.regalias import RegaliasService
 
 router = APIRouter(prefix="/admin/regalias/api", tags=["admin:regalias"])
 
 _READ_PERM = "regalia.users.read"
 _EDIT_PERM = "regalia.users.edit"
-_ALLOWED_SOURCE_TYPES = {"user", "unit"}
 
 
 # ─────────────────────────── Helpers ─────────────────────────────────────────
@@ -185,7 +185,7 @@ async def beneficiaries_index(
         data=groups,
         meta={
             "pagination": _pagination_meta(total, page, per_page).model_dump(),
-            "regalias_sources": list(_ALLOWED_SOURCE_TYPES),
+            "regalias_sources": RegaliasService(db).regalias_sources(),
         },
     )
 
@@ -317,44 +317,20 @@ async def store(
     _current_user: User = Depends(require_permission(_EDIT_PERM)),
     db: AsyncSession = Depends(get_db),
 ) -> RegaliaDataResponse:
-    """Crea una regalía."""
+    """Crea una regalia (delega validaciones al servicio)."""
     # Validar beneficiario
     ben_r = await db.execute(
         select(User).where(User.id == body.beneficiary_user_id, User.realm == "admin")
     )
     if ben_r.scalar_one_or_none() is None:
-        raise HTTPException(status_code=422, detail="Beneficiario no válido.")
+        raise HTTPException(status_code=422, detail="Beneficiario no valido.")
 
-    # Validar source
-    if body.source_type == "user":
-        src_r = await db.execute(select(User).where(User.id == body.source_id))
-        if src_r.scalar_one_or_none() is None:
-            raise HTTPException(status_code=422, detail="Usuario origen no encontrado.")
-    elif body.source_type == "unit":
-        src_r = await db.execute(select(BusinessUnit).where(BusinessUnit.id == body.source_id))
-        if src_r.scalar_one_or_none() is None:
-            raise HTTPException(status_code=422, detail="Unidad de negocio origen no encontrada.")
-
-    # Validar duplicado
-    existing = await db.execute(
-        select(Regalia).where(
-            Regalia.beneficiary_user_id == body.beneficiary_user_id,
-            Regalia.source_type == body.source_type,
-            Regalia.source_id == body.source_id,
-        )
+    service = RegaliasService(db)
+    regalia = await service.create_regalia(
+        beneficiary_id=body.beneficiary_user_id,
+        source_type=body.source_type,
+        source_id=body.source_id,
     )
-    if existing.scalar_one_or_none() is not None:
-        raise HTTPException(status_code=422, detail="Esta regalía ya existe.")
-
-    regalia = Regalia()
-    regalia.beneficiary_user_id = body.beneficiary_user_id
-    regalia.source_type = body.source_type
-    regalia.source_id = body.source_id
-    regalia.commission = 0
-
-    db.add(regalia)
-    await db.commit()
-    await db.refresh(regalia)
 
     return RegaliaDataResponse(data=_regalia_out(regalia), message="Regalía creada.")
 
@@ -369,14 +345,12 @@ async def update(
     _current_user: User = Depends(require_permission(_EDIT_PERM)),
     db: AsyncSession = Depends(get_db),
 ) -> RegaliaDataResponse:
-    """Actualiza la comisión de una regalía."""
+    """Actualiza la comision de una regalia."""
     regalia = await _get_regalia(regalia_id, db)
 
-    if "commission" in body.model_fields_set:
-        regalia.commission = body.commission
-
-    await db.commit()
-    await db.refresh(regalia)
+    service = RegaliasService(db)
+    commission = body.commission if "commission" in body.model_fields_set else None
+    regalia = await service.update_commission(regalia, commission)
 
     return RegaliaDataResponse(data=_regalia_out(regalia), message="Regalía actualizada.")
 
@@ -390,11 +364,11 @@ async def destroy(
     _current_user: User = Depends(require_permission(_EDIT_PERM)),
     db: AsyncSession = Depends(get_db),
 ) -> RegaliaDataResponse:
-    """Elimina una regalía."""
+    """Elimina una regalia."""
     regalia = await _get_regalia(regalia_id, db)
     out = _regalia_out(regalia)
 
-    await db.delete(regalia)
-    await db.commit()
+    service = RegaliasService(db)
+    await service.delete_regalia(regalia)
 
     return RegaliaDataResponse(data=out, message="Regalía eliminada.")

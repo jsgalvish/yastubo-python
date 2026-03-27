@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import uuid as uuid_lib
 
-from sqlalchemy import String, Text
+from sqlalchemy import JSON, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
@@ -26,6 +26,8 @@ class File(TimestampMixin, Base):
     original_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mime_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     size: Mapped[int | None] = mapped_column(nullable=True)
+    uploaded_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     def url(self) -> str | None:
         """Retorna la URL pública del archivo (si es público)."""

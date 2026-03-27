@@ -12,6 +12,7 @@ Endpoints Config:
   PUT    /admin/config/{id}/definition                 → updateDefinition
   PUT    /admin/config/{id}/value                      → updateValue
   DELETE /admin/config/{id}                            → destroy
+  POST   /admin/config/{id}/file                       → uploadFile
 
 Permisos: admin.config.read / admin.config.create / admin.config.edit / admin.config.fill / admin.config.delete
 """
@@ -19,7 +20,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -259,3 +260,127 @@ async def config_destroy(
     await db.delete(item)
     await db.commit()
     return {"toast": {"type": "success", "message": "Item eliminado."}}
+
+
+# ─────────────────────────── Config: uploadFile ──────────────────────────────
+
+
+@router.post("/admin/config/{item_id}/upload", response_model=ConfigItemMessageResponse)
+async def config_upload_file(
+    item_id: int,
+    file: UploadFile = File(...),
+    locale: str | None = Query(default=None),
+    _current_user: User = Depends(require_permission(_FILL_PERM)),
+    db: AsyncSession = Depends(get_db),
+) -> ConfigItemMessageResponse:
+    """Sube un archivo para un item de configuración de tipo file."""
+    item = await _get_item(item_id, db)
+
+    if item.type not in ("file_plain", "file_translated"):
+        raise HTTPException(status_code=422, detail="Este registro no es de tipo archivo.")
+
+    from app.services.uploaded_file.uploaded_file_service import UploadedFileService
+
+    uploader = UploadedFileService(db)
+    user_id = _current_user.id
+
+    meta = {
+        "context": "config_item",
+        "model": "ConfigItem",
+        "model_id": item.id,
+    }
+
+    # Determinar campo según tipo
+    if item.type == "file_plain":
+        field = "value_file_plain_id"
+        current_file_id = item.value_file_plain_id
+        meta["field"] = "value_file_plain_id"
+        meta["lang"] = None
+    else:
+        effective_locale = locale or "es"
+        if effective_locale == "es":
+            field = "value_file_es_id"
+            current_file_id = item.value_file_es_id
+            meta["field"] = "value_file_es_id"
+            meta["lang"] = "es"
+        else:
+            field = "value_file_en_id"
+            current_file_id = item.value_file_en_id
+            meta["field"] = "value_file_en_id"
+            meta["lang"] = "en"
+
+    base_path = f"config/{item.id}/{field}"
+
+    if current_file_id:
+        from app.models.file import File as FileModel
+
+        r = await db.execute(select(FileModel).where(FileModel.id == current_file_id))
+        current = r.scalar_one_or_none()
+        if current:
+            file_model = await uploader.replace(
+                current,
+                file,
+                meta=meta,
+                uploaded_by_user_id=user_id,
+                base_path=base_path,
+            )
+        else:
+            file_model = await uploader.store(
+                file,
+                meta=meta,
+                uploaded_by_user_id=user_id,
+                base_path=base_path,
+            )
+            setattr(item, field, file_model.id)
+    else:
+        file_model = await uploader.store(
+            file,
+            meta=meta,
+            uploaded_by_user_id=user_id,
+            base_path=base_path,
+        )
+        setattr(item, field, file_model.id)
+
+    await db.commit()
+    await db.refresh(item)
+
+    return ConfigItemMessageResponse(item=_item_out(item), message="Archivo subido correctamente.")
+
+
+@router.delete("/admin/config/{item_id}/file", status_code=200)
+async def config_delete_file(
+    item_id: int,
+    locale: str | None = Query(default=None),
+    _current_user: User = Depends(require_permission(_FILL_PERM)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Elimina el archivo asociado a un item de configuración."""
+    item = await _get_item(item_id, db)
+
+    if item.type not in ("file_plain", "file_translated"):
+        raise HTTPException(status_code=422, detail="Este registro no es de tipo archivo.")
+
+    if item.type == "file_plain":
+        field = "value_file_plain_id"
+    else:
+        effective_locale = locale or "es"
+        field = "value_file_es_id" if effective_locale == "es" else "value_file_en_id"
+
+    current_file_id = getattr(item, field, None)
+    if not current_file_id:
+        raise HTTPException(status_code=404, detail="No hay archivo asociado.")
+
+    from app.services.uploaded_file.uploaded_file_service import UploadedFileService
+    from app.models.file import File as FileModel
+
+    r = await db.execute(select(FileModel).where(FileModel.id == current_file_id))
+    file_model = r.scalar_one_or_none()
+
+    if file_model:
+        uploader = UploadedFileService(db)
+        await uploader.delete(file_model, delete_physical=True)
+
+    setattr(item, field, None)
+    await db.commit()
+
+    return {"toast": {"type": "success", "message": "Archivo eliminado."}}

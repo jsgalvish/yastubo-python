@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     ip_country_fallback_iso2: str = "CL"
     ip_country_cache_ttl_seconds: int = 86400
 
+    # Regalias
+    app_regalias: str = ""
+
+    # reCAPTCHA
+    recaptcha_secret: str = ""
+    recaptcha_site_key: str = ""
+
     # Empresa
     company_name: str = "Global Funeral Assistance"
     company_short_name: str = "GFA"

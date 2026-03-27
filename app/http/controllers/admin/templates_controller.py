@@ -20,6 +20,8 @@ Endpoints Version:
   POST   /admin/templates/{id}/versions/{vid}/deactivate  → deactivate
   POST   /admin/templates/{id}/versions/{vid}/clone       → cloneVersion
   DELETE /admin/templates/{id}/versions/{vid}             → destroyVersion
+  GET    /admin/templates/{id}/versions/{vid}/pdf         → previewVersionPdf
+  GET    /admin/templates/{id}/active/pdf                 → previewActivePdf
 
 Permiso: admin.templates.edit
 """
@@ -29,6 +31,7 @@ import json
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -448,3 +451,55 @@ async def destroy_version(
     await db.commit()
 
     return {"toast": {"type": "success", "message": "Versión eliminada."}}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PDF PREVIEW
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/{template_id}/versions/{version_id}/pdf")
+async def preview_version_pdf(
+    template_id: int,
+    version_id: int,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Genera PDF de preview de una versión específica."""
+    t = await _get_template(template_id, db)
+    v = await _get_version(template_id, version_id, db)
+
+    from app.services.template_render.template_render_service import TemplateRenderService
+    from app.services.pdf.pdf_service import render_template, html_to_pdf_async
+
+    render_service = TemplateRenderService(db)
+    data = await render_service.build_merged_data(t, v)
+    html = render_service.render_template(v.content, data)
+    binary = await html_to_pdf_async(html)
+
+    return Response(content=binary, media_type="application/pdf")
+
+
+@router.get("/{template_id}/active/pdf")
+async def preview_active_pdf(
+    template_id: int,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Genera PDF de preview de la versión activa de la plantilla."""
+    t = await _get_template(template_id, db)
+
+    if not t.active_template_version_id:
+        raise HTTPException(status_code=404, detail="No hay versión activa.")
+
+    v = await _get_version(template_id, t.active_template_version_id, db)
+
+    from app.services.template_render.template_render_service import TemplateRenderService
+    from app.services.pdf.pdf_service import render_template, html_to_pdf_async
+
+    render_service = TemplateRenderService(db)
+    data = await render_service.build_merged_data(t, v)
+    html = render_service.render_template(v.content, data)
+    binary = await html_to_pdf_async(html)
+
+    return Response(content=binary, media_type="application/pdf")

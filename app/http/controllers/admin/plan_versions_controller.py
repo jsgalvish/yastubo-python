@@ -9,6 +9,7 @@ Endpoints PlanVersion:
   PUT    /admin/products/{pid}/plans/{vid}                   → update
   DELETE /admin/products/{pid}/plans/{vid}                   → destroy
   POST   /admin/products/{pid}/plans/{vid}/clone             → clone
+  GET    /admin/products/{pid}/plans/{vid}/pdf               → pdfPreview
   GET    /admin/products/{pid}/plans/{vid}/terms-html        → showTermsHtml
   PATCH  /admin/products/{pid}/plans/{vid}/terms-html        → updateTermsHtml
 
@@ -29,6 +30,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy import select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -339,6 +341,174 @@ async def clone(
     await db.refresh(new_version)
 
     return PlanVersionDataResponse(data=_build_version_out(new_version))
+
+
+# ─────────────────────────── PlanVersion: pdf ─────────────────────────────────
+
+
+@router.get("/{version_id}/pdf")
+async def pdf_preview(
+    product_id: int,
+    version_id: int,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Genera un PDF de preview para la versión de plan."""
+    from app.models.coverage import Coverage
+    from app.models.coverage_category import CoverageCategory
+    from app.models.plan_version_coverage import PlanVersionCoverage
+    from app.models.template import Template
+    from app.models.template_version import TemplateVersion
+    from app.models.unit_of_measure import UnitOfMeasure
+    from app.models.file import File as FileModel
+    from app.services.template_render.template_render_service import TemplateRenderService
+    from app.services.pdf.pdf_service import html_to_pdf_async
+    from app.support.json_decode import JsonDecode
+
+    version = await _get_version(product_id, version_id, db)
+    product_r = await db.execute(
+        select(Product)
+        .options(selectinload(Product.company))
+        .where(Product.id == product_id)
+    )
+    product = product_r.scalar_one()
+
+    # Cargar coberturas con relaciones
+    pvc_r = await db.execute(
+        select(PlanVersionCoverage)
+        .options(
+            selectinload(PlanVersionCoverage.coverage)
+            .selectinload(Coverage.unit),
+            selectinload(PlanVersionCoverage.coverage)
+            .selectinload(Coverage.category),
+        )
+        .where(PlanVersionCoverage.plan_version_id == version_id)
+        .order_by(PlanVersionCoverage.sort_order)
+    )
+    pv_coverages = list(pvc_r.scalars().all())
+
+    # Construir categorías de coberturas
+    categories: dict[int, dict] = {}
+    for pivot in pv_coverages:
+        cov = pivot.coverage
+        if not cov:
+            continue
+        cat = cov.category
+        if not cat:
+            continue
+        cat_id = cat.id
+        if cat_id not in categories:
+            categories[cat_id] = {
+                "id": cat_id,
+                "sort_order": cat.sort_order or 0,
+                "name": cat.name,
+                "description": cat.description,
+                "coverages": [],
+            }
+        unit = cov.unit
+        categories[cat_id]["coverages"].append({
+            "id": pivot.id,
+            "plan_version_id": pivot.plan_version_id,
+            "coverage_id": pivot.coverage_id,
+            "sort_order": pivot.sort_order,
+            "value_int": pivot.value_int,
+            "value_decimal": float(pivot.value_decimal) if pivot.value_decimal is not None else None,
+            "value_text": JsonDecode.get(pivot.value_text),
+            "notes": JsonDecode.get(pivot.notes),
+            "coverage_name": cov.name,
+            "coverage_description": cov.description,
+            "unit_name": unit.name if unit else None,
+            "unit_measure_type": unit.measure_type if unit else None,
+        })
+
+    coverage_categories = sorted(categories.values(), key=lambda c: c["sort_order"])
+
+    # Buscar template y versión activa
+    company = product.company
+    id_contrato = "YTB-000001"
+    emitido_por = "Nombre Emisor"
+    branding: dict = {}
+    template = None
+
+    if company:
+        id_contrato = f"{company.short_code}-000001" if company.short_code else "YTB-000001"
+        emitido_por = company.name or "Nombre Emisor"
+
+        # Buscar template de la empresa o el default "principal"
+        if company.pdf_template_id:
+            t_r = await db.execute(
+                select(Template).where(Template.id == company.pdf_template_id)
+            )
+            template = t_r.scalar_one_or_none()
+
+        if not template:
+            t_r = await db.execute(
+                select(Template).where(Template.slug == "principal", Template.deleted_at.is_(None))
+            )
+            template = t_r.scalar_one_or_none()
+
+        # Branding de la empresa
+        from app.models.config_item import ConfigItem
+
+        config_r = await db.execute(
+            select(ConfigItem).where(ConfigItem.category == "company_branding")
+        )
+        for ci in config_r.scalars().all():
+            val = ci.get_value()
+            if ci.token == "logo" and ci.type == "file" and ci.value_file_plain_id:
+                logo_r = await db.execute(
+                    select(FileModel).where(FileModel.id == ci.value_file_plain_id)
+                )
+                logo_file = logo_r.scalar_one_or_none()
+                branding["logo"] = logo_file.local_path() if logo_file else ""
+            elif val is not None:
+                if ci.token in ("text_dark", "text_light", "bg_light", "bg_dark"):
+                    branding[ci.token] = "#" + str(val).lstrip("#")
+                else:
+                    branding[ci.token] = val
+    else:
+        # Sin empresa: template default
+        t_r = await db.execute(
+            select(Template).where(Template.slug == "principal", Template.deleted_at.is_(None))
+        )
+        template = t_r.scalar_one_or_none()
+
+    if not template:
+        raise HTTPException(status_code=503, detail="Template principal no encontrado.")
+
+    if not template.active_template_version_id:
+        raise HTTPException(status_code=504, detail="No hay versión activa del template.")
+
+    tv_r = await db.execute(
+        select(TemplateVersion).where(
+            TemplateVersion.id == template.active_template_version_id,
+            TemplateVersion.template_id == template.id,
+        )
+    )
+    template_version = tv_r.scalar_one_or_none()
+    if not template_version:
+        raise HTTPException(status_code=504, detail="Versión activa del template no encontrada.")
+
+    # Construir datos para el template
+    data = JsonDecode.get(template.test_data_json)
+    if not isinstance(data, dict):
+        data = {}
+
+    data["product"] = product
+    data["planVersion"] = version
+    data["coverageCategories"] = coverage_categories
+    if "contrato" not in data:
+        data["contrato"] = {}
+    data["contrato"]["id"] = id_contrato
+    data["contrato"]["emitido_por"] = emitido_por
+    data["contrato"]["codigo_plan"] = f"{product.id}v{version.id}"
+    data["branding"] = branding
+
+    render_service = TemplateRenderService(db)
+    html = render_service.render_template(template_version.content, data)
+    binary = await html_to_pdf_async(html)
+
+    return Response(content=binary, media_type="application/pdf")
 
 
 # ─────────────────────────── Terms HTML ──────────────────────────────────────

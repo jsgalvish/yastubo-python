@@ -20,10 +20,15 @@ class CapitatedContract(TimestampMixin, Base):
     Contrato de asegurado capitado.
     El UUID se genera automáticamente al crear el registro.
 
-    Estados: active | expired | voided
+    Estados: active | expired | voided | rolled_back
     """
 
     __tablename__ = "capitados_contracts"
+
+    STATUS_ACTIVE = "active"
+    STATUS_EXPIRED = "expired"
+    STATUS_VOIDED = "voided"
+    STATUS_ROLLED_BACK = "rolled_back"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)

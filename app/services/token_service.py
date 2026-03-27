@@ -14,6 +14,7 @@ def create_access_token(
     user_id: int,
     realm: str,
     force_password_change: bool = False,
+    extra_claims: dict[str, Any] | None = None,
 ) -> str:
     """
     Genera un JWT de acceso.
@@ -23,6 +24,7 @@ def create_access_token(
       realm — "admin" | "customer"
       force_password_change — bool
       exp  — timestamp de expiración
+      + cualquier campo adicional pasado en extra_claims
     """
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.session_lifetime_minutes
@@ -33,6 +35,8 @@ def create_access_token(
         "force_password_change": force_password_change,
         "exp": expire,
     }
+    if extra_claims:
+        payload.update(extra_claims)
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
 

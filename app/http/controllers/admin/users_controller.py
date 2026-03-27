@@ -10,7 +10,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.http.middleware.permission import require_permission
+from app.http.middleware.auth import _bearer, _UNAUTHORIZED
+from app.http.middleware.permission import require_permission, require_role
 from app.http.requests.admin.user_request import (
     CreateUserRequest,
     PaginatedUsersOut,
@@ -27,11 +28,33 @@ from app.models.role import Role
 from app.models.staff_profile import StaffProfile
 from app.models.user import User
 from app.services.permission_service import PermissionService
+from app.services.token_service import create_access_token, decode_token
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import JWTError
 
 router = APIRouter(prefix="/admin/users", tags=["admin:users"])
+impersonate_router = APIRouter(prefix="/admin", tags=["admin:users"])
 
 
 # ── Helpers privados ──────────────────────────────────────────────────────────
+
+
+async def _get_user(db: AsyncSession, user_id: int) -> User:
+    """Carga un usuario admin activo (no eliminado) o lanza 404."""
+    result = await db.execute(
+        select(User).where(
+            User.id == user_id,
+            User.realm == "admin",
+            User.deleted_at.is_(None),
+        )
+    )
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado.",
+        )
+    return user
 
 
 def _make_temp_password() -> str:
@@ -575,3 +598,180 @@ async def update_status(
     svc = PermissionService(db)
     role_names = [r.name for r in await svc.get_roles(user)]
     return _build_user_out(user, role_names)
+
+
+# ── Impersonation ─────────────────────────────────────────────────────────────
+
+
+@router.post("/{user_id}/impersonate")
+async def impersonate(
+    user_id: int,
+    current_user: User = Depends(require_role("superadmin")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    POST /admin/users/{id}/impersonate — genera un JWT como si el usuario objetivo
+    hubiera iniciado sesión. Solo superadmin puede ejecutar esta acción.
+    Equivale a UsersController::impersonate() de PHP.
+    """
+    if current_user.id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes impersonarte a ti mismo.",
+        )
+
+    user = await _get_user(db, user_id)
+
+    if user.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes impersonar a un usuario que no está activo.",
+        )
+
+    token = create_access_token(
+        user_id=user.id,
+        realm=user.realm,
+        force_password_change=bool(user.force_password_change),
+        extra_claims={"impersonating_user_id": current_user.id},
+    )
+
+    return {
+        "token": token,
+        "toast": f"Ahora estás impersonando a {user.email}.",
+    }
+
+
+@impersonate_router.post("/impersonate/stop")
+async def stop_impersonation(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    POST /admin/impersonate/stop — finaliza la impersonación y genera un nuevo
+    token para el usuario original (el que inició la impersonación).
+    Equivale a UsersController::stopImpersonation() de PHP.
+    """
+    if not credentials:
+        raise _UNAUTHORIZED
+
+    try:
+        payload = decode_token(credentials.credentials)
+    except JWTError:
+        raise _UNAUTHORIZED
+
+    impersonator_id = payload.get("impersonating_user_id")
+    if not impersonator_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No estás en una sesión de impersonación.",
+        )
+
+    # Cargar el usuario original
+    result = await db.execute(
+        select(User).where(
+            User.id == int(impersonator_id),
+            User.deleted_at.is_(None),
+            User.status == "active",
+        )
+    )
+    original_user = result.scalar_one_or_none()
+    if original_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario original no encontrado o inactivo.",
+        )
+
+    token = create_access_token(
+        user_id=original_user.id,
+        realm=original_user.realm,
+        force_password_change=bool(original_user.force_password_change),
+    )
+
+    return {
+        "token": token,
+        "toast": "Has vuelto a tu sesión.",
+    }
+
+
+# ── Session revocation ────────────────────────────────────────────────────────
+
+
+@router.post("/{user_id}/sessions/revoke")
+async def revoke_sessions(
+    user_id: int,
+    _current_user: User = Depends(require_permission("users.sessions.revoke")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    POST /admin/users/{id}/sessions/revoke — invalida los tokens existentes
+    del usuario actualizando su remember_token.
+    Equivale a UsersController::revokeSessions() de PHP.
+    """
+    user = await _get_user(db, user_id)
+
+    # Rotar remember_token para invalidar tokens existentes
+    user.remember_token = secrets.token_urlsafe(32)
+    await db.commit()
+
+    return {"toast": "Sesiones del usuario revocadas correctamente."}
+
+
+# ── Password reset ────────────────────────────────────────────────────────────
+
+
+@router.post("/{user_id}/send-reset")
+async def send_reset(
+    user_id: int,
+    _current_user: User = Depends(require_permission("users.update")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    POST /admin/users/{id}/send-reset — marca al usuario para reseteo de
+    contraseña. El envío de email se implementará en Phase 5.
+    Equivale a UsersController::sendReset() de PHP.
+    """
+    user = await _get_user(db, user_id)
+
+    user.force_password_change = True
+    await db.commit()
+
+    return {"toast": "Usuario marcado para reseteo de contraseña."}
+
+
+# ── Lock / Unlock ─────────────────────────────────────────────────────────────
+
+
+@router.post("/{user_id}/lock")
+async def lock(
+    user_id: int,
+    _current_user: User = Depends(require_permission("users.update")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    POST /admin/users/{id}/lock — bloquea el usuario (status = 'locked').
+    Equivale a UsersController::lock() de PHP.
+    """
+    user = await _get_user(db, user_id)
+
+    user.status = "locked"
+    await db.commit()
+
+    return {"toast": f"Usuario {user.email} bloqueado."}
+
+
+@router.post("/{user_id}/unlock")
+async def unlock(
+    user_id: int,
+    _current_user: User = Depends(require_permission("users.update")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    POST /admin/users/{id}/unlock — desbloquea el usuario (status = 'active').
+    Equivale a UsersController::unlock() de PHP.
+    """
+    user = await _get_user(db, user_id)
+
+    user.status = "active"
+    await db.commit()
+
+    return {"toast": f"Usuario {user.email} desbloqueado."}

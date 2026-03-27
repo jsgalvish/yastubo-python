@@ -15,6 +15,7 @@ Endpoints Catálogo:
   POST   /admin/coverages/items/{id}/archive                 → archiveCoverage
   POST   /admin/coverages/items/{id}/restore                 → restoreCoverage
   DELETE /admin/coverages/items/{id}                         → destroyCoverage
+  GET    /admin/coverages/items/{id}/usages                  → coverageUsages
 
 Endpoints PlanVersionCoverage:
   GET    /admin/products/{pid}/plans/{vid}/coverages/available  → available
@@ -461,6 +462,46 @@ async def destroy_coverage(
     await db.delete(cov)
     await db.commit()
     return {"message": "Cobertura eliminada correctamente."}
+
+
+@catalog_router.get("/items/{coverage_id}/usages", response_model=dict)
+async def coverage_usages(
+    coverage_id: int,
+    _current_user: User = Depends(require_permission(_CATALOG_PERM)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Lista versiones de plan que usan esta cobertura."""
+    r = await db.execute(select(Coverage).where(Coverage.id == coverage_id))
+    cov = r.scalar_one_or_none()
+    if cov is None:
+        raise HTTPException(status_code=404, detail="Cobertura no encontrada.")
+
+    from app.models.product import Product
+
+    pvc_r = await db.execute(
+        select(PlanVersionCoverage)
+        .options(
+            selectinload(PlanVersionCoverage.plan_version).selectinload(PlanVersion.product),
+        )
+        .where(PlanVersionCoverage.coverage_id == coverage_id)
+        .order_by(PlanVersionCoverage.plan_version_id)
+    )
+    rows = pvc_r.scalars().all()
+
+    usages = []
+    for pvc in rows:
+        pv = pvc.plan_version
+        product = pv.product if pv else None
+        usages.append({
+            "product_version_id": pvc.plan_version_id,
+            "version_id": pv.id if pv else None,
+            "product_id": product.id if product else None,
+            "product_name": _pj(product.name) if product else None,
+            "product_link": None,
+            "version_link": None,
+        })
+
+    return {"data": usages}
 
 
 # ═════════════════════════════════════════════════════════════════════════════

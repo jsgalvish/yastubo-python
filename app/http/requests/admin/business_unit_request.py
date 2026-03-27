@@ -156,3 +156,69 @@ class StoreGSACommissionRequest(BaseModel):
 
 class UpdateGSACommissionRequest(BaseModel):
     commission: Optional[float] = Field(None, ge=0, le=100)
+
+
+# ─────────────────────────── Change Type / Move / Branding ────────────────────
+
+
+class ChangeTypeRequest(BaseModel):
+    target_type: UnitType
+    detach_parent: bool = False
+
+
+class MoveUnitRequest(BaseModel):
+    parent_id: Optional[int] = None
+
+
+class UpdateBrandingRequest(BaseModel):
+    branding_text_dark: Optional[str] = Field(None, max_length=12)
+    branding_bg_light: Optional[str] = Field(None, max_length=12)
+    branding_text_light: Optional[str] = Field(None, max_length=12)
+    branding_bg_dark: Optional[str] = Field(None, max_length=12)
+    remove_logo: bool = False
+
+
+# ─────────────────────────── Active users / Create user ──────────────────────
+
+
+class ActiveUserOut(BaseModel):
+    id: int
+    email: str
+    display_name: str
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActiveUsersResponse(BaseModel):
+    data: list[ActiveUserOut]
+    meta: PaginationMeta
+
+
+class CreateUserMemberRequest(BaseModel):
+    first_name: str = Field(..., max_length=255)
+    last_name: str = Field(..., max_length=255)
+    email: str = Field(..., max_length=255)
+    role_id: int
+
+
+class CreateUserMemberResponse(BaseModel):
+    data: MemberOut
+    toast: dict
+
+
+# ─────────────────────────── Roles unit scope ────────────────────────────────
+
+
+class RoleOut(BaseModel):
+    id: int
+    name: str
+    scope: Optional[str] = None
+    level: Optional[int] = None
+    role_name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RolesResponse(BaseModel):
+    data: list[RoleOut]

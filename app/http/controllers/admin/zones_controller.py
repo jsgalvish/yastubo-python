@@ -273,27 +273,16 @@ async def available_countries(
     }
 
 
-@router.post("/{zone_id}/countries/{country_id}", status_code=200)
-async def attach_country(
-    zone_id: int,
-    country_id: int,
-    _current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Asocia un país a una zona (idempotente, equivale a syncWithoutDetaching).
-    """
-    # Verificar zona
+async def _do_attach_country(zone_id: int, country_id: int, db: AsyncSession):
+    """Lógica compartida para asociar un país a una zona."""
     zone_result = await db.execute(select(Zone).where(Zone.id == zone_id))
     if zone_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Zona no encontrada.")
 
-    # Verificar país
     country_result = await db.execute(select(Country).where(Country.id == country_id))
     if country_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="País no encontrado.")
 
-    # Idempotente: insertar solo si no existe
     already = await db.execute(
         select(country_zone).where(
             country_zone.c.zone_id == zone_id,
@@ -307,6 +296,31 @@ async def attach_country(
         await db.commit()
 
     return {"message": "País añadido a la zona."}
+
+
+@router.post("/{zone_id}/countries/{country_id}", status_code=200)
+async def attach_country(
+    zone_id: int,
+    country_id: int,
+    _current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Asocia un país a una zona (path param)."""
+    return await _do_attach_country(zone_id, country_id, db)
+
+
+@router.post("/{zone_id}/countries", status_code=200)
+async def attach_country_body(
+    zone_id: int,
+    body: dict,
+    _current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Asocia un país a una zona (body param — usado por frontend)."""
+    cid = body.get("country_id")
+    if not cid:
+        raise HTTPException(status_code=422, detail="country_id es requerido.")
+    return await _do_attach_country(zone_id, int(cid), db)
 
 
 @router.delete("/{zone_id}/countries/{country_id}", status_code=200)
