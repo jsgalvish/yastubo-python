@@ -64,46 +64,36 @@
 
 	@page {
 		size: letter;
-		margin: 25mm 10mm 30mm 10mm;
+		margin: 35mm 0 35mm 0;
 		background: url("pdf/assets/fondo.jpg") no-repeat 0 0 / 100% 100%;
-
-		@top-center {
-			content: element(running-header);
-		}
-		@bottom-center {
-			content: element(running-footer);
-		}
 	}
 
 	@page terms {
 		size: letter;
-		margin: 25mm 10mm 30mm 10mm;
+		margin: 30mm 0 35mm 0;
 		background: url("pdf/assets/fondo-blanco.jpg") no-repeat 0 0 / 100% 100%;
-
-		@top-center {
-			content: element(running-header-terms);
-		}
-		@bottom-center {
-			content: element(running-footer-terms);
-		}
 	}
 
-	/* Running header/footer for @page margin areas */
-	.running-header {
-		position: running(running-header);
-		width: 100%;
+	body {
+		margin: 0;
+		padding: 3mm 10mm 0 10mm;
 	}
-	.running-footer {
-		position: running(running-footer);
-		width: 100%;
+
+	/* Fixed header/footer repeat on every page */
+	.fixed-header {
+		position: fixed;
+		top: -32mm;
+		left: 0;
+		right: 0;
+		padding: 0 10mm;
 	}
-	.running-header-terms {
-		position: running(running-header-terms);
-		width: 100%;
-	}
-	.running-footer-terms {
-		position: running(running-footer-terms);
-		width: 100%;
+
+	.fixed-footer {
+		position: fixed;
+		bottom: -32mm;
+		left: 0;
+		right: 0;
+		padding: 0 10mm;
 	}
 
 	.mb {
@@ -420,8 +410,8 @@
 </head>
 <body>
 
-<!-- Running header (goes into @page top margin) -->
-<div class="running-header">
+<!-- Fixed header (repeats on every page) -->
+<div class="fixed-header">
 	<table cellpadding="0" cellspacing="0" style="width: 100%;">
 		<tr>
 			<td style="width: 50%; text-align: left; vertical-align: middle;">
@@ -441,8 +431,8 @@
 	</table>
 </div>
 
-<!-- Running footer (goes into @page bottom margin) -->
-<div class="running-footer">
+<!-- Fixed footer (repeats on every page) -->
+<div class="fixed-footer">
 	<div class="footer-bar">WWW.YASTUBO.COM</div>
 	<div class="footer-meta">Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}</div>
 </div>
@@ -581,33 +571,8 @@
 </div>
 
 {% if planVersion.terms_html %}
-<!-- Running header for terms (same design) -->
-<div class="running-header-terms">
-	<table cellpadding="0" cellspacing="0" style="width: 100%;">
-		<tr>
-			<td style="width: 50%; text-align: left; vertical-align: middle;">
-				<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
-			</td>
-			<td style="width: 50%; vertical-align: middle;">
-				<div class="header-bubble">
-					<div class="plan_titulo">
-						PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
-					</div>
-					<div class="plan_codigo">
-						#{{ contrato['id'] }}
-					</div>
-				</div>
-			</td>
-		</tr>
-	</table>
-</div>
-<div class="running-footer-terms">
-	<div class="footer-bar">WWW.YASTUBO.COM</div>
-	<div class="footer-meta">Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}</div>
-</div>
-
-<!-- Terms content -->
-<div class="terminos" style="page: terms;">
+<div class="page-break"></div>
+<div class="terminos">
 	{{ planVersion.terms_html }}
 </div>
 {% endif %}
