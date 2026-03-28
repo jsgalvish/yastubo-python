@@ -60,61 +60,96 @@
 		font-family: 'urbanist', sans-serif;
 	}
 
-	/* --- WeasyPrint @page rules --- */
+	/* --- WeasyPrint @page rules with running elements --- */
 
 	@page {
 		size: letter;
-		margin: 35mm 0 35mm 0;
+		margin: 37mm 0 32mm 0;
 		background: url("pdf/assets/fondo.jpg") no-repeat 0 0 / 100% 100%;
+		background-attachment: fixed;
+
+		@top-center {
+			content: element(pageHeader);
+			width: 100%;
+		}
+
+		@bottom-center {
+			content: element(pageFooter);
+			width: 100%;
+		}
 	}
 
 	@page terms {
 		size: letter;
-		margin: 30mm 0 35mm 0;
+		margin: 37mm 0 35mm 0;
 		background: url("pdf/assets/fondo-blanco.jpg") no-repeat 0 0 / 100% 100%;
+		background-attachment: fixed;
+
+		@top-center {
+			content: element(pageHeader);
+			width: 100%;
+		}
+
+		@bottom-center {
+			content: element(pageFooter);
+			width: 100%;
+		}
 	}
 
 	body {
 		margin: 0;
+		padding: 0 10mm;
+	}
+
+	/* Running header/footer — placed in @page margin boxes */
+	.page-header {
+		position: running(pageHeader);
 		padding: 3mm 10mm 0 10mm;
 	}
 
-	/* Fixed header/footer repeat on every page */
-	.fixed-header {
-		position: fixed;
-		top: -32mm;
-		left: 0;
-		right: 0;
-		padding: 0 10mm;
+	.page-header .header-logo {
+		display: inline-block;
+		width: 49%;
+		vertical-align: middle;
+		
 	}
 
-	.fixed-footer {
-		position: fixed;
-		bottom: -32mm;
-		left: 0;
-		right: 0;
-		padding: 0 10mm;
+	.page-header .header-info {
+		display: inline-block;
+		width: 49%;
+		vertical-align: middle;
+	}
+
+	.page-footer {
+		position: running(pageFooter);
+		padding: 0 10mm 2mm 10mm;
 	}
 
 	.mb {
-		margin-bottom: 10mm;
+		margin-bottom: 6mm;
 	}
 
 	.mb-sm {
-		margin-bottom: 5mm;
+		margin-bottom: 3mm;
 	}
 
 	/* Header info bubble (green bubble with plan name) */
 	.header-bubble {
-		background-image: url("pdf/assets/header-title.png");
-		background-size: 100% 100%;
-		background-repeat: no-repeat;
-		padding-top: 3mm;
-		padding-bottom: 3mm;
+		color: #FFF;
+		font-size: 14pt;
+	}
+
+	.header-bubble .bubble-bg-img {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.header-bubble .bubble-content {
+		margin-top: -13mm;
 		padding-left: 25mm;
 		padding-right: 15mm;
-		color: #FFF;
-		font-size: 11pt;
+		padding-bottom: 3mm;
 	}
 
 	.header-bubble .plan_titulo {
@@ -125,76 +160,61 @@
 		color: #55D78E;
 	}
 
-	/* Contact bar - CSS recreation of asistencia.png */
+	/* Contact bar - uses asistencia.png as background */
+	/* Contact bar - asistencia.png as background with text overlay */
 	.contact-bar {
-		display: flex;
-		align-items: center;
-		gap: 2mm;
-		height: 16mm;
+		background-image: url("pdf/assets/asistencia.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		width: 100%;
+		height: 22mm;
 	}
 
-	.contact-email-chip {
-		flex: 1.4;
-		background: linear-gradient(90deg, #8251F9 0%, #55D78E 100%);
-		border-radius: 30mm;
-		padding: 2.5mm 5mm;
-		color: white;
-		height: 100%;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
+	.contact-bar table {
+		width: 100%;
+		height: 22mm;
+		border-collapse: collapse;
 	}
 
-	.contact-email-chip .lbl {
-		font-size: 2.5mm;
-		color: rgba(255,255,255,0.85);
+	.contact-bar td {
+		vertical-align: middle;
 	}
 
-	.contact-email-chip .val {
+	.contact-bar .email-cell {
+		width: 42%;
+		padding-left: 10mm;
+		padding-top: 11mm;
+	}
+
+	.contact-bar .email-cell .val {
 		font-weight: bold;
-		font-size: 4mm;
+		font-size: 5.5mm;
 		color: white;
 	}
 
-	.contact-phone-chip {
-		flex: 1;
-		background: white;
-		border: 1.5pt solid #8251F9;
-		border-radius: 30mm;
-		padding: 2mm 4mm 2mm 2mm;
-		display: flex;
-		align-items: center;
-		height: 100%;
+	.contact-bar .phone-cell {
+		width: 29%;
+		text-align: left;
+		padding-top: 11mm;
+		padding-left: 16mm;
 	}
 
-	.contact-phone-chip .icon-circle {
-		width: 10mm;
-		height: 10mm;
-		border-radius: 50%;
-		background: #55D78E;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: white;
-		font-size: 5mm;
-		flex-shrink: 0;
-		margin-right: 2mm;
-	}
-
-	.contact-phone-chip .text-wrap {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.contact-phone-chip .lbl {
-		font-size: 2.3mm;
+	.contact-bar .phone-cell .val {
 		font-weight: bold;
-		color: #666;
+		font-size: 4.5mm;
+		color: #333;
 	}
 
-	.contact-phone-chip .val {
+	.contact-bar .alarm-cell {
+		width: 29%;
+		text-align: left;
+		padding-top: 11mm;
+		padding-left: 15mm;
+	}
+
+	.contact-bar .alarm-cell .val {
 		font-weight: bold;
-		font-size: 3.5mm;
+		font-size: 4.5mm;
 		color: #333;
 	}
 
@@ -266,8 +286,49 @@
 	}
 
 	/* Coverage tables */
-	.tabla_coberturas {
+	.coverage-table {
 		width: 100%;
+		border-collapse: collapse;
+		border-spacing: 0;
+	}
+
+	.coverage-body-row {
+		background-image: url("pdf/assets/coverages/body.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+	}
+
+	
+
+	.cobertura-cell {
+		padding: 1.5mm 0 1.5mm 18mm;
+		width: 64%;
+		height: 14mm;
+		text-align: left;
+		vertical-align: middle;
+		color: #3E2234;
+		font-size: 11pt;
+	}
+
+	.alcance-cell {
+		padding: 1.5mm 10mm 1.5mm 0;
+		width: 22%;
+		height: 14mm;
+		text-align: right;
+		vertical-align: middle;
+		color: #8251F9;
+		font-size: 11pt;
+		font-weight: bold;
+	}
+
+	.tabla_coberturas tr {
+		border: none;
+		padding: 0;
+	}
+
+	.tabla_coberturas td,
+	.tabla_coberturas th {
+		border: none;
 	}
 
 	/* Coverage category header row with dark background image */
@@ -278,6 +339,9 @@
 		height: 11mm;
 		display: flex;
 		align-items: center;
+		page-break-after: avoid;
+		margin-left: 0.05mm;
+		margin-right: 0.05mm;
 	}
 
 	.coverage-title-row .check-icon {
@@ -288,7 +352,7 @@
 		vertical-align: middle;
 	}
 
-	.tabla_coberturas .titulo_categoria {
+	.titulo_categoria {
 		display: inline;
 		vertical-align: middle;
 		font-weight: bold;
@@ -296,14 +360,17 @@
 		font-size: 13pt;
 	}
 
-	/* Coverage body row with background image */
+	/* Coverage body row — solid white background instead of image to avoid line gaps */
 	.coverage-body-row {
-		background-image: url("pdf/assets/coverages/body.png");
-		background-size: 100% 100%;
-		background-repeat: no-repeat;
+		background-color: #FFFFFF;
 	}
 
-	.tabla_coberturas .cobertura {
+	.coverage-body-row td {
+		border-bottom: 0.5pt solid #e8e0f0;
+	}
+
+	.old-cobertura {
+		border-left: 1pt solid #e0d8f0;
 		padding: 1.5mm 0 1.5mm 18mm;
 		width: 64%;
 		height: 14mm;
@@ -313,7 +380,8 @@
 		font-size: 11pt;
 	}
 
-	.tabla_coberturas .alcance {
+	.old-alcance {
+		border-right: 1pt solid #e0d8f0;
 		padding: 1.5mm 10mm 1.5mm 0;
 		width: 22%;
 		height: 14mm;
@@ -330,6 +398,15 @@
 		width: 100%;
 		height: auto;
 		display: block;
+	}
+
+	.coverage-head-img {
+		page-break-after: avoid;
+	}
+
+	.coverage-foot-img {
+		break-before: avoid;
+		margin-top: -0.5pt;
 	}
 
 	.coverage-foot-img {
@@ -352,9 +429,10 @@
 
 	.footer-meta {
 		text-align: right;
-		font-size: 7pt;
-		color: #666;
-		padding-top: 1mm;
+		font-size: 10pt;
+		font-weight: bold;
+		color: #333;
+		padding-top: 3mm;
 	}
 
 	/**************/
@@ -379,12 +457,14 @@
 
 	/* Terms styles */
 	.terminos {
+		page: terms;
 		line-height: 18pt;
 		font-size: 12pt;
 		background: white;
 		padding: 10mm;
 		border-radius: 5mm;
-		border: 1pt solid #e0d8f0;
+		-webkit-box-decoration-break: clone;
+		box-decoration-break: clone;
 	}
 	.terminos li {
 		padding-bottom: 10pt;
@@ -410,29 +490,28 @@
 </head>
 <body>
 
-<!-- Fixed header (repeats on every page) -->
-<div class="fixed-header">
-	<table cellpadding="0" cellspacing="0" style="width: 100%;">
-		<tr>
-			<td style="width: 50%; text-align: left; vertical-align: middle;">
-				<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
-			</td>
-			<td style="width: 50%; vertical-align: middle;">
-				<div class="header-bubble">
-					<div class="plan_titulo">
-						PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
-					</div>
-					<div class="plan_codigo">
-						#{{ contrato['id'] }}
-					</div>
+<!-- Running header (repeats on every page via @page margin box) -->
+<div class="page-header">
+	<div class="header-logo">
+		<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
+	</div>
+	<div class="header-info">
+		<div class="header-bubble">
+			<img src="pdf/assets/header-title.png" class="bubble-bg-img" alt="" />
+			<div class="bubble-content">
+				<div class="plan_titulo">
+					PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
 				</div>
-			</td>
-		</tr>
-	</table>
+				<div class="plan_codigo">
+					#{{ contrato['id'] }}
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
-<!-- Fixed footer (repeats on every page) -->
-<div class="fixed-footer">
+<!-- Running footer (repeats on every page via @page margin box) -->
+<div class="page-footer">
 	<div class="footer-bar">WWW.YASTUBO.COM</div>
 	<div class="footer-meta">Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}</div>
 </div>
@@ -484,24 +563,19 @@
 
 
 	<div class="contact-bar mb">
-		<div class="contact-email-chip">
-			<div class="lbl">¿NECESITAS ASISTENCIA?</div>
-			<div class="val">Asistencias@yastubo.com</div>
-		</div>
-		<div class="contact-phone-chip">
-			<div class="icon-circle">&#9742;</div>
-			<div class="text-wrap">
-				<div class="lbl">WHATSAPP</div>
-				<div class="val">+1 305 447 7669</div>
-			</div>
-		</div>
-		<div class="contact-phone-chip">
-			<div class="icon-circle">&#9742;</div>
-			<div class="text-wrap">
-				<div class="lbl">ALARM CENTER</div>
-				<div class="val">+1 305 447 7669</div>
-			</div>
-		</div>
+		<table cellpadding="0" cellspacing="0">
+			<tr>
+				<td class="email-cell">
+					<div class="val">Asistencias@yastubo.com</div>
+				</td>
+				<td class="phone-cell">
+					<div class="val">+1 305 447 7669</div>
+				</td>
+				<td class="alarm-cell">
+					<div class="val">+1 305 447 7669</div>
+				</td>
+			</tr>
+		</table>
 	</div>
 
 
@@ -516,23 +590,26 @@
 
 	{% set notes = [] %}
 	{% for category in coverageCategories %}
-	<table cellpadding='0' cellspacing='0' class="tabla_coberturas mb-sm">
+	<table cellpadding="0" cellspacing="0" class="coverage-table mb-sm">
 		<thead>
 			<tr>
-				<th colspan="2" style="width: 100%; padding: 0;">
+				<th colspan="2" style="padding: 0;">
 					<img src="pdf/assets/coverages/head.png" class="coverage-head-img" />
-				</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr>
-				<td colspan="2" style="width: 100%; padding: 0;">
 					<div class="coverage-title-row" style="margin-top: -0.5pt;">
 						<img src="pdf/assets/coverages/check-verde.png" class="check-icon" />
 						<div class="titulo_categoria">{{ category['name'] }}</div>
 					</div>
+				</th>
+			</tr>
+		</thead>
+		<tfoot>
+			<tr>
+				<td colspan="2" style="padding: 0;">
+					<img src="pdf/assets/coverages/foot.png" class="coverage-foot-img" />
 				</td>
 			</tr>
+		</tfoot>
+		<tbody>
 			{% for coverage in category['coverages'] %}
 				{% set n = namespace() %}
 {% set n.val = none %}
@@ -540,21 +617,14 @@
 {% set _ = notes.append(coverage["notes_t"]) %}
 {% set n.val = notes|length %}
 {% endif %}
-			<tr class="coverage-body-row" style="margin-top: -0.3pt;">
-				<td class="cobertura">
+			<tr class="coverage-body-row">
+				<td class="cobertura-cell">
 					{{ coverage['coverage_name'] }} {{ "*(%d)"|format(n.val) if n.val else "" }}
 				</td>
-				<td class="alcance">{{ coverage['display_value'] }}</td>
+				<td class="alcance-cell">{{ coverage['display_value'] }}</td>
 			</tr>
 			{% endfor %}
 		</tbody>
-		<tfoot>
-			<tr>
-				<td colspan="2" style="width: 100%; padding: 0;">
-					<img src="pdf/assets/coverages/foot.png" class="coverage-foot-img" />
-				</td>
-			</tr>
-		</tfoot>
 	</table>
 	{% endfor %}
 
@@ -571,7 +641,6 @@
 </div>
 
 {% if planVersion.terms_html %}
-<div class="page-break"></div>
 <div class="terminos">
 	{{ planVersion.terms_html }}
 </div>
