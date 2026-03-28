@@ -22,6 +22,18 @@ router = APIRouter(prefix="/admin/audit", tags=["admin:audit"])
 _PERMISSION = "admin.audit.read"
 
 
+@router.get("/actions", response_model=list[str])
+async def audit_actions(
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> list[str]:
+    """Lista de acciones distintas registradas en audit_logs."""
+    rows = (await db.execute(
+        select(AuditLog.action).distinct().order_by(AuditLog.action)
+    )).scalars().all()
+    return list(rows)
+
+
 @router.get("", response_model=AuditLogsResponse)
 async def audit_index(
     user_id: Optional[int] = Query(default=None),
@@ -49,12 +61,25 @@ async def audit_index(
     total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar() or 0
     items = list((await db.execute(q.offset((page - 1) * per_page).limit(per_page))).scalars().all())
 
+    # Collect performed_by_user_ids to resolve names in one query
+    performer_ids = list({log.performed_by_user_id for log in items if log.performed_by_user_id})
+    performer_names: dict[int, str] = {}
+    if performer_ids:
+        user_rows = list((await db.execute(
+            select(User.id, User.first_name, User.last_name).where(User.id.in_(performer_ids))
+        )).all())
+        for row in user_rows:
+            full_name = f"{row.first_name} {row.last_name or ''}".strip()
+            performer_names[row.id] = full_name
+
     return AuditLogsResponse(
         data=[AuditLogOut(
             id=log.id,
             action=log.action,
             context_json=log.context_json,
             target_user_id=log.target_user_id,
+            performed_by_user_id=log.performed_by_user_id,
+            performed_by_name=performer_names.get(log.performed_by_user_id) if log.performed_by_user_id else None,
             created_at=str(log.created_at),
         ) for log in items],
         meta=PaginationMeta(

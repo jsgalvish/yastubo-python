@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from common.models.base import Base
@@ -26,6 +26,9 @@ class AuditLog(Base):
     target_user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=True
     )
+    performed_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
@@ -33,4 +36,7 @@ class AuditLog(Base):
     # Relaciones
     target_user: Mapped[User | None] = relationship(
         "User", back_populates="audit_logs", foreign_keys=[target_user_id]
+    )
+    performed_by: Mapped[User | None] = relationship(
+        "User", foreign_keys=[performed_by_user_id]
     )

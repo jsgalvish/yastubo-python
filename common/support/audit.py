@@ -15,6 +15,7 @@ class Audit:
         action: str,
         context: dict | None = None,
         target_user_id: int | None = None,
+        performed_by_user_id: int | None = None,
         request: Request | None = None,
         db: AsyncSession | None = None,
     ) -> None:
@@ -32,6 +33,7 @@ class Audit:
                 action=action,
                 context_json=json.dumps(context) if context else None,
                 target_user_id=target_user_id,
+                performed_by_user_id=performed_by_user_id,
             )
             db.add(record)
             await db.flush()

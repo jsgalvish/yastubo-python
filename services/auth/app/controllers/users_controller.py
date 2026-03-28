@@ -29,6 +29,7 @@ from common.models.staff_profile import StaffProfile
 from common.models.user import User
 from common.services.permission_service import PermissionService
 from common.services.token_service import create_access_token, decode_token
+from common.support.audit import Audit
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError
 
@@ -312,7 +313,7 @@ async def search(
 @router.post("", response_model=UserDetailOut, status_code=status.HTTP_201_CREATED)
 async def store(
     body: CreateUserRequest,
-    _current_user: User = Depends(require_permission("users.create")),
+    current_user: User = Depends(require_permission("users.create")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -387,6 +388,15 @@ async def store(
     await db.commit()
     await db.refresh(user)
 
+    await Audit.log(
+        action="user.created",
+        context={"user_id": user.id, "email": user.email, "roles": body.roles},
+        target_user_id=user.id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
+    await db.commit()
+
     return _build_user_out(user, body.roles, staff_profile)
 
 
@@ -426,7 +436,7 @@ async def show(
 async def update(
     user_id: int,
     body: UpdateUserRequest,
-    _current_user: User = Depends(require_permission("users.update")),
+    current_user: User = Depends(require_permission("users.update")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -508,13 +518,22 @@ async def update(
     await db.commit()
     await db.refresh(user)
 
+    await Audit.log(
+        action="user.updated",
+        context={"user_id": user_id, "email": body.email, "status": body.status},
+        target_user_id=user_id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
+    await db.commit()
+
     return _build_user_out(user, final_roles, staff_profile)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def destroy(
     user_id: int,
-    _current_user: User = Depends(require_permission("users.delete")),
+    current_user: User = Depends(require_permission("users.delete")),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """
@@ -533,13 +552,20 @@ async def destroy(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
 
     user.deleted_at = datetime.now(timezone.utc)
+    await Audit.log(
+        action="user.deleted",
+        context={"user_id": user_id, "email": user.email},
+        target_user_id=user_id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
     await db.commit()
 
 
 @router.post("/{user_id}/restore", response_model=UserDetailOut)
 async def restore(
     user_id: int,
-    _current_user: User = Depends(require_permission("users.restore")),
+    current_user: User = Depends(require_permission("users.restore")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -561,6 +587,13 @@ async def restore(
         )
 
     user.deleted_at = None
+    await Audit.log(
+        action="user.restored",
+        context={"user_id": user_id, "email": user.email},
+        target_user_id=user_id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
     await db.commit()
     await db.refresh(user)
 
@@ -573,7 +606,7 @@ async def restore(
 async def update_status(
     user_id: int,
     body: UpdateStatusRequest,
-    _current_user: User = Depends(require_permission("users.update")),
+    current_user: User = Depends(require_permission("users.update")),
     db: AsyncSession = Depends(get_db),
 ) -> UserDetailOut:
     """
@@ -592,6 +625,13 @@ async def update_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
 
     user.status = body.status
+    await Audit.log(
+        action="user.status_changed",
+        context={"user_id": user_id, "new_status": body.status},
+        target_user_id=user_id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
     await db.commit()
     await db.refresh(user)
 
@@ -744,7 +784,7 @@ async def send_reset(
 @router.post("/{user_id}/lock")
 async def lock(
     user_id: int,
-    _current_user: User = Depends(require_permission("users.update")),
+    current_user: User = Depends(require_permission("users.update")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
@@ -754,6 +794,13 @@ async def lock(
     user = await _get_user(db, user_id)
 
     user.status = "locked"
+    await Audit.log(
+        action="user.locked",
+        context={"user_id": user_id, "email": user.email},
+        target_user_id=user_id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
     await db.commit()
 
     return {"toast": f"Usuario {user.email} bloqueado."}
@@ -762,7 +809,7 @@ async def lock(
 @router.post("/{user_id}/unlock")
 async def unlock(
     user_id: int,
-    _current_user: User = Depends(require_permission("users.update")),
+    current_user: User = Depends(require_permission("users.update")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
@@ -772,6 +819,13 @@ async def unlock(
     user = await _get_user(db, user_id)
 
     user.status = "active"
+    await Audit.log(
+        action="user.unlocked",
+        context={"user_id": user_id, "email": user.email},
+        target_user_id=user_id,
+        performed_by_user_id=current_user.id,
+        db=db,
+    )
     await db.commit()
 
     return {"toast": f"Usuario {user.email} desbloqueado."}

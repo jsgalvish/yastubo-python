@@ -8,6 +8,8 @@ class AuditLogOut(BaseModel):
     action: str
     context_json: Optional[str] = None
     target_user_id: Optional[int] = None
+    performed_by_user_id: Optional[int] = None
+    performed_by_name: Optional[str] = None
     created_at: str
 
 
