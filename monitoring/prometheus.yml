@@ -1,0 +1,34 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: yastubo-auth
+    static_configs:
+      - targets: ['auth:8001']
+    metrics_path: /metrics
+
+  - job_name: yastubo-products
+    static_configs:
+      - targets: ['products:8002']
+    metrics_path: /metrics
+
+  - job_name: yastubo-documents
+    static_configs:
+      - targets: ['documents:8003']
+    metrics_path: /metrics
+
+  - job_name: yastubo-capitados
+    static_configs:
+      - targets: ['capitados:8004']
+    metrics_path: /metrics
+
+  - job_name: yastubo-audit
+    static_configs:
+      - targets: ['audit:8005']
+    metrics_path: /metrics
+
+  - job_name: yastubo-billing
+    static_configs:
+      - targets: ['billing:8006']
+    metrics_path: /metrics
