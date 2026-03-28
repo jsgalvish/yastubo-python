@@ -13,3 +13,5 @@ template_new.html
 app/services/pdf/pdf/
 
 common/services/pdf/pdf/
+coverage_html/
+.coverage
