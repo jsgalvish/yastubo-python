@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+	/* Font faces for WeasyPrint */
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-Regular.ttf');
+		font-weight: normal;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-Bold.ttf');
+		font-weight: bold;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-Italic.ttf');
+		font-weight: normal;
+		font-style: italic;
+	}
+	@font-face {
+		font-family: 'urbanist';
+		src: url('pdf/assets/fonts/Urbanist-BoldItalic.ttf');
+		font-weight: bold;
+		font-style: italic;
+	}
+	@font-face {
+		font-family: 'urbanistblack';
+		src: url('pdf/assets/fonts/UrbanistBlack-Regular.ttf');
+		font-weight: normal;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanistblack';
+		src: url('pdf/assets/fonts/UrbanistBlack-Bold.ttf');
+		font-weight: bold;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanistthin';
+		src: url('pdf/assets/fonts/UrbanistThin-Regular.ttf');
+		font-weight: normal;
+		font-style: normal;
+	}
+	@font-face {
+		font-family: 'urbanistthin';
+		src: url('pdf/assets/fonts/UrbanistThin-Bold.ttf');
+		font-weight: bold;
+		font-style: normal;
+	}
+
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+		font-family: 'urbanist', sans-serif;
+	}
+
+	/* --- WeasyPrint @page rules with running elements --- */
+
+	@page {
+		size: letter;
+		margin: 37mm 0 32mm 0;
+		background: url("pdf/assets/fondo.jpg") no-repeat 0 0 / 100% 100%;
+		background-attachment: fixed;
+
+		@top-center {
+			content: element(pageHeader);
+			width: 100%;
+		}
+
+		@bottom-center {
+			content: element(pageFooter);
+			width: 100%;
+		}
+	}
+
+	@page terms {
+		size: letter;
+		margin: 37mm 0 35mm 0;
+		background: url("pdf/assets/fondo-blanco.jpg") no-repeat 0 0 / 100% 100%;
+		background-attachment: fixed;
+
+		@top-center {
+			content: element(pageHeader);
+			width: 100%;
+		}
+
+		@bottom-center {
+			content: element(pageFooter);
+			width: 100%;
+		}
+	}
+
+	body {
+		margin: 0;
+		padding: 0 10mm;
+	}
+
+	/* Running header/footer — placed in @page margin boxes */
+	.page-header {
+		position: running(pageHeader);
+		padding: 3mm 10mm 0 10mm;
+	}
+
+	.page-header .header-logo {
+		display: inline-block;
+		width: 49%;
+		vertical-align: middle;
+		
+	}
+
+	.page-header .header-info {
+		display: inline-block;
+		width: 49%;
+		vertical-align: middle;
+	}
+
+	.page-footer {
+		position: running(pageFooter);
+		padding: 0 10mm 2mm 10mm;
+	}
+
+	.mb {
+		margin-bottom: 6mm;
+	}
+
+	.mb-sm {
+		margin-bottom: 3mm;
+	}
+
+	/* Header info bubble (green bubble with plan name) */
+	.header-bubble {
+		color: #FFF;
+		font-size: 14pt;
+	}
+
+	.header-bubble .bubble-bg-img {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.header-bubble .bubble-content {
+		margin-top: -13mm;
+		padding-left: 25mm;
+		padding-right: 15mm;
+		padding-bottom: 3mm;
+	}
+
+	.header-bubble .plan_titulo {
+		font-weight: bold;
+	}
+
+	.header-bubble .plan_titulo .nombre {
+		color: #55D78E;
+	}
+
+	/* Contact bar - uses asistencia.png as background */
+	/* Contact bar - asistencia.png as background with text overlay */
+	.contact-bar {
+		background-image: url("pdf/assets/asistencia.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		width: 100%;
+		height: 22mm;
+	}
+
+	.contact-bar table {
+		width: 100%;
+		height: 22mm;
+		border-collapse: collapse;
+	}
+
+	.contact-bar td {
+		vertical-align: middle;
+	}
+
+	.contact-bar .email-cell {
+		width: 42%;
+		padding-left: 10mm;
+		padding-top: 11mm;
+	}
+
+	.contact-bar .email-cell .val {
+		font-weight: bold;
+		font-size: 5.5mm;
+		color: white;
+	}
+
+	.contact-bar .phone-cell {
+		width: 29%;
+		text-align: left;
+		padding-top: 11mm;
+		padding-left: 16mm;
+	}
+
+	.contact-bar .phone-cell .val {
+		font-weight: bold;
+		font-size: 4.5mm;
+		color: #333;
+	}
+
+	.contact-bar .alarm-cell {
+		width: 29%;
+		text-align: left;
+		padding-top: 11mm;
+		padding-left: 15mm;
+	}
+
+	.contact-bar .alarm-cell .val {
+		font-weight: bold;
+		font-size: 4.5mm;
+		color: #333;
+	}
+
+	/* Card */
+	.card-header {
+		background-image: url("pdf/assets/card-top.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		color: white;
+		font-size: 5mm;
+		font-weight: bold;
+	}
+
+	.card-header-title {
+		padding-top: 7mm;
+		padding-bottom: 7mm;
+		padding-left: 6mm;
+		font-weight: bold;
+		font-family: 'urbanistblack', sans-serif;
+		font-size: 16pt;
+		color: white;
+	}
+
+	.card-body {
+		background-color: white;
+		margin-top: -1pt;
+		padding: 5mm 5mm;
+		border-left: 1px solid #e0e0e0;
+		border-right: 1px solid #e0e0e0;
+	}
+
+	.card-footer-img {
+		margin-top: -1pt;
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.titulo-oscuro {
+		color: #8251F9;
+		font-size: 5mm;
+		font-weight: bold;
+		font-family: urbanistblack;
+	}
+
+	.datos-oscuro {
+		color: #3E2234;
+		font-size: 5mm;
+		font-family: urbanistblack;
+	}
+
+	/* Cobertura date row */
+	.tabla_fecha_coberturas .titulo {
+		font-size: 15pt;
+		font-weight: bold;
+		color: #3E2234;
+		font-family: urbanistblack;
+	}
+
+	.tabla_fecha_coberturas .fecha {
+		color: #666;
+		font-size: 14pt;
+		font-weight: bold;
+		font-family: urbanistthin;
+	}
+
+	.tabla_fecha_coberturas .fecha_color {
+		color: #8251F9;
+	}
+
+	/* Coverage tables */
+	.coverage-table {
+		width: 100%;
+		border-collapse: collapse;
+		border-spacing: 0;
+	}
+
+	.coverage-body-row {
+		background-image: url("pdf/assets/coverages/body.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+	}
+
+	
+
+	.cobertura-cell {
+		padding: 1.5mm 0 1.5mm 18mm;
+		width: 64%;
+		height: 14mm;
+		text-align: left;
+		vertical-align: middle;
+		color: #3E2234;
+		font-size: 11pt;
+	}
+
+	.alcance-cell {
+		padding: 1.5mm 10mm 1.5mm 0;
+		width: 22%;
+		height: 14mm;
+		text-align: right;
+		vertical-align: middle;
+		color: #8251F9;
+		font-size: 11pt;
+		font-weight: bold;
+	}
+
+	.tabla_coberturas tr {
+		border: none;
+		padding: 0;
+	}
+
+	.tabla_coberturas td,
+	.tabla_coberturas th {
+		border: none;
+	}
+
+	/* Coverage category header row with dark background image */
+	.coverage-title-row {
+		background-image: url("pdf/assets/coverages/title.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		height: 11mm;
+		display: flex;
+		align-items: center;
+		page-break-after: avoid;
+		margin-left: 0.05mm;
+		margin-right: 0.05mm;
+	}
+
+	.coverage-title-row .check-icon {
+		width: 7mm;
+		height: auto;
+		margin-left: 8mm;
+		margin-right: 4mm;
+		vertical-align: middle;
+	}
+
+	.titulo_categoria {
+		display: inline;
+		vertical-align: middle;
+		font-weight: bold;
+		color: white;
+		font-size: 13pt;
+	}
+
+	/* Coverage body row — solid white background instead of image to avoid line gaps */
+	.coverage-body-row {
+		background-color: #FFFFFF;
+	}
+
+	.coverage-body-row td {
+		border-bottom: 0.5pt solid #e8e0f0;
+	}
+
+	.old-cobertura {
+		border-left: 1pt solid #e0d8f0;
+		padding: 1.5mm 0 1.5mm 18mm;
+		width: 64%;
+		height: 14mm;
+		text-align: left;
+		vertical-align: middle;
+		color: #3E2234;
+		font-size: 11pt;
+	}
+
+	.old-alcance {
+		border-right: 1pt solid #e0d8f0;
+		padding: 1.5mm 10mm 1.5mm 0;
+		width: 22%;
+		height: 14mm;
+		text-align: right;
+		vertical-align: middle;
+		color: #8251F9;
+		font-size: 11pt;
+		font-weight: bold;
+	}
+
+	/* Coverage head/foot decorations */
+	.coverage-head-img,
+	.coverage-foot-img {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.coverage-head-img {
+		page-break-after: avoid;
+	}
+
+	.coverage-foot-img {
+		break-before: avoid;
+		margin-top: -0.5pt;
+	}
+
+	.coverage-foot-img {
+		margin-top: -0.5pt;
+	}
+
+	/* Footer bar in margin area */
+	.footer-bar {
+		background-image: url("pdf/assets/footer.png");
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		width: 100%;
+		height: 16mm;
+		text-align: center;
+		line-height: 16mm;
+		color: #FFF;
+		font-size: 12pt;
+		font-weight: bold;
+	}
+
+	.footer-meta {
+		text-align: right;
+		font-size: 10pt;
+		font-weight: bold;
+		color: #333;
+		padding-top: 3mm;
+	}
+
+	/**************/
+	/* Para debug */
+	/**************/
+	.debug table {
+		border: solid 0.5pt yellow;
+	}
+	.debug td {
+		border: dashed 0.5pt #F00;
+	}
+	.debug div {
+		border: dotted 0.5pt #0F0;
+	}
+	.debug div div {
+		border: dotted 0.5pt yellow;
+	}
+
+	.page-break {
+		page-break-before: always;
+	}
+
+	/* Terms styles */
+	.terminos {
+		page: terms;
+		line-height: 18pt;
+		font-size: 12pt;
+		background: white;
+		padding: 10mm;
+		border-radius: 5mm;
+		-webkit-box-decoration-break: clone;
+		box-decoration-break: clone;
+	}
+	.terminos li {
+		padding-bottom: 10pt;
+	}
+	.terminos br {
+		line-height: 20pt;
+	}
+	.terminos h1 {
+		font-size: 16pt;
+		line-height: 20pt;
+		text-align: center;
+		margin-top: 2mm;
+		margin-bottom: 2mm;
+	}
+	.terminos h2 {
+		font-size: 14pt;
+		line-height: 18pt;
+		text-align: left;
+		margin-top: 2mm;
+		margin-bottom: 2mm;
+	}
+</style>
+</head>
+<body>
+
+<!-- Running header (repeats on every page via @page margin box) -->
+<div class="page-header">
+	<div class="header-logo">
+		<img src="pdf/assets/logos/logo-dark.png" alt="" style="width: auto; height: 14mm;">
+	</div>
+	<div class="header-info">
+		<div class="header-bubble">
+			<img src="pdf/assets/header-title.png" class="bubble-bg-img" alt="" />
+			<div class="bubble-content">
+				<div class="plan_titulo">
+					PLAN: <span class="nombre" style="text-transform: uppercase;">{{ product.name }}</span>
+				</div>
+				<div class="plan_codigo">
+					#{{ contrato['id'] }}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Running footer (repeats on every page via @page margin box) -->
+<div class="page-footer">
+	<div class="footer-bar">WWW.YASTUBO.COM</div>
+	<div class="footer-meta">Código Plan {{ contrato['codigo_plan'] }}, Renovación {{ contrato['renovacion'] }}, Voucher {{ contrato['id'] }}</div>
+</div>
+
+<!-- Main page content -->
+<div>
+
+	<div class="card mb">
+		<div class="card-header">
+			<div class="card-header-title">
+				INFORMACIÓN BENEFICIARIO
+			</div>
+		</div>
+
+		<div class="card-body">
+			<table cellpadding="0" cellspacing="0" style="width: 100%; margin-top: 2mm;">
+				<tr>
+					<td style="width: 24%; text-align: left; vertical-align: top;">
+						<img src="pdf/assets/icons/usuario.png" alt="" style="width: 31mm; height: auto; margin-left: 7mm; margin-bottom: 0; margin-right: 2mm;" />
+					</td>
+					<td style="width: 38%">
+						<div class="titulo-oscuro">Nombre:</div>
+						<div class="datos-oscuro">{{ contrato['full_name']|title }}</div>
+						<div></div>
+						<div class="titulo-oscuro">N° Identificación:</div>
+						<div class="datos-oscuro">{{ contrato['document'] }}</div>
+					</td>
+					<td style="width: 38%">
+						<div class="titulo-oscuro">Nacionalidad:</div>
+						<div class="datos-oscuro">{{ contrato['repatriation'] }}</div>
+						<div></div>
+
+						{% if contrato['fecha_nacimiento'] %}
+							<div class="titulo-oscuro">Fecha Nacimiento:</div>
+							<div class="datos-oscuro">{{ contrato['fecha_nacimiento'] }}</div>
+						{% elif contrato['age'] %}
+							<div class="titulo-oscuro">Edad:</div>
+							<div class="datos-oscuro">{{ contrato['age'] }}</div>
+						{% endif %}
+
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<img src="pdf/assets/card-bottom.png" alt="" class="card-footer-img" />
+
+	</div>
+
+
+	<div class="contact-bar mb">
+		<table cellpadding="0" cellspacing="0">
+			<tr>
+				<td class="email-cell">
+					<div class="val">Asistencias@yastubo.com</div>
+				</td>
+				<td class="phone-cell">
+					<div class="val">+1 305 447 7669</div>
+				</td>
+				<td class="alarm-cell">
+					<div class="val">+1 305 447 7669</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+
+	<table cellpadding='0' cellspacing='0' class="tabla_fecha_coberturas mb-sm" style="width: 100%;">
+		<tbody>
+			<tr>
+				<td style="width: 50%; text-align: left;" class="titulo">COBERTURA</td>
+				<td style="width: 50%; text-align: right;" class="fecha">Fecha de suscripción: <span class="fecha_color">{{ contrato['date_start'] }}</span></td>
+			</tr>
+		</tbody>
+	</table>
+
+	{% set notes = [] %}
+	{% for category in coverageCategories %}
+	<table cellpadding="0" cellspacing="0" class="coverage-table mb-sm">
+		<thead>
+			<tr>
+				<th colspan="2" style="padding: 0;">
+					<img src="pdf/assets/coverages/head.png" class="coverage-head-img" />
+					<div class="coverage-title-row" style="margin-top: -0.5pt;">
+						<img src="pdf/assets/coverages/check-verde.png" class="check-icon" />
+						<div class="titulo_categoria">{{ category['name'] }}</div>
+					</div>
+				</th>
+			</tr>
+		</thead>
+		<tfoot>
+			<tr>
+				<td colspan="2" style="padding: 0;">
+					<img src="pdf/assets/coverages/foot.png" class="coverage-foot-img" />
+				</td>
+			</tr>
+		</tfoot>
+		<tbody>
+			{% for coverage in category['coverages'] %}
+				{% set n = namespace() %}
+{% set n.val = none %}
+{% if coverage.get("notes_t") %}
+{% set _ = notes.append(coverage["notes_t"]) %}
+{% set n.val = notes|length %}
+{% endif %}
+			<tr class="coverage-body-row">
+				<td class="cobertura-cell">
+					{{ coverage['coverage_name'] }} {{ "*(%d)"|format(n.val) if n.val else "" }}
+				</td>
+				<td class="alcance-cell">{{ coverage['display_value'] }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% endfor %}
+
+
+	{% if notes|length %}
+		<hr/>
+		<div>Notas</div>
+		{% for note in notes %}
+		<div>*({{ loop.index }}) {{ note }}</div>
+		{% endfor %}
+	{% endif %}
+
+
+</div>
+
+{% if planVersion.terms_html %}
+<div class="terminos">
+	{{ planVersion.terms_html }}
+</div>
+{% endif %}
+
+</body>
+</html>

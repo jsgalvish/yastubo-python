@@ -7,3 +7,7 @@ __pycache__/
 .ruff_cache/
 dist/
 *.egg-info/
+.claude/
+template_backup.html
+template_new.html
+app/services/pdf/pdf/

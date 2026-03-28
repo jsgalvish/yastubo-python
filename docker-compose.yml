@@ -1,0 +1,168 @@
+version: '3.9'
+
+x-common-env: &common-env
+  DB_HOST: host.docker.internal
+  DB_PORT: 3306
+  DB_NAME: ${DB_NAME:-gfa}
+  DB_USER: ${DB_USER:-gfa}
+  DB_PASSWORD: ${DB_PASSWORD:-gfa}
+  SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+  APP_ENV: ${APP_ENV:-local}
+  APP_DEBUG: ${APP_DEBUG:-true}
+  SESSION_LIFETIME_MINUTES: "480"
+
+x-service-base: &service-base
+  build:
+    context: .
+  restart: unless-stopped
+  depends_on:
+    redis:
+      condition: service_healthy
+  environment:
+    <<: *common-env
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-gfa}
+      MYSQL_USER: ${DB_USER:-gfa}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-gfa}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Microservices ───────────────────────────────────────────────────────────
+
+  auth:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    ports:
+      - "8001:8001"
+
+  products:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/products/Dockerfile
+    ports:
+      - "8002:8002"
+
+  documents:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/documents/Dockerfile
+    ports:
+      - "8003:8003"
+
+  capitados:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/capitados/Dockerfile
+    ports:
+      - "8004:8004"
+
+  audit:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/audit/Dockerfile
+    ports:
+      - "8005:8005"
+
+  billing:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/billing/Dockerfile
+    environment:
+      <<: *common-env
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    ports:
+      - "8006:8006"
+
+  # ── Frontend ────────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../yastubo-frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - nginx
+
+  # ── API Gateway ─────────────────────────────────────────────────────────────
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth
+      - products
+      - documents
+      - capitados
+      - audit
+      - billing
+
+  # ── Observability ───────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-yastubo}
+      GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 1s
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  mariadb_data:
+  prometheus_data:
+  grafana_data:

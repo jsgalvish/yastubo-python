@@ -173,7 +173,7 @@ def _validate_parent_rules(unit_type: str, parent_id: int | None) -> None:
 
 @router.get("/units", response_model=UnitListResponse)
 async def list_units(
-    type: str = Query(...),
+    type: str | None = Query(default=None),
     status: str = Query(default="active"),
     q: str = Query(default=""),
     page: int = Query(default=1, ge=1),
@@ -185,8 +185,9 @@ async def list_units(
     base_q = (
         select(BusinessUnit)
         .options(selectinload(BusinessUnit.memberships), selectinload(BusinessUnit.children))
-        .where(BusinessUnit.type == type)
     )
+    if type:
+        base_q = base_q.where(BusinessUnit.type == type)
 
     if status in ("active", "inactive"):
         base_q = base_q.where(BusinessUnit.status == status)

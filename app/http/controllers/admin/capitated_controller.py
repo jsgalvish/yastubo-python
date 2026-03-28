@@ -22,6 +22,8 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.capitated_request import (
+    CapitatedProductsResponse,
+    CompanyOut,
     ContractDetailResponse,
     ContractIndexResponse,
     ContractOut,
@@ -30,11 +32,14 @@ from app.http.requests.admin.capitated_request import (
     PersonDetailResponse,
     PersonIndexResponse,
     PersonOut,
+    ProductOut,
 )
 from app.models.capitated_contract import CapitatedContract
 from app.models.capitated_monthly_record import CapitatedMonthlyRecord
 from app.models.capitated_product_insured import CapitatedProductInsured
 from app.models.company import Company
+from app.models.plan_version import PlanVersion
+from app.models.product import Product
 from app.models.user import User
 
 router = APIRouter(
@@ -108,6 +113,59 @@ def _pagination_meta(total: int, page: int, per_page: int) -> PaginationMeta:
         last_page=max(1, math.ceil(total / per_page)),
         per_page=per_page,
         total=total,
+    )
+
+
+# ─────────────────────────── Capitados (products) ────────────────────────────
+
+
+@router.get("", response_model=CapitatedProductsResponse)
+async def capitados_index(
+    company_id: int,
+    _current_user: User = Depends(require_permission(_PERMISSION)),
+    db: AsyncSession = Depends(get_db),
+) -> CapitatedProductsResponse:
+    """Planes capitados de una empresa con su versión activa."""
+    company = await _get_company(company_id, db)
+
+    products_r = await db.execute(
+        select(Product)
+        .where(
+            Product.company_id == company_id,
+            Product.product_type == Product.TYPE_PLAN_CAPITADO,
+        )
+        .order_by(Product.id)
+    )
+    products = list(products_r.scalars().all())
+
+    active_versions: dict[int, int] = {}
+    if products:
+        product_ids = [p.id for p in products]
+        av_r = await db.execute(
+            select(PlanVersion.product_id, PlanVersion.id).where(
+                PlanVersion.product_id.in_(product_ids),
+                PlanVersion.status == PlanVersion.STATUS_ACTIVE,
+            )
+        )
+        for pid, vid in av_r.all():
+            active_versions[pid] = vid
+
+    return CapitatedProductsResponse(
+        company=CompanyOut(id=company.id, name=company.name),
+        products=[
+            ProductOut(
+                id=p.id,
+                company_id=p.company_id,
+                status=p.status,
+                product_type=p.product_type,
+                show_in_widget=p.show_in_widget,
+                name=p.name,
+                description=p.description,
+                active_plan_version_id=active_versions.get(p.id),
+                has_active_plan_version=p.id in active_versions,
+            )
+            for p in products
+        ],
     )
 
 

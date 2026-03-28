@@ -1,0 +1,265 @@
+version: '3.9'
+
+# ── Docker Swarm Stack — Yastubo Production ──────────────────────────────────
+# Deploy:  docker stack deploy -c docker-compose.swarm.yml yastubo
+# Scale:   docker service scale yastubo_auth=3
+# Remove:  docker stack rm yastubo
+
+x-common-env: &common-env
+  DB_HOST: host.docker.internal
+  DB_PORT: 3306
+  DB_NAME: ${DB_NAME:-gfa}
+  DB_USER: ${DB_USER:-gfa}
+  DB_PASSWORD: ${DB_PASSWORD:-gfa}
+  SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+  APP_ENV: production
+  APP_DEBUG: "false"
+  SESSION_LIFETIME_MINUTES: "480"
+
+services:
+
+  # ── Microservices ─────────────────────────────────────────────────────────
+
+  auth:
+    image: yastubo/auth:latest
+    environment:
+      <<: *common-env
+    deploy:
+      replicas: 2                        # 2 instancias por defecto
+      update_config:
+        parallelism: 1                   # actualiza de a 1 (zero-downtime)
+        delay: 10s
+        order: start-first               # arranca la nueva antes de bajar la vieja
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+      labels:
+        - "yastubo.module=A"
+        - "yastubo.service=auth"
+
+  products:
+    image: yastubo/products:latest
+    environment:
+      <<: *common-env
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+      labels:
+        - "yastubo.module=B"
+        - "yastubo.service=products"
+
+  documents:
+    image: yastubo/documents:latest
+    environment:
+      <<: *common-env
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M        # mas memoria por generacion de PDFs
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+      labels:
+        - "yastubo.module=C"
+        - "yastubo.service=documents"
+
+  capitados:
+    image: yastubo/capitados:latest
+    environment:
+      <<: *common-env
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '1.0'          # mas CPU por procesamiento de Excel
+          memory: 512M
+        reservations:
+          cpus: '0.20'
+          memory: 128M
+      labels:
+        - "yastubo.module=D"
+        - "yastubo.service=capitados"
+
+  audit:
+    image: yastubo/audit:latest
+    environment:
+      <<: *common-env
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+      labels:
+        - "yastubo.module=E"
+        - "yastubo.service=audit"
+
+  billing:
+    image: yastubo/billing:latest
+    environment:
+      <<: *common-env
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    deploy:
+      replicas: 2              # billing siempre redundante
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+      labels:
+        - "yastubo.module=F"
+        - "yastubo.service=billing"
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager    # el gateway siempre en el nodo manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
+
+  frontend:
+    image: yastubo/frontend:latest
+    ports:
+      - "5173:5173"
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+
+  # ── Cache ─────────────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager    # redis en nodo fijo para persistencia
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # ── Observability ─────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-yastubo}
+      GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 1s
+    volumes:
+      - grafana_data:/var/lib/grafana
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+volumes:
+  prometheus_data:
+  grafana_data:
