@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.database import get_db
@@ -32,11 +32,16 @@ from app.requests.config_request import (
     ConfigItemMessageResponse,
     ConfigItemOut,
     DashboardResponse,
+    DashboardStats,
+    RecentAuditItem,
     StoreConfigItemRequest,
     UpdateDefinitionRequest,
     UpdateValueRequest,
 )
+from common.models.audit_log import AuditLog
+from common.models.company import Company
 from common.models.config_item import ConfigItem
+from common.models.product import Product
 from common.models.user import User
 
 router = APIRouter(tags=["admin:config"])
@@ -84,9 +89,55 @@ async def _get_item(item_id: int, db: AsyncSession) -> ConfigItem:
 @router.get("/admin/dashboard", response_model=DashboardResponse)
 async def dashboard(
     _current_user: User = Depends(require_permission(_READ_PERM)),
+    db: AsyncSession = Depends(get_db),
 ) -> DashboardResponse:
-    """Dashboard placeholder — se expandirá con métricas en el futuro."""
-    return DashboardResponse()
+    """Métricas globales del sistema para el dashboard de admin."""
+    total_users = (await db.execute(
+        select(func.count()).select_from(select(User).where(User.deleted_at.is_(None)).subquery())
+    )).scalar() or 0
+
+    total_companies = (await db.execute(
+        select(func.count()).select_from(select(Company).subquery())
+    )).scalar() or 0
+
+    total_products = (await db.execute(
+        select(func.count()).select_from(select(Product).subquery())
+    )).scalar() or 0
+
+    total_audit = (await db.execute(
+        select(func.count()).select_from(select(AuditLog).subquery())
+    )).scalar() or 0
+
+    recent_logs = list((await db.execute(
+        select(AuditLog).order_by(AuditLog.created_at.desc()).limit(5)
+    )).scalars().all())
+
+    performer_ids = list({log.performed_by_user_id for log in recent_logs if log.performed_by_user_id})
+    performer_names: dict[int, str] = {}
+    if performer_ids:
+        rows = list((await db.execute(
+            select(User.id, User.first_name, User.last_name).where(User.id.in_(performer_ids))
+        )).all())
+        for row in rows:
+            performer_names[row.id] = f"{row.first_name} {row.last_name or ''}".strip()
+
+    return DashboardResponse(
+        stats=DashboardStats(
+            total_users=total_users,
+            total_companies=total_companies,
+            total_products=total_products,
+            total_audit_logs=total_audit,
+        ),
+        recent_audit=[
+            RecentAuditItem(
+                id=log.id,
+                action=log.action,
+                performed_by_name=performer_names.get(log.performed_by_user_id) if log.performed_by_user_id else None,
+                created_at=str(log.created_at),
+            )
+            for log in recent_logs
+        ],
+    )
 
 
 # ─────────────────────────── Config: index ───────────────────────────────────

@@ -12,9 +12,23 @@ from pydantic import BaseModel, ConfigDict, Field
 # ─────────────────────────── Dashboard ───────────────────────────────────────
 
 
+class RecentAuditItem(BaseModel):
+    id: int
+    action: str
+    performed_by_name: Optional[str] = None
+    created_at: str
+
+
+class DashboardStats(BaseModel):
+    total_users: int
+    total_companies: int
+    total_products: int
+    total_audit_logs: int
+
+
 class DashboardResponse(BaseModel):
-    status: str = "ok"
-    message: str = "Dashboard placeholder"
+    stats: DashboardStats
+    recent_audit: list[RecentAuditItem]
 
 
 # ─────────────────────────── ConfigItem ──────────────────────────────────────
