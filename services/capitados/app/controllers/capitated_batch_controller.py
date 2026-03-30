@@ -580,10 +580,20 @@ async def report_download(
         product = first.product
         status = first.status
 
-        product_name = product.name if product else "Producto"
+        raw_name = product.name if product else "Producto"
+        # Parse translatable JSON name
+        if isinstance(raw_name, str) and raw_name.startswith("{"):
+            try:
+                import json as _json
+                parsed = _json.loads(raw_name)
+                product_name = parsed.get("es") or parsed.get("en") or raw_name
+            except Exception:
+                product_name = raw_name
+        else:
+            product_name = raw_name
         title = f"({product.id if product else '?'}) {product_name}"
         if status == CapitatedMonthlyRecord.STATUS_ROLLED_BACK:
-            title = f"({product.id if product else '?'}) ROLLED BACK - {product_name}"
+            title = f"({product.id if product else '?'}) RB - {product_name}"
 
         ws = wb.create_sheet(title=title[:31])
         ws.append(headers)
