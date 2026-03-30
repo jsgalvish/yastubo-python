@@ -12,23 +12,36 @@ from pydantic import BaseModel, ConfigDict, Field
 # ─────────────────────────── Dashboard ───────────────────────────────────────
 
 
-class RecentAuditItem(BaseModel):
+class CompanyCard(BaseModel):
     id: int
-    action: str
-    performed_by_name: Optional[str] = None
-    created_at: str
+    name: str
+    short_code: Optional[str] = None
+    status: str
+    logo_file_id: Optional[int] = None
 
 
-class DashboardStats(BaseModel):
-    total_users: int
-    total_companies: int
-    total_products: int
-    total_audit_logs: int
+class BatchCard(BaseModel):
+    id: int
+    company_name: str
+    coverage_month: str
+    status: str
+    total_rows: int
+    total_applied: int
+    total_rejected: int
+
+
+class BeneficiarioStats(BaseModel):
+    active: int
+    rolled_back: int
+    other: int
+    total: int
 
 
 class DashboardResponse(BaseModel):
-    stats: DashboardStats
-    recent_audit: list[RecentAuditItem]
+    beneficiarios: BeneficiarioStats
+    mrr_estimate: float
+    companies: list[CompanyCard]
+    recent_batches: list[BatchCard]
 
 
 # ─────────────────────────── ConfigItem ──────────────────────────────────────

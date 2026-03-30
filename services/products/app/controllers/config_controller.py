@@ -27,20 +27,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from common.database import get_db
 from common.middleware.permission import require_permission
 from app.requests.config_request import (
+    BatchCard,
+    BeneficiarioStats,
+    CompanyCard,
     ConfigIndexResponse,
     ConfigItemDataResponse,
     ConfigItemMessageResponse,
     ConfigItemOut,
     DashboardResponse,
-    DashboardStats,
-    RecentAuditItem,
     StoreConfigItemRequest,
     UpdateDefinitionRequest,
     UpdateValueRequest,
 )
-from common.models.audit_log import AuditLog
+from common.models.capitated_batch_log import CapitatedBatchLog
+from common.models.capitated_product_insured import CapitatedProductInsured
 from common.models.company import Company
 from common.models.config_item import ConfigItem
+from common.models.plan_version import PlanVersion
 from common.models.product import Product
 from common.models.user import User
 
@@ -91,52 +94,74 @@ async def dashboard(
     _current_user: User = Depends(require_permission(_READ_PERM)),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardResponse:
-    """Métricas globales del sistema para el dashboard de admin."""
-    total_users = (await db.execute(
-        select(func.count()).select_from(select(User).where(User.deleted_at.is_(None)).subquery())
-    )).scalar() or 0
+    """Métricas de negocio reales para el dashboard de admin."""
 
-    total_companies = (await db.execute(
-        select(func.count()).select_from(select(Company).subquery())
-    )).scalar() or 0
+    # ── Beneficiarios capitados por status ────────────────────────────────────
+    rows_status = list((await db.execute(
+        select(CapitatedProductInsured.status, func.count().label("cnt"))
+        .group_by(CapitatedProductInsured.status)
+    )).all())
 
-    total_products = (await db.execute(
-        select(func.count()).select_from(select(Product).subquery())
-    )).scalar() or 0
+    active = sum(r.cnt for r in rows_status if r.status == "active")
+    rolled_back = sum(r.cnt for r in rows_status if r.status == "rolled_back")
+    other = sum(r.cnt for r in rows_status if r.status not in ("active", "rolled_back"))
+    total_beneficiarios = active + rolled_back + other
 
-    total_audit = (await db.execute(
-        select(func.count()).select_from(select(AuditLog).subquery())
-    )).scalar() or 0
+    # ── MRR estimado: personas activas × precio promedio de plan activo ───────
+    pv_prices = list((await db.execute(
+        select(PlanVersion.public_price)
+        .where(PlanVersion.status == "active", PlanVersion.public_price.isnot(None))
+    )).scalars().all())
+    avg_price = float(sum(pv_prices) / len(pv_prices)) if pv_prices else 14.99
+    mrr_estimate = round(active * avg_price, 2)
 
-    recent_logs = list((await db.execute(
-        select(AuditLog).order_by(AuditLog.created_at.desc()).limit(5)
+    # ── Empresas con branding ─────────────────────────────────────────────────
+    companies_rows = list((await db.execute(
+        select(Company).order_by(Company.status.desc(), Company.name)
     )).scalars().all())
 
-    performer_ids = list({log.performed_by_user_id for log in recent_logs if log.performed_by_user_id})
-    performer_names: dict[int, str] = {}
-    if performer_ids:
-        rows = list((await db.execute(
-            select(User.id, User.first_name, User.last_name).where(User.id.in_(performer_ids))
-        )).all())
-        for row in rows:
-            performer_names[row.id] = f"{row.first_name} {row.last_name or ''}".strip()
+    companies = [
+        CompanyCard(
+            id=c.id,
+            name=c.name,
+            short_code=c.short_code,
+            status=c.status or "unknown",
+            logo_file_id=c.branding_logo_file_id,
+        )
+        for c in companies_rows
+    ]
+
+    # ── Lotes recientes (batches) ─────────────────────────────────────────────
+    batch_rows = list((await db.execute(
+        select(CapitatedBatchLog, Company.name.label("company_name"))
+        .join(Company, CapitatedBatchLog.company_id == Company.id)
+        .order_by(CapitatedBatchLog.coverage_month.desc())
+        .limit(6)
+    )).all())
+
+    recent_batches = [
+        BatchCard(
+            id=row.CapitatedBatchLog.id,
+            company_name=row.company_name,
+            coverage_month=str(row.CapitatedBatchLog.coverage_month),
+            status=row.CapitatedBatchLog.status,
+            total_rows=row.CapitatedBatchLog.total_rows,
+            total_applied=row.CapitatedBatchLog.total_applied,
+            total_rejected=row.CapitatedBatchLog.total_rejected,
+        )
+        for row in batch_rows
+    ]
 
     return DashboardResponse(
-        stats=DashboardStats(
-            total_users=total_users,
-            total_companies=total_companies,
-            total_products=total_products,
-            total_audit_logs=total_audit,
+        beneficiarios=BeneficiarioStats(
+            active=active,
+            rolled_back=rolled_back,
+            other=other,
+            total=total_beneficiarios,
         ),
-        recent_audit=[
-            RecentAuditItem(
-                id=log.id,
-                action=log.action,
-                performed_by_name=performer_names.get(log.performed_by_user_id) if log.performed_by_user_id else None,
-                created_at=str(log.created_at),
-            )
-            for log in recent_logs
-        ],
+        mrr_estimate=mrr_estimate,
+        companies=companies,
+        recent_batches=recent_batches,
     )
 
 
