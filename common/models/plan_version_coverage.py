@@ -46,7 +46,7 @@ class PlanVersionCoverage(HasTranslatableJson, SoftDeleteMixin, TimestampMixin, 
         Equivale al accessor getDisplayValueAttribute de PHP.
         """
         from common.models.unit_of_measure import UnitOfMeasure
-        from app.support.format_service import FormatService
+        from common.support.format_service import FormatService
 
         if self.coverage is None or self.coverage.unit is None:
             return None
