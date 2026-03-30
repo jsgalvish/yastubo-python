@@ -21,7 +21,7 @@ class HasDirectory:
         Returns:
             Ruta absoluta al directorio (o archivo) del modelo.
         """
-        from app.config import settings
+        from common.config import settings
 
         base = os.path.join(
             settings.app_storage_dir,
