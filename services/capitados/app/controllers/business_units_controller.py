@@ -112,6 +112,7 @@ def _unit_out(u: BusinessUnit) -> UnitOut:
         type=u.type,
         status=u.status,
         parent_id=u.parent_id,
+        parent_name=u.parent.name if u.parent else None,
         members_count=len(u.memberships) if u.memberships else 0,
         children_count=len(u.children) if u.children else 0,
     )
@@ -184,7 +185,7 @@ async def list_units(
     """Lista unidades por tipo con filtros de status y búsqueda."""
     base_q = (
         select(BusinessUnit)
-        .options(selectinload(BusinessUnit.memberships), selectinload(BusinessUnit.children))
+        .options(selectinload(BusinessUnit.memberships), selectinload(BusinessUnit.children), selectinload(BusinessUnit.parent))
     )
     if type:
         base_q = base_q.where(BusinessUnit.type == type)

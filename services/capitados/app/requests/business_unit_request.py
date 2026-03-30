@@ -21,6 +21,7 @@ class UnitOut(BaseModel):
     type: Optional[str] = None
     status: Optional[str] = None
     parent_id: Optional[int] = None
+    parent_name: Optional[str] = None
     members_count: int = 0
     children_count: int = 0
 
