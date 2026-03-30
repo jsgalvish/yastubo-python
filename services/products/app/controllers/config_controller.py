@@ -142,6 +142,7 @@ async def dashboard(
     recent_batches = [
         BatchCard(
             id=row.CapitatedBatchLog.id,
+            company_id=row.CapitatedBatchLog.company_id,
             company_name=row.company_name,
             coverage_month=str(row.CapitatedBatchLog.coverage_month),
             status=row.CapitatedBatchLog.status,

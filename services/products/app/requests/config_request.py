@@ -22,6 +22,7 @@ class CompanyCard(BaseModel):
 
 class BatchCard(BaseModel):
     id: int
+    company_id: int
     company_name: str
     coverage_month: str
     status: str
