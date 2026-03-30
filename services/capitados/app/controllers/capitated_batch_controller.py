@@ -24,7 +24,7 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -496,15 +496,12 @@ async def report_months(
     """Lista meses disponibles con conteos y totales."""
     await _get_company(company_id, db)
 
+    is_active = CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ACTIVE
     r = await db.execute(
         select(
             CapitatedMonthlyRecord.coverage_month,
-            func.count().filter(
-                CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ACTIVE
-            ).label("active_count"),
-            func.sum(CapitatedMonthlyRecord.price_final).filter(
-                CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ACTIVE
-            ).label("active_total"),
+            func.sum(case((is_active, 1), else_=0)).label("active_count"),
+            func.sum(case((is_active, CapitatedMonthlyRecord.price_final), else_=0)).label("active_total"),
         )
         .where(CapitatedMonthlyRecord.company_id == company_id)
         .group_by(CapitatedMonthlyRecord.coverage_month)
