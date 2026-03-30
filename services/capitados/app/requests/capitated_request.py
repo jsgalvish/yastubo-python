@@ -55,6 +55,11 @@ class ContractOut(BaseModel):
     wtime_suicide_ends_at: Optional[str] = None
     wtime_preexisting_conditions_ends_at: Optional[str] = None
     wtime_accident_ends_at: Optional[str] = None
+    # Enriched person data
+    document_number: Optional[str] = None
+    full_name: Optional[str] = None
+    residence_country: Optional[str] = None
+    repatriation_country: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -38,6 +38,7 @@ from common.models.capitated_contract import CapitatedContract
 from common.models.capitated_monthly_record import CapitatedMonthlyRecord
 from common.models.capitated_product_insured import CapitatedProductInsured
 from common.models.company import Company
+from common.models.country import Country
 from common.models.plan_version import PlanVersion
 from common.models.product import Product
 from common.models.user import User
@@ -76,7 +77,9 @@ def _person_out(p: CapitatedProductInsured) -> PersonOut:
     )
 
 
-def _contract_out(c: CapitatedContract) -> ContractOut:
+def _contract_out(c: CapitatedContract, person_map: dict | None = None, country_map: dict | None = None) -> ContractOut:
+    person = (person_map or {}).get(c.person_id)
+    countries = country_map or {}
     return ContractOut(
         id=c.id,
         company_id=c.company_id,
@@ -90,6 +93,10 @@ def _contract_out(c: CapitatedContract) -> ContractOut:
         wtime_suicide_ends_at=str(c.wtime_suicide_ends_at) if c.wtime_suicide_ends_at else None,
         wtime_preexisting_conditions_ends_at=str(c.wtime_preexisting_conditions_ends_at) if c.wtime_preexisting_conditions_ends_at else None,
         wtime_accident_ends_at=str(c.wtime_accident_ends_at) if c.wtime_accident_ends_at else None,
+        document_number=person.document_number if person else None,
+        full_name=person.full_name if person else None,
+        residence_country=countries.get(person.residence_country_id) if person else None,
+        repatriation_country=countries.get(person.repatriation_country_id) if person else None,
     )
 
 
@@ -282,8 +289,36 @@ async def contracts_index(
         base_q.offset((page - 1) * per_page).limit(per_page)
     )).scalars().all())
 
+    # Enrich with person and country data
+    person_ids = list({c.person_id for c in items})
+    person_map: dict = {}
+    country_map: dict = {}
+    if person_ids:
+        persons_r = await db.execute(
+            select(CapitatedProductInsured).where(CapitatedProductInsured.id.in_(person_ids))
+        )
+        persons = list(persons_r.scalars().all())
+        person_map = {p.id: p for p in persons}
+        country_ids = list({p.residence_country_id for p in persons if p.residence_country_id}
+                          | {p.repatriation_country_id for p in persons if p.repatriation_country_id})
+        if country_ids:
+            import json as _json
+            countries_r = await db.execute(
+                select(Country.id, Country.name).where(Country.id.in_(country_ids))
+            )
+            for r in countries_r.all():
+                raw = r.name
+                if isinstance(raw, str) and raw.startswith("{"):
+                    try:
+                        parsed = _json.loads(raw)
+                        country_map[r.id] = parsed.get("es") or parsed.get("en") or raw
+                    except Exception:
+                        country_map[r.id] = raw
+                else:
+                    country_map[r.id] = raw
+
     return ContractIndexResponse(
-        data=[_contract_out(c) for c in items],
+        data=[_contract_out(c, person_map, country_map) for c in items],
         meta=_pagination_meta(total, page, per_page),
     )
 
