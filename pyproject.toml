@@ -50,7 +50,18 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-q --tb=short --strict-markers --cov=common --cov=services --cov-report=term-missing --cov-report=html:coverage_html --cov-fail-under=45"
+addopts = "-q --tb=short --strict-markers --cov=common --cov=services --cov-report=term-missing --cov-report=html:coverage_html --cov-fail-under=55"
+
+[tool.coverage.run]
+omit = [
+    # External service integrations (require live APIs / files to test)
+    "common/services/ip_country/*",
+    "common/services/capitated/capitated_batch_processor.py",
+    "common/services/billing/*",
+    "services/billing/*",
+    # Each service main.py is just uvicorn glue
+    "services/*/app/main.py",
+]
 filterwarnings = [
     "ignore::DeprecationWarning:passlib",
     "ignore::DeprecationWarning:jose",
