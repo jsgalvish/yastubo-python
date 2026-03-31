@@ -96,14 +96,15 @@ async def list_express_accounts(
         accounts = stripe.Account.list(limit=100)
         data = []
         for acc in accounts.data:
+            meta = getattr(acc, "metadata", {}) or {}
             data.append({
                 "id": acc.id,
-                "email": acc.get("email"),
-                "country": acc.get("country"),
-                "charges_enabled": acc.get("charges_enabled"),
-                "payouts_enabled": acc.get("payouts_enabled"),
-                "name": acc.get("metadata", {}).get("name", ""),
-                "user_id": acc.get("metadata", {}).get("user_id", ""),
+                "email": getattr(acc, "email", None),
+                "country": getattr(acc, "country", None),
+                "charges_enabled": getattr(acc, "charges_enabled", False),
+                "payouts_enabled": getattr(acc, "payouts_enabled", False),
+                "name": meta.get("name", "") if isinstance(meta, dict) else "",
+                "user_id": meta.get("user_id", "") if isinstance(meta, dict) else "",
             })
         return {"data": data}
     except stripe.StripeError as e:
