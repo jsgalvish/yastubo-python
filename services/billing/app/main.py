@@ -16,10 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.controllers.connect_controller import router as connect_router
-from app.controllers.crm_controller import router as crm_router
-from app.controllers.stripe_webhook_controller import router as stripe_router
-from app.controllers.subscription_controller import router as subscription_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -27,6 +23,11 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
+
+from .controllers.connect_controller import router as connect_router
+from .controllers.crm_controller import router as crm_router
+from .controllers.stripe_webhook_controller import router as stripe_router
+from .controllers.subscription_controller import router as subscription_router
 
 
 @asynccontextmanager

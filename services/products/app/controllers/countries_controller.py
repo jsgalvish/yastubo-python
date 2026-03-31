@@ -20,15 +20,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.geo_request import (
-    StoreCountryRequest,
-    UpdateCountryRequest,
-)
 from common.database import get_db
 from common.middleware.permission import require_permission
 from common.models.country import Country
 from common.models.user import User
 from config.continents import CONTINENTS
+
+from ..requests.geo_request import (
+    StoreCountryRequest,
+    UpdateCountryRequest,
+)
 
 router = APIRouter(prefix="/admin/countries", tags=["admin:countries"])
 

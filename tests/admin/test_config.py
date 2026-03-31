@@ -100,7 +100,9 @@ class TestDashboard:
     async def test_dashboard_ok(self, client, actor_token):
         r = await client.get("/admin/dashboard", headers=_auth(actor_token))
         assert r.status_code == 200
-        assert r.json()["status"] == "ok"
+        data = r.json()
+        assert "beneficiarios" in data
+        assert "mrr_capitado" in data
 
 
 # ─────────────────────── Config Store ────────────────────────────────────────

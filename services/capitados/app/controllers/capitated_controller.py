@@ -19,7 +19,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.capitated_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.capitated_contract import CapitatedContract
+from common.models.capitated_monthly_record import CapitatedMonthlyRecord
+from common.models.capitated_product_insured import CapitatedProductInsured
+from common.models.company import Company
+from common.models.country import Country
+from common.models.plan_version import PlanVersion
+from common.models.product import Product
+from common.models.user import User
+
+from ..requests.capitated_request import (
     CapitatedProductsResponse,
     CompanyOut,
     ContractDetailResponse,
@@ -32,16 +43,6 @@ from app.requests.capitated_request import (
     PersonOut,
     ProductOut,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.capitated_contract import CapitatedContract
-from common.models.capitated_monthly_record import CapitatedMonthlyRecord
-from common.models.capitated_product_insured import CapitatedProductInsured
-from common.models.company import Company
-from common.models.country import Country
-from common.models.plan_version import PlanVersion
-from common.models.product import Product
-from common.models.user import User
 
 router = APIRouter(
     prefix="/admin/companies/{company_id}/capitados",

@@ -16,7 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.controllers.audit_controller import router as audit_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -24,6 +23,8 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
+
+from .controllers.audit_controller import router as audit_router
 
 
 @asynccontextmanager

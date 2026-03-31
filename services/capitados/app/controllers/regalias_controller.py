@@ -22,7 +22,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.requests.regalia_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.business_unit import BusinessUnit
+from common.models.regalia import Regalia
+from common.models.user import User
+from common.services.regalias import RegaliasService
+
+from ..requests.regalia_request import (
     AvailableOriginUnitItem,
     AvailableOriginUserItem,
     BeneficiariesIndexResponse,
@@ -39,12 +46,6 @@ from app.requests.regalia_request import (
     StoreRegaliaRequest,
     UpdateRegaliaRequest,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.business_unit import BusinessUnit
-from common.models.regalia import Regalia
-from common.models.user import User
-from common.services.regalias import RegaliasService
 
 router = APIRouter(prefix="/admin/regalias/api", tags=["admin:regalias"])
 

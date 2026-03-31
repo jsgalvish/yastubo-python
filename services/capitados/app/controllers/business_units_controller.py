@@ -44,7 +44,15 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.requests.business_unit_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.business_unit import BusinessUnit
+from common.models.business_unit_membership import BusinessUnitMembership
+from common.models.regalia import Regalia
+from common.models.role import Role
+from common.models.user import User
+
+from ..requests.business_unit_request import (
     ActiveUserOut,
     ActiveUsersResponse,
     AvailableGSAUserItem,
@@ -78,13 +86,6 @@ from app.requests.business_unit_request import (
     UpdateMemberStatusRequest,
     UpdateStatusRequest,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.business_unit import BusinessUnit
-from common.models.business_unit_membership import BusinessUnitMembership
-from common.models.regalia import Regalia
-from common.models.role import Role
-from common.models.user import User
 
 router = APIRouter(prefix="/admin/business-units/api", tags=["admin:business-units"])
 
@@ -97,7 +98,11 @@ _PERMISSION = "admin.business_units.manage"
 async def _get_unit(unit_id: int, db: AsyncSession) -> BusinessUnit:
     r = await db.execute(
         select(BusinessUnit)
-        .options(selectinload(BusinessUnit.memberships), selectinload(BusinessUnit.children))
+        .options(
+            selectinload(BusinessUnit.memberships),
+            selectinload(BusinessUnit.children),
+            selectinload(BusinessUnit.parent),
+        )
         .where(BusinessUnit.id == unit_id)
     )
     unit = r.scalar_one_or_none()

@@ -37,7 +37,13 @@ from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.template_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.template import Template
+from common.models.template_version import TemplateVersion
+from common.models.user import User
+
+from ..requests.template_request import (
     StoreTemplateRequest,
     StoreVersionRequest,
     TemplateDataResponse,
@@ -50,11 +56,6 @@ from app.requests.template_request import (
     VersionDataResponse,
     VersionOut,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.template import Template
-from common.models.template_version import TemplateVersion
-from common.models.user import User
 
 router = APIRouter(prefix="/admin/templates", tags=["admin:templates"])
 

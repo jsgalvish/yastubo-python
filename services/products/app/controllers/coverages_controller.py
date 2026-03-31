@@ -36,7 +36,17 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.requests.coverage_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.coverage import Coverage
+from common.models.coverage_category import CoverageCategory
+from common.models.plan_version import PlanVersion
+from common.models.plan_version_coverage import PlanVersionCoverage
+from common.models.product import Product
+from common.models.unit_of_measure import UnitOfMeasure
+from common.models.user import User
+
+from ..requests.coverage_request import (
     ArchivedCategoriesResponse,
     AvailableCategoryOut,
     AvailableCoverageItem,
@@ -57,15 +67,6 @@ from app.requests.coverage_request import (
     UpdateCoverageRequest,
     UpdatePVCoverageValueRequest,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.coverage import Coverage
-from common.models.coverage_category import CoverageCategory
-from common.models.plan_version import PlanVersion
-from common.models.plan_version_coverage import PlanVersionCoverage
-from common.models.product import Product
-from common.models.unit_of_measure import UnitOfMeasure
-from common.models.user import User
 
 # ─── Catálogo router ─────────────────────────────────────────────────────────
 

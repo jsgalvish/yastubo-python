@@ -29,12 +29,6 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.plan_version_country_request import (
-    AttachCountriesRequest,
-    AttachZoneRequest,
-    DetachByZoneRequest,
-    UpdateCountryPriceRequest,
-)
 from common.database import get_db
 from common.middleware.permission import require_permission
 from common.models.country import Country
@@ -47,6 +41,13 @@ from common.models.product import Product
 from common.models.user import User
 from common.models.zone import Zone
 from config.continents import CONTINENTS
+
+from ..requests.plan_version_country_request import (
+    AttachCountriesRequest,
+    AttachZoneRequest,
+    DetachByZoneRequest,
+    UpdateCountryPriceRequest,
+)
 
 # ─── Routers ────────────────────────────────────────────────────────────────
 

@@ -25,7 +25,17 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.config_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.capitated_batch_log import CapitatedBatchLog
+from common.models.capitated_product_insured import CapitatedProductInsured
+from common.models.company import Company
+from common.models.config_item import ConfigItem
+from common.models.plan_version import PlanVersion
+from common.models.subscription import Subscription
+from common.models.user import User
+
+from ..requests.config_request import (
     BatchCard,
     BeneficiarioStats,
     CompanyCard,
@@ -39,15 +49,6 @@ from app.requests.config_request import (
     UpdateDefinitionRequest,
     UpdateValueRequest,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.capitated_batch_log import CapitatedBatchLog
-from common.models.capitated_product_insured import CapitatedProductInsured
-from common.models.company import Company
-from common.models.config_item import ConfigItem
-from common.models.plan_version import PlanVersion
-from common.models.subscription import Subscription
-from common.models.user import User
 
 router = APIRouter(tags=["admin:config"])
 

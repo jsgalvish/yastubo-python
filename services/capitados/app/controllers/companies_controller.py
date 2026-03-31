@@ -34,7 +34,15 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.requests.company_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.company import Company
+from common.models.company_commission_user import CompanyCommissionUser
+from common.models.company_user import CompanyUser
+from common.models.template import Template
+from common.models.user import User  # usado en type hints de _current_user
+
+from ..requests.company_request import (
     AvailableUserItemOut,
     CommissionUserOut,
     CompanyDetailOut,
@@ -51,13 +59,6 @@ from app.requests.company_request import (
     UserBriefOut,
     UserSearchItemOut,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.company import Company
-from common.models.company_commission_user import CompanyCommissionUser
-from common.models.company_user import CompanyUser
-from common.models.template import Template
-from common.models.user import User  # usado en type hints de _current_user
 
 router = APIRouter(prefix="/admin/companies", tags=["admin:companies"])
 

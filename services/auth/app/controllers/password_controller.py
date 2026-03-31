@@ -7,18 +7,19 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.password_request import (
-    ChangePasswordRequest,
-    ForcePasswordRequest,
-    PasswordCheckRequest,
-    PasswordCheckResponse,
-)
 from common.database import get_db
 from common.middleware.auth import get_admin_user, get_customer_user
 from common.models.user import User
 from common.services.auth_service import AuthService
 from common.support.password_history_service import PasswordHistoryService
 from common.support.password_policy import PasswordPolicy
+
+from ..requests.password_request import (
+    ChangePasswordRequest,
+    ForcePasswordRequest,
+    PasswordCheckRequest,
+    PasswordCheckResponse,
+)
 
 router = APIRouter(tags=["auth"])
 

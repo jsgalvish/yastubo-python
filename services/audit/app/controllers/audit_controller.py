@@ -11,11 +11,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.audit_request import AuditLogOut, AuditLogsResponse, PaginationMeta
 from common.database import get_db
 from common.middleware.permission import require_permission
 from common.models.audit_log import AuditLog
 from common.models.user import User
+
+from ..requests.audit_request import AuditLogOut, AuditLogsResponse, PaginationMeta
 
 router = APIRouter(prefix="/admin/audit", tags=["admin:audit"])
 

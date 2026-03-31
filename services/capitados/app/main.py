@@ -16,11 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.controllers.business_units_controller import router as business_units_router
-from app.controllers.capitated_batch_controller import router as capitated_batch_router
-from app.controllers.capitated_controller import router as capitated_router
-from app.controllers.companies_controller import router as companies_router
-from app.controllers.regalias_controller import router as regalias_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -28,6 +23,12 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
+
+from .controllers.business_units_controller import router as business_units_router
+from .controllers.capitated_batch_controller import router as capitated_batch_router
+from .controllers.capitated_controller import router as capitated_router
+from .controllers.companies_controller import router as companies_router
+from .controllers.regalias_controller import router as regalias_router
 
 
 @asynccontextmanager

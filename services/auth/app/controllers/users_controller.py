@@ -11,17 +11,6 @@ from jose import JWTError
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.user_request import (
-    CreateUserRequest,
-    PaginatedUsersOut,
-    SearchUserItem,
-    SearchUsersOut,
-    StaffProfileOut,
-    UpdateStatusRequest,
-    UpdateUserRequest,
-    UserDetailOut,
-    UserOut,
-)
 from common.database import get_db
 from common.middleware.auth import _UNAUTHORIZED, _bearer
 from common.middleware.permission import require_permission, require_role
@@ -32,6 +21,18 @@ from common.models.user import User
 from common.services.permission_service import PermissionService
 from common.services.token_service import create_access_token, decode_token
 from common.support.audit import Audit
+
+from ..requests.user_request import (
+    CreateUserRequest,
+    PaginatedUsersOut,
+    SearchUserItem,
+    SearchUsersOut,
+    StaffProfileOut,
+    UpdateStatusRequest,
+    UpdateUserRequest,
+    UserDetailOut,
+    UserOut,
+)
 
 router = APIRouter(prefix="/admin/users", tags=["admin:users"])
 impersonate_router = APIRouter(prefix="/admin", tags=["admin:users"])

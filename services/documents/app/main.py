@@ -16,9 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.controllers.capitated_contract_pdf_controller import router as capitated_pdf_router
-from app.controllers.file_controller import router as files_router
-from app.controllers.templates_controller import router as templates_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -26,6 +23,10 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
+
+from .controllers.capitated_contract_pdf_controller import router as capitated_pdf_router
+from .controllers.file_controller import router as files_router
+from .controllers.templates_controller import router as templates_router
 
 
 @asynccontextmanager

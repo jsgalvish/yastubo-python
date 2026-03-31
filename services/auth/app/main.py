@@ -16,10 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.controllers.acl_controller import router as acl_router
-from app.controllers.login_controller import router as login_router
-from app.controllers.password_controller import router as password_router
-from app.controllers.users_controller import impersonate_router, router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -27,6 +23,11 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
+
+from .controllers.acl_controller import router as acl_router
+from .controllers.login_controller import router as login_router
+from .controllers.password_controller import router as password_router
+from .controllers.users_controller import impersonate_router, router
 
 
 @asynccontextmanager

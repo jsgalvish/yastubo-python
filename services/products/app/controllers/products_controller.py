@@ -24,7 +24,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.requests.product_request import (
+from common.database import get_db
+from common.middleware.permission import require_permission
+from common.models.product import Product
+from common.models.user import User
+
+from ..requests.product_request import (
     ProductDataResponse,
     ProductDataToastResponse,
     ProductIndexResponse,
@@ -32,10 +37,6 @@ from app.requests.product_request import (
     StoreProductRequest,
     UpdateProductRequest,
 )
-from common.database import get_db
-from common.middleware.permission import require_permission
-from common.models.product import Product
-from common.models.user import User
 
 router = APIRouter(prefix="/admin/products", tags=["admin:products"])
 

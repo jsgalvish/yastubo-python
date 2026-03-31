@@ -1,9 +1,10 @@
 """
-Punto de entrada de la aplicación FastAPI.
+Punto de entrada unificado — test harness.
 
-Cambios aplicados por auditoría de skills:
-  - HIGH-3: CORS middleware para permitir requests cross-origin
-  - HIGH-4: Lifespan context manager para startup/shutdown
+Agrega los routers de TODOS los microservicios en una sola FastAPI app
+para que los tests puedan validar todos los endpoints en un solo proceso.
+
+En producción, cada microservicio corre su propio main.py via Docker.
 """
 
 from __future__ import annotations
@@ -23,33 +24,63 @@ from app.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
-from app.http.controllers.admin import acl_controller as admin_acl
-from app.http.controllers.admin import business_units_controller as admin_business_units
-from app.http.controllers.admin import capitated_batch_controller as admin_capitated_batches
-from app.http.controllers.admin import capitated_controller as admin_capitated
-from app.http.controllers.admin import companies_controller as admin_companies
-from app.http.controllers.admin import config_controller as admin_config
-from app.http.controllers.admin import countries_controller as admin_countries
-from app.http.controllers.admin import coverages_controller as admin_coverages
-from app.http.controllers.admin import locale_controller as admin_locale
-from app.http.controllers.admin import plan_version_countries_controller as admin_pv_countries
-from app.http.controllers.admin import plan_versions_controller as admin_plan_versions
-from app.http.controllers.admin import products_controller as admin_products
-from app.http.controllers.admin import regalias_controller as admin_regalias
-from app.http.controllers.admin import templates_controller as admin_templates
-from app.http.controllers.admin import users_controller as admin_users
-from app.http.controllers.admin import zones_controller as admin_zones
-from app.http.controllers.auth import login_controller, password_controller
-from app.http.controllers.public import capitated_contract_pdf_controller as public_capitated_pdf
-from app.http.controllers.public import file_controller as public_files
+
+# ── Audit service routers ───────────────────────────────────────────────────
+from services.audit.app.controllers.audit_controller import router as audit_router
+from services.auth.app.controllers.acl_controller import router as acl_router
+
+# ── Auth service routers ────────────────────────────────────────────────────
+from services.auth.app.controllers.login_controller import router as login_router
+from services.auth.app.controllers.password_controller import router as password_router
+from services.auth.app.controllers.users_controller import (
+    impersonate_router,
+)
+from services.auth.app.controllers.users_controller import (
+    router as users_router,
+)
+from services.capitados.app.controllers.business_units_controller import (
+    router as business_units_router,
+)
+from services.capitados.app.controllers.capitated_batch_controller import (
+    router as capitated_batch_router,
+)
+from services.capitados.app.controllers.capitated_controller import router as capitated_router
+
+# ── Capitados service routers ───────────────────────────────────────────────
+from services.capitados.app.controllers.companies_controller import router as companies_router
+from services.capitados.app.controllers.regalias_controller import router as regalias_router
+from services.documents.app.controllers.capitated_contract_pdf_controller import (
+    router as capitated_pdf_router,
+)
+from services.documents.app.controllers.file_controller import router as files_router
+
+# ── Documents service routers ───────────────────────────────────────────────
+from services.documents.app.controllers.templates_controller import router as templates_router
+from services.products.app.controllers.config_controller import router as config_router
+from services.products.app.controllers.countries_controller import router as countries_router
+from services.products.app.controllers.coverages_controller import (
+    catalog_router as coverages_catalog_router,
+)
+from services.products.app.controllers.coverages_controller import (
+    pv_cov_router,
+)
+from services.products.app.controllers.locale_controller import router as locale_router
+from services.products.app.controllers.plan_version_countries_controller import (
+    pv_country_router,
+    pv_repatriation_router,
+)
+from services.products.app.controllers.plan_versions_controller import (
+    router as plan_versions_router,
+)
+
+# ── Products service routers ────────────────────────────────────────────────
+from services.products.app.controllers.products_controller import router as products_router
+from services.products.app.controllers.zones_controller import router as zones_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup / shutdown de la aplicación."""
-    # Startup: aquí se pueden inicializar pools, caches, etc.
     yield
-    # Shutdown: aquí se pueden cerrar conexiones, limpiar recursos.
     from app.database import engine
 
     await engine.dispose()
@@ -62,7 +93,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — permite requests desde el frontend (ajustar origins en producción)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if settings.app_debug else [],
@@ -71,39 +101,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(login_controller.router)
-app.include_router(password_controller.router)
-app.include_router(admin_users.router)
-app.include_router(admin_users.impersonate_router)
-app.include_router(admin_acl.router)
-app.include_router(admin_countries.router)
-app.include_router(admin_zones.router)
-app.include_router(admin_companies.router)
-app.include_router(admin_products.router)
-app.include_router(admin_plan_versions.router)
-app.include_router(admin_coverages.catalog_router)
-app.include_router(admin_coverages.pv_cov_router)
-app.include_router(admin_pv_countries.pv_country_router)
-app.include_router(admin_pv_countries.pv_repatriation_router)
-app.include_router(admin_regalias.router)
-app.include_router(admin_business_units.router)
-app.include_router(admin_capitated.router)
-app.include_router(admin_capitated_batches.router)
-app.include_router(admin_templates.router)
-app.include_router(admin_config.router)
-app.include_router(admin_locale.router)
+# ── Auth ────────────────────────────────────────────────────────────────────
+app.include_router(login_router)
+app.include_router(password_router)
+app.include_router(users_router)
+app.include_router(impersonate_router)
+app.include_router(acl_router)
 
-# ── Public routes (no auth) ──────────────────────────────────────────────────
-app.include_router(public_capitated_pdf.router)
-app.include_router(public_files.router)
+# ── Products ────────────────────────────────────────────────────────────────
+app.include_router(countries_router)
+app.include_router(zones_router)
+app.include_router(products_router)
+app.include_router(plan_versions_router)
+app.include_router(coverages_catalog_router)
+app.include_router(pv_cov_router)
+app.include_router(pv_country_router)
+app.include_router(pv_repatriation_router)
+app.include_router(config_router)
+app.include_router(locale_router)
 
-# ── Static files (email assets, etc.) ───────────────────────────────────────
+# ── Documents ───────────────────────────────────────────────────────────────
+app.include_router(templates_router)
+app.include_router(capitated_pdf_router)
+app.include_router(files_router)
+
+# ── Capitados ───────────────────────────────────────────────────────────────
+app.include_router(companies_router)
+app.include_router(capitated_router)
+app.include_router(capitated_batch_router)
+app.include_router(business_units_router)
+app.include_router(regalias_router)
+
+# ── Audit ───────────────────────────────────────────────────────────────────
+app.include_router(audit_router)
+
+# ── Static files ────────────────────────────────────────────────────────────
 _static_dir = Path(__file__).resolve().parent.parent / "resources" / "static"
 if _static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
-# ── Exception handlers ───────────────────────────────────────────────────────
+# ── Exception handlers ──────────────────────────────────────────────────────
 
 
 @app.exception_handler(RequestNotFoundException)

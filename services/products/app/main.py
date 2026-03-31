@@ -16,17 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.controllers.config_controller import router as config_router
-from app.controllers.countries_controller import router as countries_router
-from app.controllers.coverages_controller import catalog_router, pv_cov_router
-from app.controllers.locale_controller import router as locale_router
-from app.controllers.plan_version_countries_controller import (
-    pv_country_router,
-    pv_repatriation_router,
-)
-from app.controllers.plan_versions_controller import router as plan_versions_router
-from app.controllers.products_controller import router as products_router
-from app.controllers.zones_controller import router as zones_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -34,6 +23,18 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
+
+from .controllers.config_controller import router as config_router
+from .controllers.countries_controller import router as countries_router
+from .controllers.coverages_controller import catalog_router, pv_cov_router
+from .controllers.locale_controller import router as locale_router
+from .controllers.plan_version_countries_controller import (
+    pv_country_router,
+    pv_repatriation_router,
+)
+from .controllers.plan_versions_controller import router as plan_versions_router
+from .controllers.products_controller import router as products_router
+from .controllers.zones_controller import router as zones_router
 
 
 @asynccontextmanager

@@ -25,16 +25,17 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.requests.geo_request import (
-    StoreZoneRequest,
-    UpdateZoneRequest,
-)
 from common.database import get_db
 from common.middleware.auth import get_admin_user
 from common.models.country import Country
 from common.models.user import User
 from common.models.zone import Zone, country_zone
 from config.continents import CONTINENTS
+
+from ..requests.geo_request import (
+    StoreZoneRequest,
+    UpdateZoneRequest,
+)
 
 router = APIRouter(prefix="/admin/zones", tags=["admin:zones"])
 
