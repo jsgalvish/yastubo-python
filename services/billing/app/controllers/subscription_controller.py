@@ -54,6 +54,11 @@ class CreateSubscriptionRequest(BaseModel):
     referral_code: str | None = None
 
 
+class CheckoutSessionOut(BaseModel):
+    checkout_url: str
+    session_id: str
+
+
 class SubscriptionAdminOut(BaseModel):
     id: int
     user_id: int
@@ -191,6 +196,149 @@ async def create_subscription(
         plan_name=sub.plan_name,
         amount=sub.amount_cents / 100,
         currency=sub.currency,
+        referral_code=sub.referral_code,
+        stripe_subscription_id=sub.stripe_subscription_id,
+    )
+
+
+@router.post("/customer/subscription/checkout", response_model=CheckoutSessionOut)
+async def create_checkout(
+    body: CreateSubscriptionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CheckoutSessionOut:
+    """Crea una sesión de Stripe Checkout para suscripción con tarjeta."""
+    # Check existing
+    existing = (await db.execute(
+        select(Subscription).where(
+            Subscription.user_id == current_user.id,
+            Subscription.status.in_(["active", "past_due"]),
+        )
+    )).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=422, detail="Ya tienes una suscripción activa.")
+
+    # Generate referral code for this user
+    ref_code = f"REF-{uuid.uuid4().hex[:8].upper()}"
+
+    # Save pending subscription
+    sub = Subscription()
+    sub.user_id = current_user.id
+    sub.status = "pending"
+    sub.plan_name = "Yastubo - Repatriación Funeraria"
+    sub.amount_cents = 1499
+    sub.currency = "usd"
+    sub.referral_code = ref_code
+    if body.referral_code:
+        referrer = (await db.execute(
+            select(Subscription).where(Subscription.referral_code == body.referral_code)
+        )).scalar_one_or_none()
+        if referrer:
+            sub.referred_by_user_id = referrer.user_id
+    db.add(sub)
+    await db.commit()
+    await db.refresh(sub)
+
+    # Create Stripe Checkout Session
+    base_url = os.getenv("APP_URL", "http://localhost:5173")
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            payment_method_types=["card"],
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            customer_email=current_user.email,
+            success_url=f"{base_url}/customer/subscriptions?success=true&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/customer/subscriptions?cancelled=true",
+            metadata={
+                "user_id": str(current_user.id),
+                "subscription_id": str(sub.id),
+            },
+        )
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=502, detail=f"Error con Stripe: {str(e)}")
+
+    return CheckoutSessionOut(checkout_url=session.url, session_id=session.id)
+
+
+@router.post("/customer/subscription/sync")
+async def sync_subscription(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SubscriptionStatusOut:
+    """Sincroniza el estado de la suscripción con Stripe (llamar después de Checkout)."""
+    sub = (await db.execute(
+        select(Subscription)
+        .where(Subscription.user_id == current_user.id)
+        .order_by(Subscription.id.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+
+    if sub and not sub.stripe_subscription_id:
+        # Find Stripe customer by email and link subscription
+        try:
+            customers = stripe.Customer.list(email=current_user.email, limit=1)
+            if customers.data:
+                stripe_cust = customers.data[0]
+                sub.stripe_customer_id = stripe_cust.id
+                subs = stripe.Subscription.list(customer=stripe_cust.id, limit=1)
+                if subs.data:
+                    stripe_sub_obj = subs.data[0]
+                    sub.stripe_subscription_id = stripe_sub_obj.id
+                    sub.stripe_price_id = stripe_sub_obj["items"]["data"][0]["price"]["id"] if stripe_sub_obj["items"]["data"] else None
+                    await db.commit()
+        except stripe.StripeError:
+            pass
+
+    if not sub:
+        return SubscriptionStatusOut(status="none")
+
+    # Sync with Stripe
+    if sub.stripe_subscription_id:
+        try:
+            stripe_sub = stripe.Subscription.retrieve(sub.stripe_subscription_id)
+            stripe_status = stripe_sub.get("status") if isinstance(stripe_sub, dict) else getattr(stripe_sub, "status", None)
+            sub.status = {
+                "active": Subscription.STATUS_ACTIVE,
+                "past_due": Subscription.STATUS_PAST_DUE,
+                "canceled": Subscription.STATUS_CANCELLED,
+                "incomplete": "pending",
+                "trialing": Subscription.STATUS_ACTIVE,
+            }.get(stripe_status or "", sub.status)
+
+            period_end = stripe_sub.get("current_period_end") if isinstance(stripe_sub, dict) else getattr(stripe_sub, "current_period_end", None)
+            period_start = stripe_sub.get("current_period_start") if isinstance(stripe_sub, dict) else getattr(stripe_sub, "current_period_start", None)
+            if period_end:
+                sub.current_period_end = datetime.utcfromtimestamp(period_end)
+            if period_start:
+                sub.current_period_start = datetime.utcfromtimestamp(period_start)
+
+            await db.commit()
+        except stripe.StripeError:
+            pass
+
+    # Create referral commission if newly active
+    if sub.status == Subscription.STATUS_ACTIVE and sub.referred_by_user_id:
+        existing_commission = (await db.execute(
+            select(ReferralCommission).where(ReferralCommission.subscription_id == sub.id)
+        )).scalar_one_or_none()
+        if not existing_commission:
+            commission = ReferralCommission()
+            commission.referrer_user_id = sub.referred_by_user_id
+            commission.referred_user_id = current_user.id
+            commission.subscription_id = sub.id
+            commission.commission_amount_cents = int(sub.amount_cents * COMMISSION_PERCENT / 100)
+            commission.currency = "usd"
+            commission.status = "pending"
+            db.add(commission)
+            await db.commit()
+
+    return SubscriptionStatusOut(
+        id=sub.id,
+        status=sub.status,
+        plan_name=sub.plan_name,
+        amount=sub.amount_cents / 100 if sub.amount_cents else None,
+        currency=sub.currency,
+        current_period_end=str(sub.current_period_end) if sub.current_period_end else None,
         referral_code=sub.referral_code,
         stripe_subscription_id=sub.stripe_subscription_id,
     )
