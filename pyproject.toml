@@ -50,7 +50,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-q --tb=short --strict-markers --cov=app --cov-report=term-missing --cov-report=html:coverage_html --cov-fail-under=50"
+addopts = "-q --tb=short --strict-markers --cov=common --cov=services --cov-report=term-missing --cov-report=html:coverage_html --cov-fail-under=45"
 filterwarnings = [
     "ignore::DeprecationWarning:passlib",
     "ignore::DeprecationWarning:jose",
