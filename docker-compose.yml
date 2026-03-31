@@ -10,6 +10,11 @@ x-common-env: &common-env
   APP_ENV: ${APP_ENV:-local}
   APP_DEBUG: ${APP_DEBUG:-true}
   SESSION_LIFETIME_MINUTES: "480"
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-noreply@yastubo.com}
 
 x-service-base: &service-base
   build:
@@ -53,6 +58,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   # ── Microservices ───────────────────────────────────────────────────────────
 
@@ -105,6 +117,7 @@ services:
       <<: *common-env
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-price_1TGevjIpOl9JJO5pfRkAK1dJ}
     ports:
       - "8006:8006"
 

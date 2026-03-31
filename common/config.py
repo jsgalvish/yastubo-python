@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     db_user: str = "gfa"
     db_password: str = "gfa"
 
+    # SMTP
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@yastubo.com"
+
     # Auth
     secret_key: str = "change-me-in-production"
     bcrypt_rounds: int = 12

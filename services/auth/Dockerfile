@@ -16,6 +16,9 @@ COPY config/ /app/config/
 # Copy service
 COPY services/auth/app/ /app/app/
 
+# Copy email templates
+COPY resources/ /app/resources/
+
 # Install deps
 COPY services/auth/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
