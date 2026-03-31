@@ -23,7 +23,5 @@ class CompanyCommissionUser(TimestampMixin, Base):
     commission: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
 
     # Relaciones
-    company: Mapped[Company] = relationship(
-        "Company", back_populates="commission_users"
-    )
+    company: Mapped[Company] = relationship("Company", back_populates="commission_users")
     user: Mapped[User] = relationship("User")

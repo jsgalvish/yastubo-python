@@ -2,6 +2,7 @@
 Schemas Pydantic para endpoints de Capitados Lotes y Reportes Mensuales (admin).
 Equivale a CapitatedBatchController.php + CapitatedMonthlyReportController.php.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict

@@ -1,15 +1,15 @@
 from __future__ import annotations
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class AuditLogOut(BaseModel):
     id: int
     action: str
-    context_json: Optional[str] = None
-    target_user_id: Optional[int] = None
-    performed_by_user_id: Optional[int] = None
-    performed_by_name: Optional[str] = None
+    context_json: str | None = None
+    target_user_id: int | None = None
+    performed_by_user_id: int | None = None
+    performed_by_name: str | None = None
     created_at: str
 
 

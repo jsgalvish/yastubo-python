@@ -242,7 +242,9 @@ class UploadedFileService:
             original_name=source_file.original_name,
             mime_type=source_file.mime_type,
             size=source_file.size,
-            uploaded_by=uploaded_by_user_id if uploaded_by_user_id is not None else source_file.uploaded_by,
+            uploaded_by=uploaded_by_user_id
+            if uploaded_by_user_id is not None
+            else source_file.uploaded_by,
             meta=meta if meta is not None else source_file.meta,
         )
 
@@ -263,4 +265,6 @@ class UploadedFileService:
             if target.is_file():
                 target.unlink()
         except OSError:
-            logger.warning("No se pudo eliminar el archivo fisico: %s", relative_path, exc_info=True)
+            logger.warning(
+                "No se pudo eliminar el archivo fisico: %s", relative_path, exc_info=True
+            )

@@ -2,9 +2,10 @@
 Schemas Pydantic para endpoints de Templates (admin).
 Equivale a TemplateController.php + TemplateVersionController.php.
 """
+
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,8 +20,8 @@ class TemplateOut(BaseModel):
     name: str
     slug: str
     type: str
-    test_data_json: Optional[str] = None
-    active_template_version_id: Optional[int] = None
+    test_data_json: str | None = None
+    active_template_version_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,8 +30,8 @@ class VersionOut(BaseModel):
     id: int
     template_id: int
     name: str
-    content: Optional[str] = None
-    test_data_json: Optional[str] = None
+    content: str | None = None
+    test_data_json: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,11 +67,11 @@ class UpdateTemplateBasicRequest(BaseModel):
 
 
 class UpdateTestDataRequest(BaseModel):
-    test_data_json: Optional[str] = None
+    test_data_json: str | None = None
 
 
 class StoreVersionRequest(BaseModel):
-    content: Optional[str] = None
+    content: str | None = None
 
 
 class UpdateVersionBasicRequest(BaseModel):

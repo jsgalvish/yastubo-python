@@ -3,6 +3,7 @@ Schemas Pydantic para endpoints de Countries y Zones (admin).
 Equivale a StoreCountryRequest, UpdateCountryRequest,
 StoreZoneRequest, UpdateZoneRequest en PHP.
 """
+
 from __future__ import annotations
 
 import json as _json

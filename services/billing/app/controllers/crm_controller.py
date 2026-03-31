@@ -2,11 +2,14 @@
 CRM Controller — Zoho Integration
 Endpoints para visualizar y gestionar la sincronización con Zoho CRM.
 """
+
 from __future__ import annotations
 
+import contextlib
 import json
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.database import get_db
@@ -33,19 +36,19 @@ async def get_sync_log(
     data = []
     for row in rows:
         sync_data = {}
-        try:
+        with contextlib.suppress(json.JSONDecodeError, TypeError):
             sync_data = json.loads(row.sync_data) if row.sync_data else {}
-        except (json.JSONDecodeError, TypeError):
-            pass
-        data.append({
-            "id": row.id,
-            "entity_type": row.entity_type,
-            "local_id": row.local_id,
-            "zoho_module": row.zoho_module,
-            "zoho_record_id": row.zoho_record_id,
-            "sync_data": sync_data,
-            "synced_at": str(row.synced_at) if row.synced_at else None,
-        })
+        data.append(
+            {
+                "id": row.id,
+                "entity_type": row.entity_type,
+                "local_id": row.local_id,
+                "zoho_module": row.zoho_module,
+                "zoho_record_id": row.zoho_record_id,
+                "sync_data": sync_data,
+                "synced_at": str(row.synced_at) if row.synced_at else None,
+            }
+        )
 
     # Stats
     stats = {}
@@ -62,9 +65,9 @@ async def crm_dashboard(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Dashboard CRM con métricas de sincronización."""
-    result = await db.execute(text(
-        "SELECT entity_type, COUNT(*) as cnt FROM zoho_sync_log GROUP BY entity_type"
-    ))
+    result = await db.execute(
+        text("SELECT entity_type, COUNT(*) as cnt FROM zoho_sync_log GROUP BY entity_type")
+    )
     by_type = {row[0]: row[1] for row in result.all()}
 
     total = sum(by_type.values())

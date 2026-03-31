@@ -26,9 +26,7 @@ def create_access_token(
       exp  — timestamp de expiración
       + cualquier campo adicional pasado en extra_claims
     """
-    expire = datetime.now(UTC) + timedelta(
-        minutes=settings.session_lifetime_minutes
-    )
+    expire = datetime.now(UTC) + timedelta(minutes=settings.session_lifetime_minutes)
     payload: dict = {
         "sub": str(user_id),
         "realm": realm,

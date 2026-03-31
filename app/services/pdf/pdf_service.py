@@ -12,6 +12,7 @@ Dependencias en Windows (dev):
     Instalar GTK3 Runtime: https://github.com/nicoseddio/weasyprint-win/releases
     pip install weasyprint jinja2
 """
+
 from __future__ import annotations
 
 import os
@@ -58,4 +59,5 @@ def html_to_pdf(html: str, base_url: str | None = None) -> bytes:
 async def html_to_pdf_async(html: str, base_url: str | None = None) -> bytes:
     """Wrapper async que ejecuta html_to_pdf en un thread separado."""
     import asyncio
+
     return await asyncio.to_thread(html_to_pdf, html, base_url)

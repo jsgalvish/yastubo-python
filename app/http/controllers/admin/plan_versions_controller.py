@@ -25,6 +25,7 @@ Skills aplicados:
   - FastAPI: response models tipados, _current_user, type hints
   - Pydantic: Literal types, ConfigDict
 """
+
 from __future__ import annotations
 
 import json
@@ -80,9 +81,7 @@ async def _get_product(product_id: int, db: AsyncSession) -> Product:
     return product
 
 
-async def _get_version(
-    product_id: int, version_id: int, db: AsyncSession
-) -> PlanVersion:
+async def _get_version(product_id: int, version_id: int, db: AsyncSession) -> PlanVersion:
     result = await db.execute(
         select(PlanVersion).where(
             PlanVersion.id == version_id,
@@ -242,10 +241,19 @@ async def update(
     for field in fields:
         value = getattr(body, field)
         if value is not None or field in (
-            "country_id", "zone_id", "terms_file_es_id", "terms_file_en_id",
-            "max_entry_age", "max_renewal_age",
-            "wtime_suicide", "wtime_preexisting_conditions", "wtime_accident",
-            "price_1", "price_2", "price_3", "price_4",
+            "country_id",
+            "zone_id",
+            "terms_file_es_id",
+            "terms_file_en_id",
+            "max_entry_age",
+            "max_renewal_age",
+            "wtime_suicide",
+            "wtime_preexisting_conditions",
+            "wtime_accident",
+            "price_1",
+            "price_2",
+            "price_3",
+            "price_4",
         ):
             setattr(version, field, value)
 
@@ -314,10 +322,17 @@ async def clone(
 
     # Copiar campos configurables
     for field in (
-        "max_entry_age", "max_renewal_age",
-        "wtime_suicide", "wtime_preexisting_conditions", "wtime_accident",
-        "country_id", "zone_id",
-        "price_1", "price_2", "price_3", "price_4",
+        "max_entry_age",
+        "max_renewal_age",
+        "wtime_suicide",
+        "wtime_preexisting_conditions",
+        "wtime_accident",
+        "country_id",
+        "zone_id",
+        "price_1",
+        "price_2",
+        "price_3",
+        "price_4",
         "terms_html",
     ):
         setattr(new_version, field, getattr(source, field))
@@ -327,8 +342,7 @@ async def clone(
 
     # Clonar age surcharges
     surcharges_result = await db.execute(
-        select(PlanVersionAgeSurcharge)
-        .where(PlanVersionAgeSurcharge.plan_version_id == source.id)
+        select(PlanVersionAgeSurcharge).where(PlanVersionAgeSurcharge.plan_version_id == source.id)
     )
     for s in surcharges_result.scalars().all():
         clone_s = PlanVersionAgeSurcharge()
@@ -366,9 +380,7 @@ async def pdf_preview(
 
     version = await _get_version(product_id, version_id, db)
     product_r = await db.execute(
-        select(Product)
-        .options(selectinload(Product.company))
-        .where(Product.id == product_id)
+        select(Product).options(selectinload(Product.company)).where(Product.id == product_id)
     )
     product = product_r.scalar_one()
 
@@ -376,10 +388,8 @@ async def pdf_preview(
     pvc_r = await db.execute(
         select(PlanVersionCoverage)
         .options(
-            selectinload(PlanVersionCoverage.coverage)
-            .selectinload(Coverage.unit),
-            selectinload(PlanVersionCoverage.coverage)
-            .selectinload(Coverage.category),
+            selectinload(PlanVersionCoverage.coverage).selectinload(Coverage.unit),
+            selectinload(PlanVersionCoverage.coverage).selectinload(Coverage.category),
         )
         .where(PlanVersionCoverage.plan_version_id == version_id)
         .order_by(PlanVersionCoverage.sort_order)
@@ -405,20 +415,24 @@ async def pdf_preview(
                 "coverages": [],
             }
         unit = cov.unit
-        categories[cat_id]["coverages"].append({
-            "id": pivot.id,
-            "plan_version_id": pivot.plan_version_id,
-            "coverage_id": pivot.coverage_id,
-            "sort_order": pivot.sort_order,
-            "value_int": pivot.value_int,
-            "value_decimal": float(pivot.value_decimal) if pivot.value_decimal is not None else None,
-            "value_text": JsonDecode.get(pivot.value_text),
-            "notes": JsonDecode.get(pivot.notes),
-            "coverage_name": cov.name,
-            "coverage_description": cov.description,
-            "unit_name": unit.name if unit else None,
-            "unit_measure_type": unit.measure_type if unit else None,
-        })
+        categories[cat_id]["coverages"].append(
+            {
+                "id": pivot.id,
+                "plan_version_id": pivot.plan_version_id,
+                "coverage_id": pivot.coverage_id,
+                "sort_order": pivot.sort_order,
+                "value_int": pivot.value_int,
+                "value_decimal": float(pivot.value_decimal)
+                if pivot.value_decimal is not None
+                else None,
+                "value_text": JsonDecode.get(pivot.value_text),
+                "notes": JsonDecode.get(pivot.notes),
+                "coverage_name": cov.name,
+                "coverage_description": cov.description,
+                "unit_name": unit.name if unit else None,
+                "unit_measure_type": unit.measure_type if unit else None,
+            }
+        )
 
     coverage_categories = sorted(categories.values(), key=lambda c: c["sort_order"])
 
@@ -435,9 +449,7 @@ async def pdf_preview(
 
         # Buscar template de la empresa o el default "principal"
         if company.pdf_template_id:
-            t_r = await db.execute(
-                select(Template).where(Template.id == company.pdf_template_id)
-            )
+            t_r = await db.execute(select(Template).where(Template.id == company.pdf_template_id))
             template = t_r.scalar_one_or_none()
 
         if not template:
@@ -504,7 +516,7 @@ async def pdf_preview(
     data["branding"] = branding
 
     render_service = TemplateRenderService(db)
-    html = render_service.render_template(template_version.content, data)
+    html = render_service.render_template(template_version.content, data)  # type: ignore[arg-type]
     binary = await html_to_pdf_async(html)
 
     return Response(content=binary, media_type="application/pdf")
@@ -570,7 +582,9 @@ async def age_surcharges_index(
 # ─────────────────────────── AgeSurcharge: store ─────────────────────────────
 
 
-@router.post("/{version_id}/age-surcharges", response_model=AgeSurchargeDataResponse, status_code=201)
+@router.post(
+    "/{version_id}/age-surcharges", response_model=AgeSurchargeDataResponse, status_code=201
+)
 async def age_surcharges_store(
     product_id: int,
     version_id: int,
@@ -583,8 +597,8 @@ async def age_surcharges_store(
 
     surcharge = PlanVersionAgeSurcharge()
     surcharge.plan_version_id = version_id
-    surcharge.age_from = body.age_from
-    surcharge.age_to = body.age_to
+    surcharge.age_from = body.age_from  # type: ignore[assignment]
+    surcharge.age_to = body.age_to  # type: ignore[assignment]
     surcharge.surcharge_percent = body.surcharge_percent
 
     db.add(surcharge)
@@ -600,7 +614,9 @@ async def age_surcharges_store(
 # ─────────────────────────── AgeSurcharge: update ────────────────────────────
 
 
-@router.patch("/{version_id}/age-surcharges/{surcharge_id}", response_model=AgeSurchargeDataResponse)
+@router.patch(
+    "/{version_id}/age-surcharges/{surcharge_id}", response_model=AgeSurchargeDataResponse
+)
 async def age_surcharges_update(
     product_id: int,
     version_id: int,
@@ -627,7 +643,9 @@ async def age_surcharges_update(
 # ─────────────────────────── AgeSurcharge: destroy ───────────────────────────
 
 
-@router.delete("/{version_id}/age-surcharges/{surcharge_id}", response_model=AgeSurchargeDeleteResponse)
+@router.delete(
+    "/{version_id}/age-surcharges/{surcharge_id}", response_model=AgeSurchargeDeleteResponse
+)
 async def age_surcharges_destroy(
     product_id: int,
     version_id: int,

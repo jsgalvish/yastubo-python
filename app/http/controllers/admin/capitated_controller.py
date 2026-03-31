@@ -10,6 +10,7 @@ Endpoints:
 
 Permiso: admin.companies.manage (acceso a empresa)
 """
+
 from __future__ import annotations
 
 import math
@@ -87,7 +88,9 @@ def _contract_out(c: CapitatedContract) -> ContractOut:
         entry_age=c.entry_age,
         uuid=c.uuid,
         wtime_suicide_ends_at=str(c.wtime_suicide_ends_at) if c.wtime_suicide_ends_at else None,
-        wtime_preexisting_conditions_ends_at=str(c.wtime_preexisting_conditions_ends_at) if c.wtime_preexisting_conditions_ends_at else None,
+        wtime_preexisting_conditions_ends_at=str(c.wtime_preexisting_conditions_ends_at)
+        if c.wtime_preexisting_conditions_ends_at
+        else None,
         wtime_accident_ends_at=str(c.wtime_accident_ends_at) if c.wtime_accident_ends_at else None,
     )
 
@@ -183,18 +186,16 @@ async def persons_index(
     """Lista paginada de asegurados de una empresa."""
     await _get_company(company_id, db)
 
-    base_q = select(CapitatedProductInsured).where(
-        CapitatedProductInsured.company_id == company_id
-    )
+    base_q = select(CapitatedProductInsured).where(CapitatedProductInsured.company_id == company_id)
     if product_id is not None:
         base_q = base_q.where(CapitatedProductInsured.product_id == product_id)
 
     base_q = base_q.order_by(CapitatedProductInsured.full_name)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     return PersonIndexResponse(
         data=[_person_out(p) for p in items],
@@ -271,15 +272,15 @@ async def contracts_index(
             CapitatedProductInsured.document_number.ilike(like),
         ]
         if search.isdigit():
-            filters.append(CapitatedContract.id == int(search))
+            filters.append(CapitatedContract.id == int(search))  # type: ignore[arg-type]
         base_q = base_q.where(or_(*filters))
 
     base_q = base_q.order_by(CapitatedContract.id.desc())
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     return ContractIndexResponse(
         data=[_contract_out(c) for c in items],

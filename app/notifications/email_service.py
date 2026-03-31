@@ -68,7 +68,7 @@ async def send_email(
     # Construir mensaje
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = sender
+    msg["From"] = sender  # type: ignore[assignment]
     msg["To"] = to
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 

@@ -15,6 +15,7 @@ Cambios aplicados por auditoría de skills:
   - MED-7: _actor → _current_user
   - MED-8: type hints en helpers
 """
+
 from __future__ import annotations
 
 import json
@@ -71,9 +72,7 @@ def _build_product_out(product: Product) -> ProductOut:
 
 async def _get_product(product_id: int, db: AsyncSession) -> Product:
     """Carga un producto por ID. 404 si no existe."""
-    result = await db.execute(
-        select(Product).where(Product.id == product_id)
-    )
+    result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado.")
@@ -136,9 +135,7 @@ async def store(
     product = Product()
     product.name = json.dumps(body.name.model_dump(), ensure_ascii=False)
     product.description = (
-        json.dumps(body.description.model_dump(), ensure_ascii=False)
-        if body.description
-        else None
+        json.dumps(body.description.model_dump(), ensure_ascii=False) if body.description else None
     )
     product.product_type = body.product_type
     product.show_in_widget = body.show_in_widget

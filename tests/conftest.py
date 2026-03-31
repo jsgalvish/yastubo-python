@@ -6,6 +6,7 @@ para evitar duplicación entre archivos de test.
 
 Referencia skill: python-testing → conftest.py for shared fixtures.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib

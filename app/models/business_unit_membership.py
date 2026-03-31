@@ -22,16 +22,12 @@ class BusinessUnitMembership(TimestampMixin, Base):
     __tablename__ = "memberships_business_unit"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    business_unit_id: Mapped[int] = mapped_column(
-        ForeignKey("business_units.id"), nullable=False
-    )
+    business_unit_id: Mapped[int] = mapped_column(ForeignKey("business_units.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     role_id: Mapped[int | None] = mapped_column(ForeignKey("roles.id"), nullable=True)
     status: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Relaciones
-    business_unit: Mapped[BusinessUnit] = relationship(
-        "BusinessUnit", back_populates="memberships"
-    )
+    business_unit: Mapped[BusinessUnit] = relationship("BusinessUnit", back_populates="memberships")
     user: Mapped[User] = relationship("User", back_populates="business_unit_memberships")
     role: Mapped[Role | None] = relationship("Role")

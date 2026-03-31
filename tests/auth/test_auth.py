@@ -6,6 +6,7 @@ Estrategia:
 - TestAuthService: servicio con SQLite en memoria.
 - TestLoginEndpoints / TestPasswordEndpoints: endpoints vía httpx + SQLite.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -211,7 +212,9 @@ class TestLoginEndpoints:
         assert data["force_password_change"] is False
 
     @pytest.mark.asyncio
-    async def test_admin_login_password_incorrecto(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_admin_login_password_incorrecto(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         user = _make_user(email="login_wrongpwd@test.com", realm="admin")
         db_session.add(user)
         await db_session.commit()
@@ -267,7 +270,9 @@ class TestLoginEndpoints:
         assert r.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_login_force_password_change_en_token(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_login_force_password_change_en_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         user = _make_user(
             email="login_fpc@test.com",
             realm="admin",
@@ -337,7 +342,9 @@ class TestPasswordEndpoints:
         assert "Contraseña" in r.json()["status"]
 
     @pytest.mark.asyncio
-    async def test_cambio_password_actual_incorrecto(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_cambio_password_actual_incorrecto(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         user = _make_user(email="chpwd_wrong@test.com", realm="admin")
         db_session.add(user)
         await db_session.commit()
@@ -355,7 +362,9 @@ class TestPasswordEndpoints:
         assert r.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_cambio_password_no_coinciden(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_cambio_password_no_coinciden(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """password != password_confirmation debe fallar en validación de request."""
         user = _make_user(email="chpwd_mismatch@test.com", realm="admin")
         db_session.add(user)
@@ -426,7 +435,9 @@ class TestPasswordEndpoints:
         assert r.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_token_realm_cruzado_retorna_403(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_token_realm_cruzado_retorna_403(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Token de admin no puede acceder a endpoints de customer y viceversa."""
         admin = _make_user(email="cross_admin@test.com", realm="admin")
         customer = _make_user(email="cross_cust@test.com", realm="customer")
@@ -481,7 +492,7 @@ class TestPasswordHistory:
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "current_password": "TestPass123!",
-                "password": "TestPass123!",   # misma contraseña
+                "password": "TestPass123!",  # misma contraseña
                 "password_confirmation": "TestPass123!",
             },
         )
@@ -516,16 +527,14 @@ class TestPasswordHistory:
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "current_password": "NewPass456@",
-                "password": "TestPass123!",   # fue usada antes → rechazar
+                "password": "TestPass123!",  # fue usada antes → rechazar
                 "password_confirmation": "TestPass123!",
             },
         )
         assert r.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_puede_usar_password_nueva(
-        self, client: AsyncClient, db_session: AsyncSession
-    ):
+    async def test_puede_usar_password_nueva(self, client: AsyncClient, db_session: AsyncSession):
         """Contraseña completamente nueva debe aceptarse."""
         user = _make_user(email="hist_new@test.com", realm="admin")
         db_session.add(user)

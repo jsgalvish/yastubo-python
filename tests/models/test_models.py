@@ -6,6 +6,7 @@ Estrategia:
   definiciones de columnas (__table__.columns) y relaciones.
 - Con SQLite en memoria: crea el schema y verifica CRUD básico.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,6 +37,7 @@ from app.models.concerns.has_translatable_json import HasTranslatableJson
 
 # ─────────────────────────── Fixtures SQLite ────────────────────────────────
 
+
 @pytest_asyncio.fixture(scope="module")
 async def async_engine():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
@@ -54,6 +56,7 @@ async def db_session(async_engine):
 
 
 # ─────────────────────────── HasTranslatableJson ─────────────────────────────
+
 
 class TestHasTranslatableJson:
     def _make(self) -> HasTranslatableJson:
@@ -94,9 +97,11 @@ class TestHasTranslatableJson:
 
 # ─────────────────────────── HasDirectory ────────────────────────────────────
 
+
 class TestHasDirectory:
     def test_storage_path_base(self, tmp_path, monkeypatch):
         import app.config as cfg
+
         monkeypatch.setattr(cfg.settings, "app_storage_dir", str(tmp_path))
 
         class FakeModel(HasDirectory):
@@ -109,6 +114,7 @@ class TestHasDirectory:
 
     def test_storage_path_with_field(self, tmp_path, monkeypatch):
         import app.config as cfg
+
         monkeypatch.setattr(cfg.settings, "app_storage_dir", str(tmp_path))
 
         class FakeModel(HasDirectory):
@@ -123,10 +129,12 @@ class TestHasDirectory:
 
 # ─────────────────────────── User ────────────────────────────────────────────
 
+
 class TestUserModel:
     def test_constants(self):
         assert User.REALM_ADMIN if hasattr(User, "REALM_ADMIN") else True
         from app.models.user import REALM_ADMIN, REALM_CUSTOMER, STATUS_ACTIVE
+
         assert REALM_ADMIN == "admin"
         assert REALM_CUSTOMER == "customer"
         assert STATUS_ACTIVE == "active"
@@ -173,6 +181,7 @@ class TestUserModel:
 
 # ─────────────────────────── Role ────────────────────────────────────────────
 
+
 class TestRoleModel:
     def test_tablename(self):
         assert Role.__tablename__ == "roles"
@@ -202,6 +211,7 @@ class TestRoleModel:
 
 # ─────────────────────────── Product ─────────────────────────────────────────
 
+
 class TestProductModel:
     def test_tablename(self):
         assert Product.__tablename__ == "products"
@@ -228,6 +238,7 @@ class TestProductModel:
 
 
 # ─────────────────────────── PlanVersion ─────────────────────────────────────
+
 
 class TestPlanVersionModel:
     def test_tablename(self):
@@ -256,6 +267,7 @@ class TestPlanVersionModel:
 
 # ─────────────────────────── UnitOfMeasure ───────────────────────────────────
 
+
 class TestUnitOfMeasureModel:
     def test_tablename(self):
         assert UnitOfMeasure.__tablename__ == "units_of_measure"
@@ -272,6 +284,7 @@ class TestUnitOfMeasureModel:
 
 
 # ─────────────────────────── BusinessUnit ────────────────────────────────────
+
 
 class TestBusinessUnitModel:
     def test_tablename(self):
@@ -297,6 +310,7 @@ class TestBusinessUnitModel:
 
 # ─────────────────────────── Template ────────────────────────────────────────
 
+
 class TestTemplateModel:
     def test_tablename(self):
         assert Template.__tablename__ == "templates"
@@ -312,6 +326,7 @@ class TestTemplateModel:
 
 # ─────────────────────────── CapitatedBatchLog ───────────────────────────────
 
+
 class TestCapitatedBatchLogModel:
     def test_tablename(self):
         assert CapitatedBatchLog.__tablename__ == "capitados_batch_logs"
@@ -323,12 +338,19 @@ class TestCapitatedBatchLogModel:
 
     def test_counter_columns_exist(self):
         cols = {c.name for c in CapitatedBatchLog.__table__.columns}
-        for col in ("total_rows", "total_applied", "total_rejected",
-                    "total_duplicated", "total_incongruences", "total_plan_errors"):
+        for col in (
+            "total_rows",
+            "total_applied",
+            "total_rejected",
+            "total_duplicated",
+            "total_incongruences",
+            "total_plan_errors",
+        ):
             assert col in cols, f"Missing: {col}"
 
 
 # ─────────────────────────── CapitatedVoidReason ─────────────────────────────
+
 
 class TestCapitatedVoidReasonModel:
     def test_tablename(self):
@@ -342,6 +364,7 @@ class TestCapitatedVoidReasonModel:
 
 # ─────────────────────────── File ────────────────────────────────────────────
 
+
 class TestFileModel:
     def test_tablename(self):
         assert File.__tablename__ == "files"
@@ -352,6 +375,7 @@ class TestFileModel:
 
     def test_local_path(self, monkeypatch, tmp_path):
         import app.config as cfg
+
         monkeypatch.setattr(cfg.settings, "app_storage_dir", str(tmp_path))
         f = File()
         f.path = "companies/1/logo.png"
@@ -360,6 +384,7 @@ class TestFileModel:
 
 
 # ─────────────────────────── ConfigItem ──────────────────────────────────────
+
 
 class TestConfigItemModel:
     def test_tablename(self):
@@ -385,6 +410,7 @@ class TestConfigItemModel:
 
 
 # ─────────────────────────── SQLite CRUD ─────────────────────────────────────
+
 
 class TestSQLiteCRUD:
     async def test_create_country(self, db_session: AsyncSession):

@@ -43,7 +43,7 @@ async def _do_login(
     await perm_service.load_permissions(user)
 
     roles_list = [r.name for r in getattr(user, "_roles_cache", [])]
-    perms_set = getattr(user, "_permissions_cache", set())
+    perms_set: set[str] = getattr(user, "_permissions_cache", set())
 
     token = create_access_token(
         user_id=user.id,

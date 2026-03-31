@@ -6,7 +6,7 @@ _current_realm_var: ContextVar[str | None] = ContextVar("current_realm", default
 
 
 class Realm:
-    ADMIN    = "admin"
+    ADMIN = "admin"
     CUSTOMER = "customer"
 
     # Clave del atributo en el Request (espeja PHP)

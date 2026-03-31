@@ -84,9 +84,7 @@ class PlanVersion(TimestampMixin, Base):
     )
 
     # Zona / País (scope general del plan)
-    zone_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("zones.id"), nullable=True
-    )
+    zone_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("zones.id"), nullable=True)
     country_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("countries.id"), nullable=True
     )
@@ -98,7 +96,8 @@ class PlanVersion(TimestampMixin, Base):
         "PlanVersionCoverage", back_populates="plan_version"
     )
     age_surcharges: Mapped[list[PlanVersionAgeSurcharge]] = relationship(
-        "PlanVersionAgeSurcharge", back_populates="plan_version",
+        "PlanVersionAgeSurcharge",
+        back_populates="plan_version",
         cascade="all, delete-orphan",
     )
     zone: Mapped[Zone | None] = relationship("Zone")
@@ -106,11 +105,15 @@ class PlanVersion(TimestampMixin, Base):
 
     # Many-to-many countries (con precio)
     countries: Mapped[list[Country]] = relationship(
-        "Country", secondary=plan_version_countries, lazy="selectin",
+        "Country",
+        secondary=plan_version_countries,
+        lazy="selectin",
     )
     # Many-to-many repatriation countries (sin precio)
     repatriation_countries: Mapped[list[Country]] = relationship(
-        "Country", secondary=plan_version_repatriation_countries, lazy="selectin",
+        "Country",
+        secondary=plan_version_repatriation_countries,
+        lazy="selectin",
     )
 
     # ─── Helpers ─────────────────────────────────────────────────────────────

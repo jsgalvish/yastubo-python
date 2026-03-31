@@ -26,8 +26,10 @@ class Coverage(HasTranslatableJson, TimestampMixin, Base):
     unit_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("units_of_measure.id"), nullable=True
     )
-    name: Mapped[str | None] = mapped_column(Text, nullable=True)         # JSON {"es":..., "en":...}
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+    description: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON {"es":..., "en":...}
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

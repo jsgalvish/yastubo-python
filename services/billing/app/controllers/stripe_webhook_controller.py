@@ -2,6 +2,7 @@
 Stripe Webhook Controller — Module F
 Procesa eventos de Stripe y actualiza estado de suscripciones.
 """
+
 from __future__ import annotations
 
 import os
@@ -43,6 +44,7 @@ async def stripe_webhook(request: Request) -> dict:
             raise HTTPException(status_code=400, detail="Firma de webhook inválida.")
     else:
         import json
+
         event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
 
     event_type = event.type
@@ -84,9 +86,14 @@ async def _handle_invoice_paid(db: AsyncSession, invoice: dict) -> None:
         sub.current_period_end = datetime.utcfromtimestamp(period_end)
 
     await db.commit()
-    await Audit.log(db, action="subscription.payment_succeeded", context={
-        "subscription_id": sub.id, "user_id": sub.user_id,
-    })
+    await Audit.log(
+        db,
+        action="subscription.payment_succeeded",
+        context={
+            "subscription_id": sub.id,
+            "user_id": sub.user_id,
+        },
+    )
 
 
 async def _handle_payment_failed(db: AsyncSession, invoice: dict) -> None:
@@ -101,9 +108,14 @@ async def _handle_payment_failed(db: AsyncSession, invoice: dict) -> None:
 
     sub.status = Subscription.STATUS_PAST_DUE
     await db.commit()
-    await Audit.log(db, action="subscription.payment_failed", context={
-        "subscription_id": sub.id, "user_id": sub.user_id,
-    })
+    await Audit.log(
+        db,
+        action="subscription.payment_failed",
+        context={
+            "subscription_id": sub.id,
+            "user_id": sub.user_id,
+        },
+    )
 
 
 async def _handle_subscription_deleted(db: AsyncSession, stripe_sub: dict) -> None:
@@ -115,9 +127,14 @@ async def _handle_subscription_deleted(db: AsyncSession, stripe_sub: dict) -> No
     sub.status = Subscription.STATUS_CANCELLED
     sub.canceled_at = datetime.utcnow()
     await db.commit()
-    await Audit.log(db, action="subscription.cancelled", context={
-        "subscription_id": sub.id, "user_id": sub.user_id,
-    })
+    await Audit.log(
+        db,
+        action="subscription.cancelled",
+        context={
+            "subscription_id": sub.id,
+            "user_id": sub.user_id,
+        },
+    )
 
 
 async def _handle_subscription_updated(db: AsyncSession, stripe_sub: dict) -> None:

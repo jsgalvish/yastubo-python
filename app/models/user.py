@@ -61,9 +61,7 @@ class User(HasDirectory, SoftDeleteMixin, TimestampMixin, Base):
 
     # Preferencias y auditoría
     locale: Mapped[str] = mapped_column(String(5), default="es", nullable=False)
-    timezone: Mapped[str] = mapped_column(
-        String(50), default="America/Santiago", nullable=False
-    )
+    timezone: Mapped[str] = mapped_column(String(50), default="America/Santiago", nullable=False)
     ui_settings_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_login_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)

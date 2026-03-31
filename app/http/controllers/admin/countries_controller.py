@@ -11,6 +11,7 @@ Endpoints:
 
 Permiso requerido: admin.countries.manage
 """
+
 from __future__ import annotations
 
 import json
@@ -127,16 +128,12 @@ async def store(
 ):
     """Crea un nuevo país."""
     # Unicidad iso2
-    existing = await db.execute(
-        select(Country).where(Country.iso2 == body.iso2)
-    )
+    existing = await db.execute(select(Country).where(Country.iso2 == body.iso2))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=422, detail="El código ISO2 ya existe.")
 
     # Unicidad iso3
-    existing = await db.execute(
-        select(Country).where(Country.iso3 == body.iso3)
-    )
+    existing = await db.execute(select(Country).where(Country.iso3 == body.iso3))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=422, detail="El código ISO3 ya existe.")
 

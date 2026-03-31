@@ -2,6 +2,7 @@
 Schemas Pydantic para endpoints de Capitados Core (admin).
 Equivale a CapitatedPersonController.php + CapitatedContractController.php.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict

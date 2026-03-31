@@ -54,9 +54,7 @@ class IpCountryService:
     # resolve_country
     # ------------------------------------------------------------------
 
-    async def resolve_country(
-        self, request: Request, only_active: bool = True
-    ) -> Country | None:
+    async def resolve_country(self, request: Request, only_active: bool = True) -> Country | None:
         """
         Resuelve el Country del request segun IP -> ISO2.
         Si no se puede resolver, usa el fallback ISO2 configurado.
@@ -192,9 +190,7 @@ class IpCountryService:
 
         country_any = None
         if iso2:
-            r = await self._db.execute(
-                select(Country).where(Country.iso2 == iso2.upper())
-            )
+            r = await self._db.execute(select(Country).where(Country.iso2 == iso2.upper()))
             country_any = r.scalar_one_or_none()
 
         return {

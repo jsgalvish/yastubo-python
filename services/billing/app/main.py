@@ -2,11 +2,13 @@
 Yastubo — Service: Billing
 Port: 8006
 """
+
 from __future__ import annotations
 
+import os
+import sys
 from contextlib import asynccontextmanager
 
-import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from fastapi import FastAPI, Request
@@ -14,6 +16,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app.controllers.connect_controller import router as connect_router
+from app.controllers.crm_controller import router as crm_router
+from app.controllers.stripe_webhook_controller import router as stripe_router
+from app.controllers.subscription_controller import router as subscription_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -21,21 +27,18 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
-from app.controllers.subscription_controller import router as subscription_router
-from app.controllers.stripe_webhook_controller import router as stripe_router
-from app.controllers.connect_controller import router as connect_router
-from app.controllers.crm_controller import router as crm_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
     from common.database import engine
+
     await engine.dispose()
 
 
 app = FastAPI(
-    title=f"Yastubo — Billing",
+    title="Yastubo — Billing",
     version="1.0.0",
     debug=settings.app_debug,
     lifespan=lifespan,
@@ -60,7 +63,10 @@ app.include_router(crm_router)
 
 @app.exception_handler(RequestNotFoundException)
 async def request_not_found_handler(request: Request, exc: RequestNotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context})
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context},
+    )
 
 
 @app.exception_handler(TokenException)
@@ -70,7 +76,10 @@ async def token_exception_handler(request: Request, exc: TokenException):
 
 @app.exception_handler(TransactionNotFoundException)
 async def transaction_not_found_handler(request: Request, exc: TransactionNotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context})
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context},
+    )
 
 
 @app.exception_handler(BaseAppException)

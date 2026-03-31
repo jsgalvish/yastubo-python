@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import math
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import JWTError
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from common.database import get_db
-from common.middleware.auth import _bearer, _UNAUTHORIZED
-from common.middleware.permission import require_permission, require_role
 from app.requests.user_request import (
     CreateUserRequest,
     PaginatedUsersOut,
@@ -23,6 +22,9 @@ from app.requests.user_request import (
     UserDetailOut,
     UserOut,
 )
+from common.database import get_db
+from common.middleware.auth import _UNAUTHORIZED, _bearer
+from common.middleware.permission import require_permission, require_role
 from common.models.permission import USER_MODEL_TYPE, model_has_roles
 from common.models.role import Role
 from common.models.staff_profile import StaffProfile
@@ -30,8 +32,6 @@ from common.models.user import User
 from common.services.permission_service import PermissionService
 from common.services.token_service import create_access_token, decode_token
 from common.support.audit import Audit
-from fastapi.security import HTTPAuthorizationCredentials
-from jose import JWTError
 
 router = APIRouter(prefix="/admin/users", tags=["admin:users"])
 impersonate_router = APIRouter(prefix="/admin", tags=["admin:users"])
@@ -75,9 +75,8 @@ def _validate_vendor_commissions(roles: list[str], data: dict) -> dict[str, str]
             errors["commission_regular_first_year_pct"] = "Obligatorio para vendedor regular."
         if data.get("commission_regular_renewal_pct") is None:
             errors["commission_regular_renewal_pct"] = "Obligatorio para vendedor regular."
-    if "vendedor_capitados" in roles:
-        if data.get("commission_capitados_pct") is None:
-            errors["commission_capitados_pct"] = "Obligatorio para vendedor capitados."
+    if "vendedor_capitados" in roles and data.get("commission_capitados_pct") is None:
+        errors["commission_capitados_pct"] = "Obligatorio para vendedor capitados."
     return errors
 
 
@@ -109,9 +108,7 @@ async def _sync_roles(db: AsyncSession, user: User, role_names: list[str]) -> No
                 await svc.assign_role(user, role)
 
 
-async def _load_roles_for_users(
-    db: AsyncSession, user_ids: list[int]
-) -> dict[int, list[str]]:
+async def _load_roles_for_users(db: AsyncSession, user_ids: list[int]) -> dict[int, list[str]]:
     """Carga los roles de múltiples usuarios en una sola query (evita N+1)."""
     if not user_ids:
         return {}
@@ -424,9 +421,7 @@ async def show(
     svc = PermissionService(db)
     role_names = [r.name for r in await svc.get_roles(user)]
 
-    profile_r = await db.execute(
-        select(StaffProfile).where(StaffProfile.user_id == user_id)
-    )
+    profile_r = await db.execute(select(StaffProfile).where(StaffProfile.user_id == user_id))
     staff_profile = profile_r.scalar_one_or_none()
 
     return _build_user_out(user, role_names, staff_profile)
@@ -493,16 +488,18 @@ async def update(
     user.status = body.status
 
     # Upsert staff_profile
-    profile_r = await db.execute(
-        select(StaffProfile).where(StaffProfile.user_id == user_id)
-    )
+    profile_r = await db.execute(select(StaffProfile).where(StaffProfile.user_id == user_id))
     staff_profile = profile_r.scalar_one_or_none()
     if staff_profile is None:
         staff_profile = StaffProfile(user_id=user_id)
         db.add(staff_profile)
 
-    staff_profile.work_phone = body.work_phone if body.work_phone is not None else staff_profile.work_phone
-    staff_profile.notes_admin = body.notes_admin if body.notes_admin is not None else staff_profile.notes_admin
+    staff_profile.work_phone = (
+        body.work_phone if body.work_phone is not None else staff_profile.work_phone
+    )
+    staff_profile.notes_admin = (
+        body.notes_admin if body.notes_admin is not None else staff_profile.notes_admin
+    )
     staff_profile.commission_regular_first_year_pct = body.commission_regular_first_year_pct
     staff_profile.commission_regular_renewal_pct = body.commission_regular_renewal_pct
     staff_profile.commission_capitados_pct = body.commission_capitados_pct
@@ -551,7 +548,7 @@ async def destroy(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
 
-    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_at = datetime.now(UTC)
     await Audit.log(
         action="user.deleted",
         context={"user_id": user_id, "email": user.email},

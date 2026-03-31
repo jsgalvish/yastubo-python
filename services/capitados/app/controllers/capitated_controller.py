@@ -10,6 +10,7 @@ Endpoints:
 
 Permiso: admin.companies.manage (acceso a empresa)
 """
+
 from __future__ import annotations
 
 import math
@@ -17,10 +18,7 @@ import math
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.capitated_request import (
     CapitatedProductsResponse,
     CompanyOut,
@@ -34,6 +32,8 @@ from app.requests.capitated_request import (
     PersonOut,
     ProductOut,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.capitated_contract import CapitatedContract
 from common.models.capitated_monthly_record import CapitatedMonthlyRecord
 from common.models.capitated_product_insured import CapitatedProductInsured
@@ -77,7 +77,9 @@ def _person_out(p: CapitatedProductInsured) -> PersonOut:
     )
 
 
-def _contract_out(c: CapitatedContract, person_map: dict | None = None, country_map: dict | None = None) -> ContractOut:
+def _contract_out(
+    c: CapitatedContract, person_map: dict | None = None, country_map: dict | None = None
+) -> ContractOut:
     person = (person_map or {}).get(c.person_id)
     countries = country_map or {}
     return ContractOut(
@@ -91,7 +93,9 @@ def _contract_out(c: CapitatedContract, person_map: dict | None = None, country_
         entry_age=c.entry_age,
         uuid=c.uuid,
         wtime_suicide_ends_at=str(c.wtime_suicide_ends_at) if c.wtime_suicide_ends_at else None,
-        wtime_preexisting_conditions_ends_at=str(c.wtime_preexisting_conditions_ends_at) if c.wtime_preexisting_conditions_ends_at else None,
+        wtime_preexisting_conditions_ends_at=str(c.wtime_preexisting_conditions_ends_at)
+        if c.wtime_preexisting_conditions_ends_at
+        else None,
         wtime_accident_ends_at=str(c.wtime_accident_ends_at) if c.wtime_accident_ends_at else None,
         document_number=person.document_number if person else None,
         full_name=person.full_name if person else None,
@@ -191,18 +195,16 @@ async def persons_index(
     """Lista paginada de asegurados de una empresa."""
     await _get_company(company_id, db)
 
-    base_q = select(CapitatedProductInsured).where(
-        CapitatedProductInsured.company_id == company_id
-    )
+    base_q = select(CapitatedProductInsured).where(CapitatedProductInsured.company_id == company_id)
     if product_id is not None:
         base_q = base_q.where(CapitatedProductInsured.product_id == product_id)
 
     base_q = base_q.order_by(CapitatedProductInsured.full_name)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     return PersonIndexResponse(
         data=[_person_out(p) for p in items],
@@ -285,9 +287,9 @@ async def contracts_index(
     base_q = base_q.order_by(CapitatedContract.id.desc())
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     # Enrich with person and country data
     person_ids = list({c.person_id for c in items})
@@ -299,10 +301,13 @@ async def contracts_index(
         )
         persons = list(persons_r.scalars().all())
         person_map = {p.id: p for p in persons}
-        country_ids = list({p.residence_country_id for p in persons if p.residence_country_id}
-                          | {p.repatriation_country_id for p in persons if p.repatriation_country_id})
+        country_ids = list(
+            {p.residence_country_id for p in persons if p.residence_country_id}
+            | {p.repatriation_country_id for p in persons if p.repatriation_country_id}
+        )
         if country_ids:
             import json as _json
+
             countries_r = await db.execute(
                 select(Country.id, Country.name).where(Country.id.in_(country_ids))
             )

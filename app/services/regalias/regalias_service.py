@@ -9,6 +9,7 @@ Concentra:
   - Validacion de ciclos usuario-usuario (DFS).
   - Validacion de redundancias ciclicas en jerarquia de unidades.
 """
+
 from __future__ import annotations
 
 import re
@@ -77,8 +78,7 @@ class RegaliasService:
                 raise HTTPException(
                     status_code=500,
                     detail=(
-                        f"APP_REGALIAS contiene un tipo de origen no soportado "
-                        f"por el backend: {p}"
+                        f"APP_REGALIAS contiene un tipo de origen no soportado por el backend: {p}"
                     ),
                 )
 
@@ -128,14 +128,10 @@ class RegaliasService:
                 select(User).where(User.id == source_id, User.realm == "admin")
             )
             if result.scalar_one_or_none() is None:
-                raise HTTPException(
-                    status_code=422, detail="Usuario origen no encontrado."
-                )
+                raise HTTPException(status_code=422, detail="Usuario origen no encontrado.")
 
         elif source_type == "unit":
-            result = await db.execute(
-                select(BusinessUnit).where(BusinessUnit.id == source_id)
-            )
+            result = await db.execute(select(BusinessUnit).where(BusinessUnit.id == source_id))
             if result.scalar_one_or_none() is None:
                 raise HTTPException(
                     status_code=422,
@@ -164,26 +160,23 @@ class RegaliasService:
 
         # Validar ciclos en relaciones usuario-usuario
         if source_type == "user" and await self._would_create_user_cycle(beneficiary_id, source_id):
-                raise HTTPException(
-                    status_code=422,
-                    detail=(
-                        "La relacion de regalias entre usuarios genera un "
-                        "ciclo y no es valida."
-                    ),
-                )
+            raise HTTPException(
+                status_code=422,
+                detail=("La relacion de regalias entre usuarios genera un ciclo y no es valida."),
+            )
 
         # Validar redundancias ciclicas en relaciones de unidades
         if source_type == "unit" and await self._would_create_unit_redundancy_cycle(
             beneficiary_id, source_id
         ):
-                raise HTTPException(
-                    status_code=422,
-                    detail=(
-                        "La unidad seleccionada genera una redundancia en la "
-                        "jerarquia de unidades para este beneficiario y no es "
-                        "valida."
-                    ),
-                )
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "La unidad seleccionada genera una redundancia en la "
+                    "jerarquia de unidades para este beneficiario y no es "
+                    "valida."
+                ),
+            )
 
         regalia = Regalia()
         regalia.beneficiary_user_id = beneficiary_id
@@ -197,9 +190,7 @@ class RegaliasService:
 
         return regalia
 
-    async def update_commission(
-        self, regalia: Regalia, commission: float | None
-    ) -> Regalia:
+    async def update_commission(self, regalia: Regalia, commission: float | None) -> Regalia:
         """
         Actualiza el porcentaje de comision de una Regalia.
         Aplica clamp 0-100 antes de guardar.
@@ -241,9 +232,7 @@ class RegaliasService:
     # Deteccion de ciclos usuario-usuario (DFS)
     # ------------------------------------------------------------------
 
-    async def _would_create_user_cycle(
-        self, beneficiary_id: int, source_id: int
-    ) -> bool:
+    async def _would_create_user_cycle(self, beneficiary_id: int, source_id: int) -> bool:
         """
         Verifica si al crear una relacion de regalia usuario-usuario
         beneficiary_id -> source_id se generaria un ciclo en el grafo.
@@ -302,9 +291,7 @@ class RegaliasService:
     # Deteccion de redundancias ciclicas en jerarquia de unidades
     # ------------------------------------------------------------------
 
-    async def _would_create_unit_redundancy_cycle(
-        self, beneficiary_id: int, unit_id: int
-    ) -> bool:
+    async def _would_create_unit_redundancy_cycle(self, beneficiary_id: int, unit_id: int) -> bool:
         """
         Verifica si al crear una regalia de unidad
         beneficiary_id -> unit_id (source_type = 'unit')
@@ -328,9 +315,7 @@ class RegaliasService:
                 Regalia.source_type == "unit",
             )
         )
-        existing_unit_ids = list(
-            {int(row[0]) for row in result.all() if row[0] is not None}
-        )
+        existing_unit_ids = list({int(row[0]) for row in result.all() if row[0] is not None})
 
         if not existing_unit_ids:
             return False
@@ -347,9 +332,7 @@ class RegaliasService:
             .options(selectinload(BusinessUnit.parent))
             .where(BusinessUnit.id.in_(all_ids))
         )
-        units_map: dict[int, BusinessUnit] = {
-            bu.id: bu for bu in units_result.scalars().all()
-        }
+        units_map: dict[int, BusinessUnit] = {bu.id: bu for bu in units_result.scalars().all()}
 
         candidate = units_map.get(unit_id)
         if candidate is None:

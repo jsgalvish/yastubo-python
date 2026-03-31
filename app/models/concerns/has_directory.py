@@ -26,7 +26,7 @@ class HasDirectory:
         base = os.path.join(
             settings.app_storage_dir,
             self.__tablename__,  # type: ignore[attr-defined]
-            str(self.id),        # type: ignore[attr-defined]
+            str(self.id),  # type: ignore[attr-defined]
         )
         if field:
             value = getattr(self, field, None)

@@ -8,6 +8,7 @@ Estrategia:
 - beneficiariesIndex: agrupado por beneficiario.
 - availableOriginsUsers / availableOriginsUnits: paginado con is_assigned.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib

@@ -15,27 +15,24 @@ Endpoints:
 
 Sin permiso explícito: solo requiere autenticación admin (get_admin_user).
 """
+
 from __future__ import annotations
 
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from common.database import get_db
-from common.models.user import User
-from common.middleware.auth import get_admin_user
 from app.requests.geo_request import (
-    CountryAvailableOut,
-    CountryForZoneOut,
     StoreZoneRequest,
     UpdateZoneRequest,
-    ZoneOut,
-    ZoneSimpleOut,
 )
+from common.database import get_db
+from common.middleware.auth import get_admin_user
 from common.models.country import Country
+from common.models.user import User
 from common.models.zone import Zone, country_zone
 from config.continents import CONTINENTS
 
@@ -290,9 +287,7 @@ async def _do_attach_country(zone_id: int, country_id: int, db: AsyncSession):
         )
     )
     if already.first() is None:
-        await db.execute(
-            country_zone.insert().values(zone_id=zone_id, country_id=country_id)
-        )
+        await db.execute(country_zone.insert().values(zone_id=zone_id, country_id=country_id))
         await db.commit()
 
     return {"message": "País añadido a la zona."}

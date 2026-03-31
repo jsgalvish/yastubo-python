@@ -1,34 +1,33 @@
 from __future__ import annotations
 
 import json as _json
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
-
 
 # ── Requests ──────────────────────────────────────────────────────────────────
 
 
 class StoreRoleRequest(BaseModel):
     name: str = Field(..., max_length=255)
-    label: Optional[dict] = None
-    scope: Optional[str] = Field(None, max_length=50)
+    label: dict | None = None
+    scope: str | None = Field(None, max_length=50)
 
 
 class UpdateRoleRequest(BaseModel):
-    name: Optional[str] = Field(None, max_length=255)
-    label: Optional[dict] = None
-    scope: Optional[str] = Field(None, max_length=50)
+    name: str | None = Field(None, max_length=255)
+    label: dict | None = None
+    scope: str | None = Field(None, max_length=50)
 
 
 class StorePermissionRequest(BaseModel):
     name: str = Field(..., max_length=255)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: str | None = Field(None, max_length=1000)
 
 
 class UpdatePermissionRequest(BaseModel):
-    name: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = Field(None, max_length=1000)
+    name: str | None = Field(None, max_length=255)
+    description: str | None = Field(None, max_length=1000)
 
 
 class ToggleAssignmentRequest(BaseModel):
@@ -44,9 +43,9 @@ class RoleOut(BaseModel):
     id: int
     name: str
     guard_name: str
-    scope: Optional[str] = None
-    level: Optional[int] = None
-    label: Optional[Any] = None
+    scope: str | None = None
+    level: int | None = None
+    label: Any | None = None
 
     model_config = {"from_attributes": True}
 
@@ -66,7 +65,7 @@ class PermissionOut(BaseModel):
     id: int
     name: str
     guard_name: str
-    description: Optional[str] = None
+    description: str | None = None
 
     model_config = {"from_attributes": True}
 

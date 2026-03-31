@@ -7,6 +7,7 @@ Estrategia:
 - Template CRUD: store, show, updateBasic, updateTestData, destroy, clone.
 - Version CRUD: store, show, updateBasic, updateTestData, activate, deactivate, clone, destroy.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
@@ -41,9 +42,13 @@ async def actor_token(async_engine):
     Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         actor = User(
-            realm="admin", email="templates_actor@test.com",
-            password=_hashed("Pass1!"), first_name="Tpl", last_name="Actor",
-            status="active", force_password_change=False,
+            realm="admin",
+            email="templates_actor@test.com",
+            password=_hashed("Pass1!"),
+            first_name="Tpl",
+            last_name="Actor",
+            status="active",
+            force_password_change=False,
         )
         db.add(actor)
         await db.flush()
@@ -91,7 +96,8 @@ class TestTemplateStore:
 
     async def test_crea_template(self, client, actor_token):
         r = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Contrato PDF", "slug": "contrato-pdf", "type": "pdf"},
         )
         assert r.status_code == 201
@@ -102,11 +108,13 @@ class TestTemplateStore:
 
     async def test_slug_duplicado_retorna_422(self, client, actor_token):
         await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Dup", "slug": "dup-slug", "type": "html"},
         )
         r = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Dup2", "slug": "dup-slug", "type": "html"},
         )
         assert r.status_code == 422
@@ -115,7 +123,8 @@ class TestTemplateStore:
 class TestTemplateShow:
     async def test_show_con_versiones(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Show Tpl", "slug": "show-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -133,39 +142,45 @@ class TestTemplateShow:
 class TestTemplateUpdate:
     async def test_update_basic(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Upd Tpl", "slug": "upd-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
 
         r = await client.patch(
-            f"{_BASE}/{tid}/basic", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/basic",
+            headers=_auth(actor_token),
             json={"name": "Updated", "slug": "upd-tpl-new"},
         )
         assert r.status_code == 200
 
     async def test_update_test_data(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "TD Tpl", "slug": "td-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
 
         r = await client.patch(
-            f"{_BASE}/{tid}/test-data", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/test-data",
+            headers=_auth(actor_token),
             json={"test_data_json": '{"key": "value"}'},
         )
         assert r.status_code == 200
 
     async def test_invalid_json_retorna_422(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Bad JSON", "slug": "bad-json", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
 
         r = await client.patch(
-            f"{_BASE}/{tid}/test-data", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/test-data",
+            headers=_auth(actor_token),
             json={"test_data_json": "not valid json"},
         )
         assert r.status_code == 422
@@ -174,7 +189,8 @@ class TestTemplateUpdate:
 class TestTemplateDestroy:
     async def test_soft_delete(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Del Tpl", "slug": "del-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -189,7 +205,8 @@ class TestTemplateDestroy:
 class TestTemplateClone:
     async def test_clone(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Clone Src", "slug": "clone-src", "type": "pdf"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -217,13 +234,15 @@ class TestTemplateIndex:
 class TestVersionCRUD:
     async def test_store_version(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "V Tpl", "slug": "v-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
 
         r = await client.post(
-            f"{_BASE}/{tid}/versions", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions",
+            headers=_auth(actor_token),
             json={"content": "<h1>Hello</h1>"},
         )
         assert r.status_code == 201
@@ -233,13 +252,15 @@ class TestVersionCRUD:
 
     async def test_show_version(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Show V Tpl", "slug": "show-v-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
 
         vr = await client.post(
-            f"{_BASE}/{tid}/versions", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions",
+            headers=_auth(actor_token),
             json={"content": "test"},
         )
         vid = vr.json()["data"]["version"]["id"]
@@ -250,7 +271,8 @@ class TestVersionCRUD:
 
     async def test_update_version_basic(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Upd V Tpl", "slug": "upd-v-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -259,7 +281,8 @@ class TestVersionCRUD:
         vid = vr.json()["data"]["version"]["id"]
 
         r = await client.patch(
-            f"{_BASE}/{tid}/versions/{vid}/basic", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions/{vid}/basic",
+            headers=_auth(actor_token),
             json={"name": "Renamed", "content": "<p>Updated</p>"},
         )
         assert r.status_code == 200
@@ -268,7 +291,8 @@ class TestVersionCRUD:
 class TestVersionActivation:
     async def test_activate_and_deactivate(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Act Tpl", "slug": "act-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -278,7 +302,8 @@ class TestVersionActivation:
 
         # Activate
         r = await client.post(
-            f"{_BASE}/{tid}/versions/{vid}/activate", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions/{vid}/activate",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 200
 
@@ -288,13 +313,15 @@ class TestVersionActivation:
 
         # Deactivate
         r2 = await client.post(
-            f"{_BASE}/{tid}/versions/{vid}/deactivate", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions/{vid}/deactivate",
+            headers=_auth(actor_token),
         )
         assert r2.status_code == 200
 
     async def test_deactivate_non_active_retorna_422(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Deact Tpl", "slug": "deact-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -303,7 +330,8 @@ class TestVersionActivation:
         vid = vr.json()["data"]["version"]["id"]
 
         r = await client.post(
-            f"{_BASE}/{tid}/versions/{vid}/deactivate", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions/{vid}/deactivate",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 422
 
@@ -311,7 +339,8 @@ class TestVersionActivation:
 class TestVersionDelete:
     async def test_delete_version(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Del V Tpl", "slug": "del-v-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -324,7 +353,8 @@ class TestVersionDelete:
 
     async def test_delete_active_retorna_422(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Del Act Tpl", "slug": "del-act-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
@@ -341,19 +371,22 @@ class TestVersionDelete:
 class TestVersionClone:
     async def test_clone_version(self, client, actor_token):
         cr = await client.post(
-            _BASE, headers=_auth(actor_token),
+            _BASE,
+            headers=_auth(actor_token),
             json={"name": "Clone V Tpl", "slug": "clone-v-tpl", "type": "html"},
         )
         tid = cr.json()["data"]["template"]["id"]
 
         vr = await client.post(
-            f"{_BASE}/{tid}/versions", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions",
+            headers=_auth(actor_token),
             json={"content": "<p>Original</p>"},
         )
         vid = vr.json()["data"]["version"]["id"]
 
         r = await client.post(
-            f"{_BASE}/{tid}/versions/{vid}/clone", headers=_auth(actor_token),
+            f"{_BASE}/{tid}/versions/{vid}/clone",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 201
         clone = r.json()["data"]["version"]

@@ -18,9 +18,7 @@ class BusinessUnitCommissionUser(TimestampMixin, Base):
     __tablename__ = "business_unit_commission_users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    business_unit_id: Mapped[int] = mapped_column(
-        ForeignKey("business_units.id"), nullable=False
-    )
+    business_unit_id: Mapped[int] = mapped_column(ForeignKey("business_units.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     commission: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
 

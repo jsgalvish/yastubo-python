@@ -25,6 +25,7 @@ Endpoints Version:
 
 Permiso: admin.templates.edit
 """
+
 from __future__ import annotations
 
 import json
@@ -85,10 +86,7 @@ def _version_out(v: TemplateVersion) -> VersionOut:
 
 
 async def _get_template(tid: int, db: AsyncSession) -> Template:
-    r = await db.execute(
-        select(Template)
-        .where(Template.id == tid, Template.deleted_at.is_(None))
-    )
+    r = await db.execute(select(Template).where(Template.id == tid, Template.deleted_at.is_(None)))
     t = r.scalar_one_or_none()
     if t is None:
         raise HTTPException(status_code=404, detail="Plantilla no encontrada.")
@@ -140,9 +138,7 @@ async def index(
 ) -> TemplateIndexResponse:
     """Lista todas las plantillas activas."""
     r = await db.execute(
-        select(Template)
-        .where(Template.deleted_at.is_(None))
-        .order_by(Template.name)
+        select(Template).where(Template.deleted_at.is_(None)).order_by(Template.name)
     )
     return TemplateIndexResponse(data=[_template_out(t) for t in r.scalars().all()])
 
@@ -188,10 +184,12 @@ async def show(
         .order_by(TemplateVersion.id)
     )
 
-    return TemplateShowResponse(data={
-        "template": _template_out(t).model_dump(),
-        "versions": [_version_out(v).model_dump() for v in versions_r.scalars().all()],
-    })
+    return TemplateShowResponse(
+        data={
+            "template": _template_out(t).model_dump(),
+            "versions": [_version_out(v).model_dump() for v in versions_r.scalars().all()],
+        }
+    )
 
 
 @router.patch("/{template_id}/basic", response_model=dict)
@@ -245,6 +243,7 @@ async def destroy(
     """Soft-delete de una plantilla."""
     t = await _get_template(template_id, db)
     from datetime import datetime
+
     t.deleted_at = datetime.now(UTC)
     await db.commit()
     return {"toast": {"type": "success", "message": "Plantilla eliminada."}}
@@ -408,7 +407,11 @@ async def deactivate(
     return {"toast": {"type": "success", "message": "Versión desactivada."}}
 
 
-@router.post("/{template_id}/versions/{version_id}/clone", response_model=VersionDataResponse, status_code=201)
+@router.post(
+    "/{template_id}/versions/{version_id}/clone",
+    response_model=VersionDataResponse,
+    status_code=201,
+)
 async def clone_version(
     template_id: int,
     version_id: int,
@@ -474,7 +477,7 @@ async def preview_version_pdf(
 
     render_service = TemplateRenderService(db)
     data = await render_service.build_merged_data(t, v)
-    html = render_service.render_template(v.content, data)
+    html = render_service.render_template(v.content, data)  # type: ignore[arg-type]
     binary = await html_to_pdf_async(html)
 
     return Response(content=binary, media_type="application/pdf")
@@ -499,7 +502,7 @@ async def preview_active_pdf(
 
     render_service = TemplateRenderService(db)
     data = await render_service.build_merged_data(t, v)
-    html = render_service.render_template(v.content, data)
+    html = render_service.render_template(v.content, data)  # type: ignore[arg-type]
     binary = await html_to_pdf_async(html)
 
     return Response(content=binary, media_type="application/pdf")

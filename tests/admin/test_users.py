@@ -7,6 +7,7 @@ Estrategia:
 - Commit en fixtures de setup (necesario para que el client vea los datos).
 - Cada test que crea datos usa emails únicos para evitar colisiones.
 """
+
 from __future__ import annotations
 
 from datetime import UTC
@@ -125,9 +126,7 @@ class TestUserIndex:
         assert r.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_lista_vacia_retorna_paginacion(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_lista_vacia_retorna_paginacion(self, client: AsyncClient, actor_token: str):
         r = await client.get("/admin/users", headers=_auth(actor_token))
         assert r.status_code == 200
         body = r.json()
@@ -168,9 +167,7 @@ class TestUserIndex:
         assert "customer_hidden@admintest.com" not in emails
 
     @pytest.mark.asyncio
-    async def test_excluye_soft_deleted(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_excluye_soft_deleted(self, client: AsyncClient, actor_token: str, async_engine):
         from datetime import datetime
 
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
@@ -185,9 +182,7 @@ class TestUserIndex:
         assert "deleted_hidden@admintest.com" not in emails
 
     @pytest.mark.asyncio
-    async def test_filtro_status(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_filtro_status(self, client: AsyncClient, actor_token: str, async_engine):
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             active = _make_user(email="flt_active@admintest.com", status="active")
@@ -204,26 +199,20 @@ class TestUserIndex:
         assert "flt_active@admintest.com" not in emails
 
     @pytest.mark.asyncio
-    async def test_filtro_q(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_filtro_q(self, client: AsyncClient, actor_token: str, async_engine):
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             u = _make_user(email="buscar_xyz@admintest.com", first_name="Zorbaz")
             session.add(u)
             await session.commit()
 
-        r = await client.get(
-            "/admin/users", params={"q": "Zorba"}, headers=_auth(actor_token)
-        )
+        r = await client.get("/admin/users", params={"q": "Zorba"}, headers=_auth(actor_token))
         assert r.status_code == 200
         emails = [u["email"] for u in r.json()["data"]]
         assert "buscar_xyz@admintest.com" in emails
 
     @pytest.mark.asyncio
-    async def test_paginacion(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_paginacion(self, client: AsyncClient, actor_token: str):
         r = await client.get(
             "/admin/users", params={"per_page": 2, "page": 1}, headers=_auth(actor_token)
         )
@@ -313,12 +302,14 @@ class TestCreateUser:
         assert r.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_crear_usuario_minimo(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_crear_usuario_minimo(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/users",
-            json={"first_name": "Maria", "last_name": "García", "email": "create_min@admintest.com"},
+            json={
+                "first_name": "Maria",
+                "last_name": "García",
+                "email": "create_min@admintest.com",
+            },
             headers=_auth(actor_token),
         )
         assert r.status_code == 201
@@ -331,9 +322,7 @@ class TestCreateUser:
         assert body["staff_profile"] is None
 
     @pytest.mark.asyncio
-    async def test_sin_last_name_retorna_422(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_sin_last_name_retorna_422(self, client: AsyncClient, actor_token: str):
         """last_name es obligatorio (NOT NULL en MySQL)."""
         r = await client.post(
             "/admin/users",
@@ -343,9 +332,7 @@ class TestCreateUser:
         assert r.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_crear_con_todos_los_campos(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_crear_con_todos_los_campos(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/users",
             json={
@@ -366,9 +353,7 @@ class TestCreateUser:
         assert body["staff_profile"]["work_phone"] == "+56912345678"
 
     @pytest.mark.asyncio
-    async def test_email_duplicado_retorna_422(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_email_duplicado_retorna_422(self, client: AsyncClient, actor_token: str):
         payload = {"first_name": "Dup", "last_name": "Test", "email": "create_dup@admintest.com"}
         r1 = await client.post("/admin/users", json=payload, headers=_auth(actor_token))
         assert r1.status_code == 201
@@ -376,9 +361,7 @@ class TestCreateUser:
         assert r2.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_email_se_almacena_en_minusculas(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_email_se_almacena_en_minusculas(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/users",
             json={"first_name": "Up", "last_name": "Case", "email": "CREATE_UPPER@ADMINTEST.COM"},
@@ -418,9 +401,7 @@ class TestCreateUser:
         assert "commission_regular_first_year_pct" in detail
 
     @pytest.mark.asyncio
-    async def test_crear_con_rol(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_crear_con_rol(self, client: AsyncClient, actor_token: str, async_engine):
         from app.models.role import Role
 
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
@@ -474,9 +455,7 @@ class TestShowUser:
         assert body["staff_profile"]["work_phone"] == "+56999999999"
 
     @pytest.mark.asyncio
-    async def test_show_no_encontrado_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_show_no_encontrado_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.get("/admin/users/999999", headers=_auth(actor_token))
         assert r.status_code == 404
 
@@ -529,9 +508,7 @@ class TestUpdateUser:
         assert body["status"] == "suspended"
 
     @pytest.mark.asyncio
-    async def test_email_duplicado_falla(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_email_duplicado_falla(self, client: AsyncClient, actor_token: str, async_engine):
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             u1 = _make_user(email="upd_dup1@admintest.com")
@@ -554,9 +531,7 @@ class TestUpdateUser:
         assert r.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_upsert_staff_profile(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_upsert_staff_profile(self, client: AsyncClient, actor_token: str, async_engine):
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             u = _make_user(email="upd_profile@admintest.com")
@@ -582,9 +557,7 @@ class TestUpdateUser:
         assert body["staff_profile"]["notes_admin"] == "Nota de prueba"
 
     @pytest.mark.asyncio
-    async def test_sync_roles(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_sync_roles(self, client: AsyncClient, actor_token: str, async_engine):
         from app.models.role import Role
 
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
@@ -664,9 +637,7 @@ class TestDeleteUser:
         assert "del_list@admintest.com" not in emails
 
     @pytest.mark.asyncio
-    async def test_delete_no_encontrado_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_delete_no_encontrado_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.delete("/admin/users/999999", headers=_auth(actor_token))
         assert r.status_code == 404
 
@@ -719,9 +690,7 @@ class TestRestoreUser:
 
 class TestUpdateStatus:
     @pytest.mark.asyncio
-    async def test_cambiar_status(
-        self, client: AsyncClient, actor_token: str, async_engine
-    ):
+    async def test_cambiar_status(self, client: AsyncClient, actor_token: str, async_engine):
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             u = _make_user(email="status_ok@admintest.com", status="active")
@@ -756,9 +725,7 @@ class TestUpdateStatus:
         assert r.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_status_no_encontrado_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_status_no_encontrado_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.put(
             "/admin/users/999999/status",
             json={"status": "active"},

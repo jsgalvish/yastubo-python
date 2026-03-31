@@ -24,13 +24,9 @@ class Regalia(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     source_type: Mapped[str] = mapped_column(String(20), nullable=False)
     source_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    beneficiary_user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), nullable=False
-    )
+    beneficiary_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     commission: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
 
     # Relaciones
-    beneficiary: Mapped[User] = relationship(
-        "User", foreign_keys=[beneficiary_user_id]
-    )
+    beneficiary: Mapped[User] = relationship("User", foreign_keys=[beneficiary_user_id])
     # origin_user y origin_unit son polimórficos; se acceden por código según source_type

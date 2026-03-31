@@ -32,9 +32,7 @@ class StaffProfile(SoftDeleteMixin, TimestampMixin, Base):
     commission_regular_renewal_pct: Mapped[float | None] = mapped_column(
         Numeric(8, 4), nullable=True
     )
-    commission_capitados_pct: Mapped[float | None] = mapped_column(
-        Numeric(8, 4), nullable=True
-    )
+    commission_capitados_pct: Mapped[float | None] = mapped_column(Numeric(8, 4), nullable=True)
 
     # Relaciones
     user: Mapped[User] = relationship("User", back_populates="staff_profile")

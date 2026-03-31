@@ -8,6 +8,7 @@ Estrategia:
 - CRUD completo: index, store, show, update.
 - Reglas de negocio: consistencia tipo/empresa, inmutabilidad de tipo.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
@@ -109,7 +110,9 @@ class TestProductStore:
     """POST /admin/products"""
 
     async def test_sin_token_retorna_401(self, client):
-        r = await client.post("/admin/products", json={"name": {"es": "X"}, "product_type": "plan_regular"})
+        r = await client.post(
+            "/admin/products", json={"name": {"es": "X"}, "product_type": "plan_regular"}
+        )
         assert r.status_code == 401
 
     async def test_crea_producto_regular(self, client, actor_token):

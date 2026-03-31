@@ -10,6 +10,7 @@ Estrategia:
 - AgeSurcharges: index, store, update, destroy.
 - Reglas de negocio: activación desactiva otros, delete solo si deletable.
 """
+
 from __future__ import annotations
 
 import json

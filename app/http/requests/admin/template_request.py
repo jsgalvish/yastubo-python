@@ -2,6 +2,7 @@
 Schemas Pydantic para endpoints de Templates (admin).
 Equivale a TemplateController.php + TemplateVersionController.php.
 """
+
 from __future__ import annotations
 
 from typing import Literal

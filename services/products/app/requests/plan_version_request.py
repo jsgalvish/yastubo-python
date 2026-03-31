@@ -6,9 +6,10 @@ Skills aplicados:
   - Pydantic: Literal types, ConfigDict, schema separation
   - FastAPI: response models tipados
 """
+
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,23 +21,24 @@ PlanVersionStatus = Literal["inactive", "active", "archived"]
 
 class PlanVersionOut(BaseModel):
     """Representación de una versión de plan en respuestas API."""
+
     id: int
     product_id: int
     name: str
     status: str
-    max_entry_age: Optional[int] = None
-    max_renewal_age: Optional[int] = None
-    wtime_suicide: Optional[int] = None
-    wtime_preexisting_conditions: Optional[int] = None
-    wtime_accident: Optional[int] = None
-    country_id: Optional[int] = None
-    zone_id: Optional[int] = None
-    price_1: Optional[float] = None
-    price_2: Optional[float] = None
-    price_3: Optional[float] = None
-    price_4: Optional[float] = None
-    terms_file_es_id: Optional[int] = None
-    terms_file_en_id: Optional[int] = None
+    max_entry_age: int | None = None
+    max_renewal_age: int | None = None
+    wtime_suicide: int | None = None
+    wtime_preexisting_conditions: int | None = None
+    wtime_accident: int | None = None
+    country_id: int | None = None
+    zone_id: int | None = None
+    price_1: float | None = None
+    price_2: float | None = None
+    price_3: float | None = None
+    price_4: float | None = None
+    terms_file_es_id: int | None = None
+    terms_file_en_id: int | None = None
     can_be_activated: bool = True
     is_in_use: bool = False
     is_deletable: bool = True
@@ -66,39 +68,42 @@ class PlanVersionDeleteResponse(BaseModel):
 
 class StorePlanVersionRequest(BaseModel):
     """Request para crear una versión de plan."""
+
     name: str = Field(..., max_length=255)
 
 
 class ClonePlanVersionRequest(BaseModel):
     """Request para clonar una versión de plan."""
+
     name: str = Field(..., max_length=255)
 
 
 class UpdatePlanVersionRequest(BaseModel):
     """Request para actualizar una versión de plan (parcial)."""
-    name: Optional[str] = Field(None, max_length=255)
-    status: Optional[PlanVersionStatus] = None
-    max_entry_age: Optional[int] = Field(None, ge=0)
-    max_renewal_age: Optional[int] = Field(None, ge=0)
-    wtime_suicide: Optional[int] = Field(None, ge=0)
-    wtime_preexisting_conditions: Optional[int] = Field(None, ge=0)
-    wtime_accident: Optional[int] = Field(None, ge=0)
-    country_id: Optional[int] = None
-    zone_id: Optional[int] = None
-    price_1: Optional[float] = Field(None, ge=0)
-    price_2: Optional[float] = Field(None, ge=0)
-    price_3: Optional[float] = Field(None, ge=0)
-    price_4: Optional[float] = Field(None, ge=0)
-    terms_file_es_id: Optional[int] = None
-    terms_file_en_id: Optional[int] = None
+
+    name: str | None = Field(None, max_length=255)
+    status: PlanVersionStatus | None = None
+    max_entry_age: int | None = Field(None, ge=0)
+    max_renewal_age: int | None = Field(None, ge=0)
+    wtime_suicide: int | None = Field(None, ge=0)
+    wtime_preexisting_conditions: int | None = Field(None, ge=0)
+    wtime_accident: int | None = Field(None, ge=0)
+    country_id: int | None = None
+    zone_id: int | None = None
+    price_1: float | None = Field(None, ge=0)
+    price_2: float | None = Field(None, ge=0)
+    price_3: float | None = Field(None, ge=0)
+    price_4: float | None = Field(None, ge=0)
+    terms_file_es_id: int | None = None
+    terms_file_en_id: int | None = None
 
 
 # ─────────────────────────── Terms HTML ──────────────────────────────────────
 
 
 class TermsHtmlOut(BaseModel):
-    es: Optional[str] = None
-    en: Optional[str] = None
+    es: str | None = None
+    en: str | None = None
 
 
 class TermsHtmlDataResponse(BaseModel):
@@ -107,7 +112,7 @@ class TermsHtmlDataResponse(BaseModel):
 
 class UpdateTermsHtmlRequest(BaseModel):
     locale: Literal["es", "en"]
-    html: Optional[str] = None
+    html: str | None = None
 
 
 # ─────────────────────────── AgeSurcharge ────────────────────────────────────
@@ -116,9 +121,9 @@ class UpdateTermsHtmlRequest(BaseModel):
 class AgeSurchargeOut(BaseModel):
     id: int
     plan_version_id: int
-    age_from: Optional[int] = None
-    age_to: Optional[int] = None
-    surcharge_percent: Optional[float] = None
+    age_from: int | None = None
+    age_to: int | None = None
+    surcharge_percent: float | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -138,12 +143,12 @@ class AgeSurchargeDeleteResponse(BaseModel):
 
 
 class StoreAgeSurchargeRequest(BaseModel):
-    age_from: Optional[int] = Field(None, ge=0)
-    age_to: Optional[int] = Field(None, ge=0)
-    surcharge_percent: Optional[float] = None
+    age_from: int | None = Field(None, ge=0)
+    age_to: int | None = Field(None, ge=0)
+    surcharge_percent: float | None = None
 
 
 class UpdateAgeSurchargeRequest(BaseModel):
-    age_from: Optional[int] = Field(None, ge=0)
-    age_to: Optional[int] = Field(None, ge=0)
-    surcharge_percent: Optional[float] = None
+    age_from: int | None = Field(None, ge=0)
+    age_to: int | None = Field(None, ge=0)
+    surcharge_percent: float | None = None

@@ -4,6 +4,7 @@ Servicio de renderizado de plantillas.
 Combina datos de prueba de Template y TemplateVersion, y renderiza
 contenido HTML usando Jinja2 (equivalente a Blade en el proyecto PHP).
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

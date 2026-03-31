@@ -156,11 +156,7 @@ class BusinessUnitPermissionResolver:
         # Membresias del usuario en las unidades de la cadena
         result = await self._db.execute(
             select(BusinessUnitMembership)
-            .options(
-                selectinload(BusinessUnitMembership.role).selectinload(
-                    Role.permissions
-                )
-            )
+            .options(selectinload(BusinessUnitMembership.role).selectinload(Role.permissions))
             .where(
                 BusinessUnitMembership.user_id == user.id,
                 BusinessUnitMembership.business_unit_id.in_(unit_ids),
@@ -205,9 +201,7 @@ class BusinessUnitPermissionResolver:
                     anc_levels = perm_levels_by_unit_id.get(
                         anc_id, self._global_permissions[user.id]
                     )
-                    manage_children_level = anc_levels.get(
-                        "unit.manage_children", LEVEL_NONE
-                    )
+                    manage_children_level = anc_levels.get("unit.manage_children", LEVEL_NONE)
 
                     if manage_children_level > LEVEL_NONE:
                         for perm_name in local_perms_by_unit_id[anc_id]:
@@ -260,9 +254,7 @@ class BusinessUnitPermissionResolver:
         if not chain_ids:
             return [unit]
 
-        result = await self._db.execute(
-            select(BusinessUnit).where(BusinessUnit.id.in_(chain_ids))
-        )
+        result = await self._db.execute(select(BusinessUnit).where(BusinessUnit.id.in_(chain_ids)))
         units_by_id = {u.id: u for u in result.scalars().all()}
 
         # Preservar orden: raiz -> ... -> unit

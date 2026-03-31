@@ -1,26 +1,24 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 import secrets
-from datetime import datetime, timedelta, timezone
 
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from common.database import get_db
-from common.middleware.auth import get_admin_user, get_customer_user
 from app.requests.password_request import (
     ChangePasswordRequest,
     ForcePasswordRequest,
     PasswordCheckRequest,
     PasswordCheckResponse,
 )
+from common.database import get_db
+from common.middleware.auth import get_admin_user, get_customer_user
 from common.models.user import User
 from common.services.auth_service import AuthService
-from common.support.password_policy import PasswordPolicy
 from common.support.password_history_service import PasswordHistoryService
+from common.support.password_policy import PasswordPolicy
 
 router = APIRouter(tags=["auth"])
 
@@ -44,10 +42,10 @@ async def password_check(body: PasswordCheckRequest) -> PasswordCheckResponse:
     Equivale a PasswordController::check() de PHP.
     """
     context = {
-        "first_name":   body.first_name or "",
-        "last_name":    body.last_name or "",
+        "first_name": body.first_name or "",
+        "last_name": body.last_name or "",
         "display_name": body.display_name or "",
-        "email":        body.email or "",
+        "email": body.email or "",
     }
     errors = _policy.validate(body.password, context)
     return PasswordCheckResponse(valid=len(errors) == 0, errors=errors)
@@ -68,10 +66,10 @@ async def _change_password(
 
     # 2) Validar política
     context = {
-        "first_name":   user.first_name,
-        "last_name":    user.last_name,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
         "display_name": user.display_name or "",
-        "email":        user.email,
+        "email": user.email,
     }
     errors = _policy.validate(body.password, context)
     if errors:
@@ -187,14 +185,14 @@ async def _forgot_password(realm: str, body: ForgotPasswordRequest, db: AsyncSes
     # Enviar email (best effort, no bloquea)
     try:
         if realm == "admin":
-            from common.notifications.admin.reset_password import send_reset_password_admin
             from common.config import settings
+            from common.notifications.admin.reset_password import send_reset_password_admin
 
             url = f"{settings.app_url}/admin/reset-password/{token}?email={user.email}"
             await send_reset_password_admin(user, url, minutes=30)
         else:
-            from common.notifications.customer.reset_password import send_reset_password_customer
             from common.config import settings
+            from common.notifications.customer.reset_password import send_reset_password_customer
 
             url = f"{settings.app_url}/customer/reset-password/{token}?email={user.email}"
             await send_reset_password_customer(user, url, minutes=30)

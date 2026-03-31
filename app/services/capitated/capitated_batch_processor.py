@@ -311,7 +311,9 @@ class CapitatedBatchProcessor:
                         if not res_country:
                             result = "rejected"
                             rejection_code = CapitatedRejectionCodes.PERSON_COUNTRY_CODE_NOT_FOUND
-                            rejection_detail = "No se pudo resolver pais de residencia a registro de pais."
+                            rejection_detail = (
+                                "No se pudo resolver pais de residencia a registro de pais."
+                            )
 
                 if result == "applied":
                     rep_iso3 = await self._normalize_country_to_iso3(rep_raw)
@@ -324,37 +326,36 @@ class CapitatedBatchProcessor:
                         if not rep_country:
                             result = "rejected"
                             rejection_code = CapitatedRejectionCodes.PERSON_COUNTRY_CODE_NOT_FOUND
-                            rejection_detail = "No se pudo resolver pais de repatriacion a registro de pais."
+                            rejection_detail = (
+                                "No se pudo resolver pais de repatriacion a registro de pais."
+                            )
 
                 if result == "applied" and res_iso3 not in res_allowed:
-                        result = "rejected"
-                        rejection_code = CapitatedRejectionCodes.PERSON_RESIDENCE_NOT_ALLOWED
-                        rejection_detail = "Pais de residencia no permitido para esta version de plan."
+                    result = "rejected"
+                    rejection_code = CapitatedRejectionCodes.PERSON_RESIDENCE_NOT_ALLOWED
+                    rejection_detail = "Pais de residencia no permitido para esta version de plan."
 
                 if result == "applied" and rep_allowed and rep_iso3 not in rep_allowed:
-                        result = "rejected"
-                        rejection_code = CapitatedRejectionCodes.PERSON_REPATRIATION_NOT_ALLOWED
-                        rejection_detail = "Pais de repatriacion no permitido para esta version de plan."
+                    result = "rejected"
+                    rejection_code = CapitatedRejectionCodes.PERSON_REPATRIATION_NOT_ALLOWED
+                    rejection_detail = (
+                        "Pais de repatriacion no permitido para esta version de plan."
+                    )
 
                 # Persona: buscar/crear y detectar incongruencia
                 if result in ("applied", "incongruence"):
-                    person = await self._find_person(
-                        company.id, product.id, document_number
-                    )
+                    person = await self._find_person(company.id, product.id, document_number)
 
                     if person:
                         existing_name = (person.full_name or "").strip()
                         existing_sex = (person.sex or "").upper()
 
-                        if (
-                            (existing_name != "" and existing_name != full_name)
-                            or (existing_sex != "" and existing_sex != sex)
+                        if (existing_name != "" and existing_name != full_name) or (
+                            existing_sex != "" and existing_sex != sex
                         ):
                             result = "incongruence"
                             rejection_code = CapitatedRejectionCodes.PERSON_INCONGRUENCE
-                            rejection_detail = (
-                                "Datos incongruentes con la ficha existente de la persona (nombre/sexo)."
-                            )
+                            rejection_detail = "Datos incongruentes con la ficha existente de la persona (nombre/sexo)."
                         elif result == "applied":
                             person.full_name = full_name
                             person.sex = sex
@@ -388,7 +389,9 @@ class CapitatedBatchProcessor:
                     if existing_record:
                         result = "duplicated"
                         rejection_code = CapitatedRejectionCodes.PERSON_DUPLICATED
-                        rejection_detail = "Ya existe un registro aprobado para esta persona/producto y mes."
+                        rejection_detail = (
+                            "Ya existe un registro aprobado para esta persona/producto y mes."
+                        )
                         duplicated_record = existing_record
                     else:
                         # 2) Continuidad simple
@@ -417,7 +420,11 @@ class CapitatedBatchProcessor:
 
                                 if coverage_month > expected_next:
                                     # Quiebre de continuidad
-                                    if plan_version.max_entry_age and age is not None and age > plan_version.max_entry_age:
+                                    if (
+                                        plan_version.max_entry_age
+                                        and age is not None
+                                        and age > plan_version.max_entry_age
+                                    ):
                                         result = "rejected"
                                         rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
                                         rejection_detail = "Excede edad maxima para contratacion"
@@ -425,41 +432,70 @@ class CapitatedBatchProcessor:
                                     if result == "applied":
                                         if (
                                             existing_contract
-                                            and existing_contract.status == CapitatedContract.STATUS_ACTIVE
+                                            and existing_contract.status
+                                            == CapitatedContract.STATUS_ACTIVE
                                         ):
-                                            existing_contract.status = CapitatedContract.STATUS_EXPIRED
-                                            existing_contract.terminated_at = datetime.now(UTC)
-                                            existing_contract.termination_reason = (
-                                                f"Quiebre de continuidad al cargar el mes {coverage_month.strftime('%Y-%m')}."
+                                            existing_contract.status = (
+                                                CapitatedContract.STATUS_EXPIRED
                                             )
+                                            existing_contract.terminated_at = datetime.now(UTC)
+                                            existing_contract.termination_reason = f"Quiebre de continuidad al cargar el mes {coverage_month.strftime('%Y-%m')}."
                                             await self._db.flush()
 
                                         contract = await self._create_new_contract(
-                                            company, product, person, plan_version, coverage_month, age  # type: ignore[arg-type]
+                                            company,
+                                            product,
+                                            person,
+                                            plan_version,
+                                            coverage_month,
+                                            age,  # type: ignore[arg-type]
                                         )
                                         continuity_break = True
                                 else:
                                     # Continuidad normal
                                     if existing_contract:
-                                        if plan_version.max_renewal_age and age is not None and age > plan_version.max_renewal_age:
+                                        if (
+                                            plan_version.max_renewal_age
+                                            and age is not None
+                                            and age > plan_version.max_renewal_age
+                                        ):
                                             result = "rejected"
-                                            rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                            rejection_code = (
+                                                CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                            )
                                             rejection_detail = "Excede edad maxima para renovacion"
 
                                         if result == "applied":
-                                            existing_contract.status = CapitatedContract.STATUS_ACTIVE
-                                            existing_contract.valid_until = _end_of_month(coverage_month)
+                                            existing_contract.status = (
+                                                CapitatedContract.STATUS_ACTIVE
+                                            )
+                                            existing_contract.valid_until = _end_of_month(
+                                                coverage_month
+                                            )
                                             await self._db.flush()
                                             contract = existing_contract
                                     else:
-                                        if plan_version.max_entry_age and age is not None and age > plan_version.max_entry_age:
+                                        if (
+                                            plan_version.max_entry_age
+                                            and age is not None
+                                            and age > plan_version.max_entry_age
+                                        ):
                                             result = "rejected"
-                                            rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
-                                            rejection_detail = "Excede edad maxima para contratacion"
+                                            rejection_code = (
+                                                CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                            )
+                                            rejection_detail = (
+                                                "Excede edad maxima para contratacion"
+                                            )
 
                                         if result == "applied":
                                             contract = await self._create_new_contract(
-                                                company, product, person, plan_version, coverage_month, age  # type: ignore[arg-type]
+                                                company,
+                                                product,
+                                                person,
+                                                plan_version,
+                                                coverage_month,
+                                                age,  # type: ignore[arg-type]
                                             )
 
                                 if continuity_break:
@@ -470,14 +506,23 @@ class CapitatedBatchProcessor:
                                     )
                         else:
                             # Primera vez: nuevo contrato
-                            if plan_version.max_entry_age and age is not None and age > plan_version.max_entry_age:
+                            if (
+                                plan_version.max_entry_age
+                                and age is not None
+                                and age > plan_version.max_entry_age
+                            ):
                                 result = "rejected"
                                 rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
                                 rejection_detail = "Excede edad maxima para contratacion"
 
                             if result == "applied":
                                 contract = await self._create_new_contract(
-                                    company, product, person, plan_version, coverage_month, age  # type: ignore[arg-type]
+                                    company,
+                                    product,
+                                    person,
+                                    plan_version,
+                                    coverage_month,
+                                    age,  # type: ignore[arg-type]
                                 )
 
                         # 3) Crear registro mensual y calcular precio
@@ -508,16 +553,12 @@ class CapitatedBatchProcessor:
                             if len(matched_rules) > 1:
                                 result = "incongruence"
                                 rejection_code = CapitatedRejectionCodes.PERSON_INCONGRUENCE
-                                rejection_detail = (
-                                    "La edad coincide con mas de un tramo de recargo en la version de plan."
-                                )
+                                rejection_detail = "La edad coincide con mas de un tramo de recargo en la version de plan."
                             elif len(matched_rules) == 1:
                                 rule = matched_rules[0]
                                 age_rule_id = rule.id
                                 age_percent = float(rule.surcharge_percent or 0)
-                                price_final = round(
-                                    price_base * (100.0 + age_percent) / 100, 2
-                                )
+                                price_final = round(price_base * (100.0 + age_percent) / 100, 2)
                                 age_amount = price_final - price_base
 
                             if result == "applied":
@@ -644,12 +685,14 @@ class CapitatedBatchProcessor:
             product = r.scalar_one_or_none()
 
             if not product:
-                plan_errors.append({
-                    "code": CapitatedRejectionCodes.PLAN_INVALID_PRODUCT,
-                    "sheet": sheet_name,
-                    "product_id": product_id,
-                    "message": "No existe un producto plan_capitado valido para esta company en la hoja.",
-                })
+                plan_errors.append(
+                    {
+                        "code": CapitatedRejectionCodes.PLAN_INVALID_PRODUCT,
+                        "sheet": sheet_name,
+                        "product_id": product_id,
+                        "message": "No existe un producto plan_capitado valido para esta company en la hoja.",
+                    }
+                )
                 continue
 
             # Buscar version activa
@@ -662,20 +705,22 @@ class CapitatedBatchProcessor:
             plan_version = r.scalar_one_or_none()
 
             if not plan_version:
-                plan_errors.append({
-                    "code": CapitatedRejectionCodes.PLAN_NO_ACTIVE_VERSION,
-                    "sheet": sheet_name,
-                    "product_id": product_id,
-                    "message": "El producto no tiene version activa.",
-                })
+                plan_errors.append(
+                    {
+                        "code": CapitatedRejectionCodes.PLAN_NO_ACTIVE_VERSION,
+                        "sheet": sheet_name,
+                        "product_id": product_id,
+                        "message": "El producto no tiene version activa.",
+                    }
+                )
                 continue
 
             # Cargar relaciones (countries, repatriationCountries, ageSurcharges)
             # En SQLAlchemy async, las relaciones selectin se cargan automaticamente
             # pero necesitamos acceder a ellas explicitamente
-            countries_list = plan_version.countries
-            repatriation_countries_list = plan_version.repatriation_countries
-            age_surcharges_list = plan_version.age_surcharges
+            countries_list = plan_version.countries  # type: ignore[attr-defined]
+            repatriation_countries_list = plan_version.repatriation_countries  # type: ignore[attr-defined]
+            age_surcharges_list = plan_version.age_surcharges  # type: ignore[attr-defined]
 
             # Encabezados (primera fila)
             headers: dict[str, int] = {}
@@ -693,13 +738,15 @@ class CapitatedBatchProcessor:
             missing = [h for h in required if h not in headers]
 
             if missing:
-                plan_errors.append({
-                    "code": CapitatedRejectionCodes.PLAN_STRUCTURE_INVALID,
-                    "sheet": sheet_name,
-                    "product_id": product_id,
-                    "missing_headers": missing,
-                    "message": "Faltan encabezados obligatorios en la hoja.",
-                })
+                plan_errors.append(
+                    {
+                        "code": CapitatedRejectionCodes.PLAN_STRUCTURE_INVALID,
+                        "sheet": sheet_name,
+                        "product_id": product_id,
+                        "missing_headers": missing,
+                        "message": "Faltan encabezados obligatorios en la hoja.",
+                    }
+                )
                 continue
 
             # Mapas de paises permitidos y precios
@@ -715,7 +762,9 @@ class CapitatedBatchProcessor:
             )
             pivot_by_country_id: dict[int, float | None] = {}
             for pivot_row in pivot_prices.all():
-                pivot_by_country_id[pivot_row[0]] = float(pivot_row[1]) if pivot_row[1] is not None else None
+                pivot_by_country_id[pivot_row[0]] = (
+                    float(pivot_row[1]) if pivot_row[1] is not None else None
+                )
 
             for c in countries_list:
                 iso3 = (c.iso3 or "").upper()
@@ -945,10 +994,12 @@ class CapitatedBatchProcessor:
                 CapitatedContract.company_id == contract.company_id,
                 CapitatedContract.product_id == contract.product_id,
                 CapitatedContract.person_id == contract.person_id,
-                CapitatedContract.status.in_([
-                    CapitatedContract.STATUS_ACTIVE,
-                    CapitatedContract.STATUS_EXPIRED,
-                ]),
+                CapitatedContract.status.in_(
+                    [
+                        CapitatedContract.STATUS_ACTIVE,
+                        CapitatedContract.STATUS_EXPIRED,
+                    ]
+                ),
             )
             .limit(1)
         )
@@ -987,14 +1038,19 @@ class CapitatedBatchProcessor:
         r1 = await self._db.execute(
             select(func.count())
             .select_from(CapitatedMonthlyRecord)
-            .where(*base_where, CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ACTIVE)
+            .where(
+                *base_where, CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ACTIVE
+            )
         )
         total_active = r1.scalar() or 0
 
         r2 = await self._db.execute(
             select(func.count())
             .select_from(CapitatedMonthlyRecord)
-            .where(*base_where, CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ROLLED_BACK)
+            .where(
+                *base_where,
+                CapitatedMonthlyRecord.status == CapitatedMonthlyRecord.STATUS_ROLLED_BACK,
+            )
         )
         total_rolled_back = r2.scalar() or 0
 
@@ -1018,10 +1074,12 @@ class CapitatedBatchProcessor:
             update(CapitatedContract)
             .where(
                 CapitatedContract.company_id == company.id,
-                CapitatedContract.status.in_([
-                    CapitatedContract.STATUS_ACTIVE,
-                    CapitatedContract.STATUS_EXPIRED,
-                ]),
+                CapitatedContract.status.in_(
+                    [
+                        CapitatedContract.STATUS_ACTIVE,
+                        CapitatedContract.STATUS_EXPIRED,
+                    ]
+                ),
             )
             .values(
                 status=text(
@@ -1032,7 +1090,7 @@ class CapitatedBatchProcessor:
             )
         )
         result = await self._db.execute(stmt)
-        return result.rowcount  # type: ignore[return-value]
+        return result.rowcount  # type: ignore[attr-defined]
 
     # ------------------------------------------------------------------
     # Helpers
@@ -1056,18 +1114,14 @@ class CapitatedBatchProcessor:
         # Si token >= 3 letras, probar ISO3
         if len(token) >= 3:
             code3 = token[:3]
-            r = await self._db.execute(
-                select(Country).where(Country.iso3 == code3)
-            )
+            r = await self._db.execute(select(Country).where(Country.iso3 == code3))
             country = r.scalar_one_or_none()
             if country:
                 return country.iso3
 
         # Probar ISO2
         code2 = token[:2]
-        r = await self._db.execute(
-            select(Country).where(Country.iso2 == code2)
-        )
+        r = await self._db.execute(select(Country).where(Country.iso2 == code2))
         country = r.scalar_one_or_none()
         if country:
             return country.iso3
@@ -1124,16 +1178,16 @@ class CapitatedBatchProcessor:
         )
         return r.scalar_one_or_none()
 
-    async def _find_contract_for_record(
-        self, contract_id: int
-    ) -> CapitatedContract | None:
+    async def _find_contract_for_record(self, contract_id: int) -> CapitatedContract | None:
         r = await self._db.execute(
             select(CapitatedContract).where(
                 CapitatedContract.id == contract_id,
-                CapitatedContract.status.in_([
-                    CapitatedContract.STATUS_ACTIVE,
-                    CapitatedContract.STATUS_EXPIRED,
-                ]),
+                CapitatedContract.status.in_(
+                    [
+                        CapitatedContract.STATUS_ACTIVE,
+                        CapitatedContract.STATUS_EXPIRED,
+                    ]
+                ),
             )
         )
         return r.scalar_one_or_none()

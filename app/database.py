@@ -4,6 +4,7 @@ Configuración de base de datos async con SQLAlchemy 2.0.
 Cambios aplicados por auditoría de skills:
   - HIGH-5: try/except/finally en get_db() para rollback en error.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator

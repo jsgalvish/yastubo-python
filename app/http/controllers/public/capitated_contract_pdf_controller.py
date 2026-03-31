@@ -8,6 +8,7 @@ Endpoint:
 
 No requiere autenticacion (acceso publico por UUID).
 """
+
 from __future__ import annotations
 
 import json
@@ -53,7 +54,7 @@ def _build_coverage_categories(plan_version: PlanVersion, locale: str = "es") ->
     # Sort coverages by sort_order
     sorted_coverages = sorted(
         plan_version.coverages,
-        key=lambda pvc: (pvc.sort_order or 0),
+        key=lambda pvc: pvc.sort_order or 0,
     )
 
     for pivot in sorted_coverages:
@@ -81,22 +82,26 @@ def _build_coverage_categories(plan_version: PlanVersion, locale: str = "es") ->
         # Extract notes_t for coverage notes
         notes_t = _translate(pivot.notes, locale) if pivot.notes else None
 
-        categories[cat_id]["coverages"].append({
-            "id": pivot.id,
-            "plan_version_id": pivot.plan_version_id,
-            "coverage_id": pivot.coverage_id,
-            "sort_order": pivot.sort_order,
-            "value_int": pivot.value_int,
-            "value_decimal": float(pivot.value_decimal) if pivot.value_decimal is not None else None,
-            "value_text": pivot.value_text,
-            "notes": pivot.notes,
-            "notes_t": notes_t,
-            "display_value": pivot.get_display_value(locale),
-            "coverage_name": _translate(coverage.name, locale),
-            "coverage_description": _translate(coverage.description, locale),
-            "unit_name": _translate(unit.name, locale) if unit else None,
-            "unit_measure_type": unit.measure_type if unit else None,
-        })
+        categories[cat_id]["coverages"].append(
+            {
+                "id": pivot.id,
+                "plan_version_id": pivot.plan_version_id,
+                "coverage_id": pivot.coverage_id,
+                "sort_order": pivot.sort_order,
+                "value_int": pivot.value_int,
+                "value_decimal": float(pivot.value_decimal)
+                if pivot.value_decimal is not None
+                else None,
+                "value_text": pivot.value_text,
+                "notes": pivot.notes,
+                "notes_t": notes_t,
+                "display_value": pivot.get_display_value(locale),
+                "coverage_name": _translate(coverage.name, locale),
+                "coverage_description": _translate(coverage.description, locale),
+                "unit_name": _translate(unit.name, locale) if unit else None,
+                "unit_measure_type": unit.measure_type if unit else None,
+            }
+        )
 
     # Sort categories by sort_order and return as list
     return sorted(categories.values(), key=lambda c: c["sort_order"])
@@ -142,9 +147,7 @@ async def _get_branding(company: Company, db: AsyncSession) -> dict:
 
 async def _get_default_branding(db: AsyncSession) -> dict:
     """Load default branding from config_items table."""
-    result = await db.execute(
-        select(ConfigItem).where(ConfigItem.category == "company_branding")
-    )
+    result = await db.execute(select(ConfigItem).where(ConfigItem.category == "company_branding"))
     items = result.scalars().all()
 
     defaults: dict = {}
@@ -176,16 +179,12 @@ async def _get_template_content(company: Company, db: AsyncSession) -> str:
 
     # Try company's PDF template
     if company.pdf_template_id:
-        result = await db.execute(
-            select(Template).where(Template.id == company.pdf_template_id)
-        )
+        result = await db.execute(select(Template).where(Template.id == company.pdf_template_id))
         template = result.scalar_one_or_none()
 
     # Fallback: template with slug 'principal'
     if template is None:
-        result = await db.execute(
-            select(Template).where(Template.slug == "principal")
-        )
+        result = await db.execute(select(Template).where(Template.slug == "principal"))
         template = result.scalar_one_or_none()
 
     if template is None:
@@ -202,10 +201,10 @@ async def _get_template_content(company: Company, db: AsyncSession) -> str:
     )
     version = result.scalar_one_or_none()
 
-    if version is None or not version.content:
+    if version is None or not version.content:  # type: ignore[attr-defined]
         raise HTTPException(status_code=500, detail="Contenido de plantilla vacio.")
 
-    return version.content
+    return version.content  # type: ignore[attr-defined]
 
 
 def _translate(data, locale: str = "es") -> str | None:
@@ -263,15 +262,15 @@ async def show_pdf_by_uuid(
         .options(
             selectinload(CapitatedMonthlyRecord.residence_country),
             selectinload(CapitatedMonthlyRecord.repatriation_country),
-            selectinload(CapitatedMonthlyRecord.plan_version).selectinload(
-                PlanVersion.coverages
-            ).selectinload(PlanVersionCoverage.coverage).selectinload(Coverage.unit),
-            selectinload(CapitatedMonthlyRecord.plan_version).selectinload(
-                PlanVersion.coverages
-            ).selectinload(PlanVersionCoverage.coverage).selectinload(Coverage.category),
-            selectinload(CapitatedMonthlyRecord.plan_version).selectinload(
-                PlanVersion.product
-            ),
+            selectinload(CapitatedMonthlyRecord.plan_version)
+            .selectinload(PlanVersion.coverages)
+            .selectinload(PlanVersionCoverage.coverage)
+            .selectinload(Coverage.unit),
+            selectinload(CapitatedMonthlyRecord.plan_version)
+            .selectinload(PlanVersion.coverages)
+            .selectinload(PlanVersionCoverage.coverage)
+            .selectinload(Coverage.category),
+            selectinload(CapitatedMonthlyRecord.plan_version).selectinload(PlanVersion.product),
         )
         .order_by(
             CapitatedMonthlyRecord.coverage_month.desc(),
@@ -297,13 +296,17 @@ async def show_pdf_by_uuid(
     short_code = company.short_code or "YTB"
     contract_id_str = f"{short_code}-{contract.id:05d}"
 
-    residence_name = _translate(
-        last_monthly_record.residence_country.name
-    ) if last_monthly_record.residence_country else ""
+    residence_name = (
+        _translate(last_monthly_record.residence_country.name)
+        if last_monthly_record.residence_country
+        else ""
+    )
 
-    repatriation_name = _translate(
-        last_monthly_record.repatriation_country.name
-    ) if last_monthly_record.repatriation_country else ""
+    repatriation_name = (
+        _translate(last_monthly_record.repatriation_country.name)
+        if last_monthly_record.repatriation_country
+        else ""
+    )
 
     entry_date_str = contract.entry_date.strftime("%d/%m/%Y") if contract.entry_date else ""
     valid_until_str = contract.valid_until.strftime("%d/%m/%Y") if contract.valid_until else ""
@@ -359,6 +362,7 @@ async def show_pdf_by_uuid(
     # 10. Generate PDF
     try:
         from pathlib import Path
+
         base_path = Path(__file__).resolve().parent.parent.parent / "services" / "pdf"  # noqa: ASYNC240
         base_url = base_path.as_uri() + "/"
         pdf_bytes = await html_to_pdf_async(html, base_url=base_url)

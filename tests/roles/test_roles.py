@@ -8,6 +8,7 @@ Estrategia:
 - TestPermissionMiddleware: endpoints protegidos con require_permission / require_role.
 - TestUserHelpers: métodos has_role() y can() sobre caches.
 """
+
 from __future__ import annotations
 
 from datetime import UTC
@@ -109,6 +110,7 @@ class TestPermissionModel:
             model_has_roles,
             role_has_permissions,
         )
+
         assert model_has_roles.name == "model_has_roles"
         assert model_has_permissions.name == "model_has_permissions"
         assert role_has_permissions.name == "role_has_permissions"
@@ -336,9 +338,7 @@ class TestPermissionMiddleware:
         await db_session.commit()
 
         token = create_access_token(user.id, "admin")
-        r = await client.get(
-            "/test-perm-ok", headers={"Authorization": f"Bearer {token}"}
-        )
+        r = await client.get("/test-perm-ok", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-perm-ok"]
@@ -361,17 +361,13 @@ class TestPermissionMiddleware:
         await db_session.commit()
 
         token = create_access_token(user.id, "admin")
-        r = await client.get(
-            "/test-perm-403", headers={"Authorization": f"Bearer {token}"}
-        )
+        r = await client.get("/test-perm-403", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 403
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-perm-403"]
 
     @pytest.mark.asyncio
-    async def test_require_role_con_rol(
-        self, client: AsyncClient, db_session: AsyncSession
-    ):
+    async def test_require_role_con_rol(self, client: AsyncClient, db_session: AsyncSession):
         """Usuario con el rol requerido accede al endpoint."""
         from fastapi import Depends
 
@@ -392,9 +388,7 @@ class TestPermissionMiddleware:
         await db_session.commit()
 
         token = create_access_token(user.id, "admin")
-        r = await client.get(
-            "/test-role-ok", headers={"Authorization": f"Bearer {token}"}
-        )
+        r = await client.get("/test-role-ok", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-role-ok"]
@@ -417,9 +411,7 @@ class TestPermissionMiddleware:
         await db_session.commit()
 
         token = create_access_token(user.id, "admin")
-        r = await client.get(
-            "/test-role-403", headers={"Authorization": f"Bearer {token}"}
-        )
+        r = await client.get("/test-role-403", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 403
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-role-403"]
@@ -447,21 +439,17 @@ class TestPermissionMiddleware:
 
         svc = PermissionService(db_session)
         await svc.give_permission_to_role(role, perm)  # permiso al rol
-        await svc.assign_role(user, role)               # rol al usuario
+        await svc.assign_role(user, role)  # rol al usuario
         await db_session.commit()
 
         token = create_access_token(user.id, "admin")
-        r = await client.get(
-            "/test-perm-viarole", headers={"Authorization": f"Bearer {token}"}
-        )
+        r = await client.get("/test-perm-viarole", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-perm-viarole"]
 
     @pytest.mark.asyncio
-    async def test_token_expirado_retorna_401(
-        self, client: AsyncClient, db_session: AsyncSession
-    ):
+    async def test_token_expirado_retorna_401(self, client: AsyncClient, db_session: AsyncSession):
         """Token expirado en endpoint protegido retorna 401."""
         from datetime import datetime, timedelta
 
@@ -486,13 +474,9 @@ class TestPermissionMiddleware:
             "force_password_change": False,
             "exp": datetime.now(UTC) - timedelta(seconds=10),
         }
-        expired_token = _jose_jwt.encode(
-            expired_payload, settings.secret_key, algorithm=ALGORITHM
-        )
+        expired_token = _jose_jwt.encode(expired_payload, settings.secret_key, algorithm=ALGORITHM)
 
-        r = await client.get(
-            "/test-expired", headers={"Authorization": f"Bearer {expired_token}"}
-        )
+        r = await client.get("/test-expired", headers={"Authorization": f"Bearer {expired_token}"})
         assert r.status_code == 401
 
         app.routes[:] = [rt for rt in app.routes if getattr(rt, "path", "") != "/test-expired"]

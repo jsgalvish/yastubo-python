@@ -6,9 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from common.database import get_db
-from common.models.user import User
-from common.middleware.permission import require_permission
 from app.requests.acl_request import (
     MatrixDataOut,
     PermissionOut,
@@ -20,8 +17,11 @@ from app.requests.acl_request import (
     UpdatePermissionRequest,
     UpdateRoleRequest,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.permission import Permission, role_has_permissions
 from common.models.role import Role
+from common.models.user import User
 
 router = APIRouter(prefix="/admin/acl/roles", tags=["admin:acl"])
 

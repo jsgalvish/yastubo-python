@@ -27,18 +27,14 @@ class CapitatedBatchItemLog(TimestampMixin, Base):
     __tablename__ = "capitados_batch_item_logs"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    batch_id: Mapped[int] = mapped_column(
-        ForeignKey("capitados_batch_logs.id"), nullable=False
-    )
+    batch_id: Mapped[int] = mapped_column(ForeignKey("capitados_batch_logs.id"), nullable=False)
 
     # Ubicación en el Excel
     sheet_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     row_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Plan / versión
-    product_id: Mapped[int | None] = mapped_column(
-        ForeignKey("products.id"), nullable=True
-    )
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"), nullable=True)
     plan_version_id: Mapped[int | None] = mapped_column(
         ForeignKey("plan_versions.id"), nullable=True
     )
@@ -86,9 +82,7 @@ class CapitatedBatchItemLog(TimestampMixin, Base):
     batch: Mapped[CapitatedBatchLog] = relationship("CapitatedBatchLog")
     product: Mapped[Product | None] = relationship("Product")
     plan_version: Mapped[PlanVersion | None] = relationship("PlanVersion")
-    person: Mapped[CapitatedProductInsured | None] = relationship(
-        "CapitatedProductInsured"
-    )
+    person: Mapped[CapitatedProductInsured | None] = relationship("CapitatedProductInsured")
     contract: Mapped[CapitatedContract | None] = relationship("CapitatedContract")
     monthly_record: Mapped[CapitatedMonthlyRecord | None] = relationship(
         "CapitatedMonthlyRecord", foreign_keys=[monthly_record_id]

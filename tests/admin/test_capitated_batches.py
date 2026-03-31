@@ -6,6 +6,7 @@ Estrategia:
 - Seed: empresa + producto + persona + contrato + batch + items + monthly records.
 - Endpoints: batches index/show/items/monthly-records, rollback, report months.
 """
+
 from __future__ import annotations
 
 import json
@@ -53,9 +54,13 @@ async def actor_token(async_engine):
     Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         actor = User(
-            realm="admin", email="batch_actor@test.com",
-            password=_hashed("Pass1!"), first_name="Batch", last_name="Actor",
-            status="active", force_password_change=False,
+            realm="admin",
+            email="batch_actor@test.com",
+            password=_hashed("Pass1!"),
+            first_name="Batch",
+            last_name="Actor",
+            status="active",
+            force_password_change=False,
         )
         db.add(actor)
         await db.flush()
@@ -82,29 +87,40 @@ async def seed_data(async_engine):
         product = Product(
             name=json.dumps({"es": "Plan Batch"}),
             product_type=Product.TYPE_PLAN_CAPITADO,
-            status="active", show_in_widget=False, company_id=company.id,
+            status="active",
+            show_in_widget=False,
+            company_id=company.id,
         )
         db.add(product)
         await db.flush()
 
         pv = PlanVersion(
-            product_id=product.id, name="V1 Batch", status="active",
+            product_id=product.id,
+            name="V1 Batch",
+            status="active",
         )
         db.add(pv)
         await db.flush()
 
         person = CapitatedProductInsured(
-            company_id=company.id, product_id=product.id,
-            document_number="BATCH001", full_name="Batch Person",
-            sex="F", age_reported=30, status="active",
+            company_id=company.id,
+            product_id=product.id,
+            document_number="BATCH001",
+            full_name="Batch Person",
+            sex="F",
+            age_reported=30,
+            status="active",
         )
         db.add(person)
         await db.flush()
 
         contract = CapitatedContract(
-            company_id=company.id, product_id=product.id,
-            person_id=person.id, status="active",
-            entry_date=date(2025, 1, 1), entry_age=30,
+            company_id=company.id,
+            product_id=product.id,
+            person_id=person.id,
+            status="active",
+            entry_date=date(2025, 1, 1),
+            entry_age=30,
         )
         db.add(contract)
         await db.flush()
@@ -115,31 +131,47 @@ async def seed_data(async_engine):
             source="excel",
             original_filename="test.xlsx",
             status=CapitatedBatchLog.STATUS_PROCESSED,
-            total_rows=2, total_applied=1, total_rejected=1,
-            total_duplicated=0, total_incongruences=0,
-            total_plan_errors=0, total_rolled_back=0,
+            total_rows=2,
+            total_applied=1,
+            total_rejected=1,
+            total_duplicated=0,
+            total_incongruences=0,
+            total_plan_errors=0,
+            total_rolled_back=0,
             processed_at=datetime.now(UTC),
         )
         db.add(batch)
         await db.flush()
 
         item = CapitatedBatchItemLog(
-            batch_id=batch.id, sheet_name="(1) Plan Batch",
-            row_number=2, product_id=product.id,
-            document_number="BATCH001", full_name="Batch Person",
-            sex="F", age_reported=30, result="applied",
-            person_id=person.id, contract_id=contract.id,
+            batch_id=batch.id,
+            sheet_name="(1) Plan Batch",
+            row_number=2,
+            product_id=product.id,
+            document_number="BATCH001",
+            full_name="Batch Person",
+            sex="F",
+            age_reported=30,
+            result="applied",
+            person_id=person.id,
+            contract_id=contract.id,
         )
         db.add(item)
         await db.flush()
 
         mr = CapitatedMonthlyRecord(
-            company_id=company.id, product_id=product.id,
-            person_id=person.id, contract_id=contract.id,
+            company_id=company.id,
+            product_id=product.id,
+            person_id=person.id,
+            contract_id=contract.id,
             coverage_month=date(2025, 3, 1),
-            plan_version_id=pv.id, load_batch_id=batch.id,
-            full_name="Batch Person", sex="F", age_reported=30,
-            price_base=100.00, price_final=110.00,
+            plan_version_id=pv.id,
+            load_batch_id=batch.id,
+            full_name="Batch Person",
+            sex="F",
+            age_reported=30,
+            price_base=100.00,
+            price_final=110.00,
             status="active",
         )
         db.add(mr)

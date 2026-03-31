@@ -8,6 +8,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     """Clase base para todos los modelos SQLAlchemy."""
+
     pass
 
 

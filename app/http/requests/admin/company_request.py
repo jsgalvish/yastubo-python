@@ -2,6 +2,7 @@
 Schemas Pydantic para endpoints de Companies (admin).
 Equivale a los Form Requests de PHP para CompanyController y CompanyCommissionUserController.
 """
+
 from __future__ import annotations
 
 import re
@@ -96,7 +97,9 @@ class UpdateCompanyRequest(BaseModel):
     @classmethod
     def validate_hex_color(cls, v: str | None) -> str | None:
         if v is not None and not _HEX_RE.match(v):
-            raise ValueError("El color debe ser un valor hexadecimal válido (ej: #FFFFFF o FFFFFF).")
+            raise ValueError(
+                "El color debe ser un valor hexadecimal válido (ej: #FFFFFF o FFFFFF)."
+            )
         return v
 
 

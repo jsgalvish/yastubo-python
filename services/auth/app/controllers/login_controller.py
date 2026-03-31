@@ -3,9 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.requests.login_request import LoginRequest, TokenResponse, UserInfo
 from common.database import get_db
 from common.middleware.auth import get_admin_user, get_customer_user
-from app.requests.login_request import LoginRequest, TokenResponse, UserInfo
 from common.models.user import User
 from common.services.auth_service import AuthService
 from common.services.permission_service import PermissionService

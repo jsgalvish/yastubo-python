@@ -15,6 +15,7 @@ Endpoints:
 
 Sin permiso explícito: solo requiere autenticación admin (get_admin_user).
 """
+
 from __future__ import annotations
 
 import json
@@ -286,9 +287,7 @@ async def _do_attach_country(zone_id: int, country_id: int, db: AsyncSession):
         )
     )
     if already.first() is None:
-        await db.execute(
-            country_zone.insert().values(zone_id=zone_id, country_id=country_id)
-        )
+        await db.execute(country_zone.insert().values(zone_id=zone_id, country_id=country_id))
         await db.commit()
 
     return {"message": "País añadido a la zona."}

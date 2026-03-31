@@ -1,0 +1,11 @@
+services:
+  frontend:
+    build:
+      context: ../yastubo-frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - C:/yastubo/yastubo-frontend://app
+      - //app/node_modules
+    environment:
+      - VITE_HMR_HOST=localhost
+      - VITE_PROXY_TARGET=http://nginx:80

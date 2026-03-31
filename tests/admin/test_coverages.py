@@ -7,6 +7,7 @@ Estrategia:
 - Catálogo: categorías CRUD + archive/restore, coberturas CRUD + archive/restore/delete.
 - PlanVersionCoverage: available, store (idempotente), updateValue, reorder, destroy.
 """
+
 from __future__ import annotations
 
 import json
@@ -373,7 +374,9 @@ class TestPVCoverageAvailable:
 
 
 class TestPVCoverageStore:
-    async def test_agrega_cobertura_a_version(self, client, actor_token, seed_unit_id, seed_product_and_version):
+    async def test_agrega_cobertura_a_version(
+        self, client, actor_token, seed_unit_id, seed_product_and_version
+    ):
         pid, vid = seed_product_and_version
 
         # Crear categoría + cobertura
@@ -412,7 +415,11 @@ class TestPVCoverageStore:
         cov_r = await client.post(
             "/admin/coverages/items",
             headers=_auth(actor_token),
-            json={"category_id": cat_r.json()["data"]["id"], "unit_id": seed_unit_id, "name": {"es": "Idemp Cov"}},
+            json={
+                "category_id": cat_r.json()["data"]["id"],
+                "unit_id": seed_unit_id,
+                "name": {"es": "Idemp Cov"},
+            },
         )
         cov_id = cov_r.json()["data"]["id"]
 
@@ -431,7 +438,9 @@ class TestPVCoverageStore:
 
 
 class TestPVCoverageUpdateValue:
-    async def test_actualiza_valor(self, client, actor_token, seed_unit_id, seed_product_and_version):
+    async def test_actualiza_valor(
+        self, client, actor_token, seed_unit_id, seed_product_and_version
+    ):
         pid, vid = seed_product_and_version
 
         cat_r = await client.post(
@@ -442,7 +451,11 @@ class TestPVCoverageUpdateValue:
         cov_r = await client.post(
             "/admin/coverages/items",
             headers=_auth(actor_token),
-            json={"category_id": cat_r.json()["data"]["id"], "unit_id": seed_unit_id, "name": {"es": "Value Cov"}},
+            json={
+                "category_id": cat_r.json()["data"]["id"],
+                "unit_id": seed_unit_id,
+                "name": {"es": "Value Cov"},
+            },
         )
         pvc_r = await client.post(
             f"/admin/products/{pid}/plans/{vid}/coverages",
@@ -463,7 +476,9 @@ class TestPVCoverageUpdateValue:
 
 
 class TestPVCoverageDestroy:
-    async def test_elimina_cobertura_de_version(self, client, actor_token, seed_unit_id, seed_product_and_version):
+    async def test_elimina_cobertura_de_version(
+        self, client, actor_token, seed_unit_id, seed_product_and_version
+    ):
         pid, vid = seed_product_and_version
 
         cat_r = await client.post(
@@ -474,7 +489,11 @@ class TestPVCoverageDestroy:
         cov_r = await client.post(
             "/admin/coverages/items",
             headers=_auth(actor_token),
-            json={"category_id": cat_r.json()["data"]["id"], "unit_id": seed_unit_id, "name": {"es": "Del Cov"}},
+            json={
+                "category_id": cat_r.json()["data"]["id"],
+                "unit_id": seed_unit_id,
+                "name": {"es": "Del Cov"},
+            },
         )
         pvc_r = await client.post(
             f"/admin/products/{pid}/plans/{vid}/coverages",

@@ -12,6 +12,7 @@ Endpoints:
 
 Permisos: regalia.users.read / regalia.users.edit
 """
+
 from __future__ import annotations
 
 import math
@@ -21,8 +22,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.regalia_request import (
     AvailableOriginUnitItem,
     AvailableOriginUserItem,
@@ -40,6 +39,8 @@ from app.requests.regalia_request import (
     StoreRegaliaRequest,
     UpdateRegaliaRequest,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.business_unit import BusinessUnit
 from common.models.regalia import Regalia
 from common.models.user import User
@@ -66,9 +67,7 @@ def _regalia_out(r: Regalia) -> RegaliaOut:
 
 async def _get_regalia(regalia_id: int, db: AsyncSession) -> Regalia:
     result = await db.execute(
-        select(Regalia)
-        .options(selectinload(Regalia.beneficiary))
-        .where(Regalia.id == regalia_id)
+        select(Regalia).options(selectinload(Regalia.beneficiary)).where(Regalia.id == regalia_id)
     )
     reg = result.scalar_one_or_none()
     if reg is None:
@@ -100,36 +99,41 @@ async def beneficiaries_index(
     # Subquery: user_ids que son beneficiarios
     ben_subq = select(Regalia.beneficiary_user_id).distinct().subquery()
 
-    base_q = (
-        select(User)
-        .where(User.id.in_(select(ben_subq.c.beneficiary_user_id)))
-    )
+    base_q = select(User).where(User.id.in_(select(ben_subq.c.beneficiary_user_id)))
 
     search = q.strip()
     if search:
         like = f"%{search}%"
         base_q = base_q.where(
-            User.email.ilike(like)
-            | User.first_name.ilike(like)
-            | User.last_name.ilike(like)
+            User.email.ilike(like) | User.first_name.ilike(like) | User.last_name.ilike(like)
         )
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
 
-    users = list((await db.execute(
-        base_q.order_by(User.first_name, User.last_name)
-        .offset((page - 1) * per_page)
-        .limit(per_page)
-    )).scalars().all())
+    users = list(
+        (
+            await db.execute(
+                base_q.order_by(User.first_name, User.last_name)
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     # Cargar regalías para estos beneficiarios
     user_ids = [u.id for u in users]
-    regalias_r = await db.execute(
-        select(Regalia)
-        .options(selectinload(Regalia.beneficiary))
-        .where(Regalia.beneficiary_user_id.in_(user_ids))
-        .order_by(Regalia.id)
-    ) if user_ids else None
+    regalias_r = (
+        await db.execute(
+            select(Regalia)
+            .options(selectinload(Regalia.beneficiary))
+            .where(Regalia.beneficiary_user_id.in_(user_ids))
+            .order_by(Regalia.id)
+        )
+        if user_ids
+        else None
+    )
     all_regalias = list(regalias_r.scalars().all()) if regalias_r else []
 
     # Cargar origin users y units
@@ -159,27 +163,31 @@ async def beneficiaries_index(
                 origin_user = OriginUserOut(id=ou.id, display_name=ou.full_name, email=ou.email)
             elif reg.source_type == "unit" and reg.source_id in origin_units_map:
                 obu = origin_units_map[reg.source_id]
-                origin_unit = OriginUnitOut(id=obu.id, name=obu.name)
+                origin_unit = OriginUnitOut(id=obu.id, name=obu.name, type=obu.type)
 
-            detail_list.append(RegaliaDetailOut(
-                id=reg.id,
-                source_type=reg.source_type,
-                source_id=reg.source_id,
-                beneficiary_user_id=reg.beneficiary_user_id,
-                commission=float(reg.commission) if reg.commission is not None else None,
-                origin_user=origin_user,
-                origin_unit=origin_unit,
-            ))
+            detail_list.append(
+                RegaliaDetailOut(
+                    id=reg.id,
+                    source_type=reg.source_type,
+                    source_id=reg.source_id,
+                    beneficiary_user_id=reg.beneficiary_user_id,
+                    commission=float(reg.commission) if reg.commission is not None else None,
+                    origin_user=origin_user,
+                    origin_unit=origin_unit,
+                )
+            )
 
-        groups.append(BeneficiaryGroupOut(
-            beneficiary=BeneficiaryBriefOut(
-                id=user.id,
-                display_name=user.full_name,
-                email=user.email,
-                status=user.status,
-            ),
-            regalias=detail_list,
-        ))
+        groups.append(
+            BeneficiaryGroupOut(
+                beneficiary=BeneficiaryBriefOut(
+                    id=user.id,
+                    display_name=user.full_name,
+                    email=user.email,
+                    status=user.status,
+                ),
+                regalias=detail_list,
+            )
+        )
 
     return BeneficiariesIndexResponse(
         data=groups,
@@ -215,14 +223,16 @@ async def available_origins_users(
     search = q.strip()
     if search:
         like = f"%{search}%"
-        base_q = base_q.where(User.email.ilike(like) | User.first_name.ilike(like) | User.last_name.ilike(like))
+        base_q = base_q.where(
+            User.email.ilike(like) | User.first_name.ilike(like) | User.last_name.ilike(like)
+        )
 
     base_q = base_q.order_by(User.first_name, User.last_name)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    users = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    users = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     # IDs ya asignados
     assigned_r = await db.execute(
@@ -279,9 +289,9 @@ async def available_origins_units(
     base_q = base_q.order_by(BusinessUnit.name)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    units = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    units = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     # IDs ya asignados
     assigned_r = await db.execute(

@@ -2,12 +2,10 @@
 Schemas Pydantic para endpoints de Capitados Lotes y Reportes Mensuales (admin).
 Equivale a CapitatedBatchController.php + CapitatedMonthlyReportController.php.
 """
+
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict
-
 
 # ─────────────────────────── Batch ───────────────────────────────────────────
 
@@ -15,10 +13,10 @@ from pydantic import BaseModel, ConfigDict
 class BatchOut(BaseModel):
     id: int
     company_id: int
-    coverage_month: Optional[str] = None
+    coverage_month: str | None = None
     status: str
     source: str
-    original_filename: Optional[str] = None
+    original_filename: str | None = None
     total_rows: int = 0
     total_applied: int = 0
     total_rejected: int = 0
@@ -26,8 +24,8 @@ class BatchOut(BaseModel):
     total_incongruences: int = 0
     total_plan_errors: int = 0
     total_rolled_back: int = 0
-    created_by_user_id: Optional[int] = None
-    processed_at: Optional[str] = None
+    created_by_user_id: int | None = None
+    processed_at: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -54,18 +52,18 @@ class BatchDetailResponse(BaseModel):
 class BatchItemOut(BaseModel):
     id: int
     batch_id: int
-    sheet_name: Optional[str] = None
-    row_number: Optional[int] = None
-    product_id: Optional[int] = None
-    document_number: Optional[str] = None
-    full_name: Optional[str] = None
-    sex: Optional[str] = None
-    age_reported: Optional[int] = None
-    result: Optional[str] = None
-    rejection_code: Optional[str] = None
-    rejection_detail: Optional[str] = None
-    residence_raw: Optional[str] = None
-    repatriation_raw: Optional[str] = None
+    sheet_name: str | None = None
+    row_number: int | None = None
+    product_id: int | None = None
+    document_number: str | None = None
+    full_name: str | None = None
+    sex: str | None = None
+    age_reported: int | None = None
+    result: str | None = None
+    rejection_code: str | None = None
+    rejection_detail: str | None = None
+    residence_raw: str | None = None
+    repatriation_raw: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -82,13 +80,13 @@ class MonthlyRecordBatchOut(BaseModel):
     id: int
     person_id: int
     contract_id: int
-    coverage_month: Optional[str] = None
+    coverage_month: str | None = None
     full_name: str
     sex: str
-    age_reported: Optional[int] = None
-    price_base: Optional[float] = None
-    price_final: Optional[float] = None
-    status: Optional[str] = None
+    age_reported: int | None = None
+    price_base: float | None = None
+    price_final: float | None = None
+    status: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -111,7 +109,7 @@ class RollbackResponse(BaseModel):
 class MonthSummaryOut(BaseModel):
     month: str
     active_count: int
-    active_total: Optional[float] = None
+    active_total: float | None = None
 
 
 class MonthlyReportMonthsResponse(BaseModel):

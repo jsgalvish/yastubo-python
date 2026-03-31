@@ -26,13 +26,15 @@ class ConfigItem(TimestampMixin, Base):
     token: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     type: Mapped[str] = mapped_column(String(20), nullable=False)
-    config: Mapped[str | None] = mapped_column(Text, nullable=True)   # JSON opciones extra
+    config: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON opciones extra
 
     # Valores polimórficos
     value_int: Mapped[int | None] = mapped_column(Integer, nullable=True)
     value_decimal: Mapped[float | None] = mapped_column(Numeric(15, 4), nullable=True)
     value_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    value_trans: Mapped[str | None] = mapped_column(Text, nullable=True)   # JSON {"es":..., "en":...}
+    value_trans: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON {"es":..., "en":...}
     value_date: Mapped[str | None] = mapped_column(Date, nullable=True)
     value_file_es_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("files.id"), nullable=True

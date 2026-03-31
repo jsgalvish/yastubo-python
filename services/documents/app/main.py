@@ -2,11 +2,13 @@
 Yastubo — Service: Documents
 Port: 8003
 """
+
 from __future__ import annotations
 
+import os
+import sys
 from contextlib import asynccontextmanager
 
-import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from fastapi import FastAPI, Request
@@ -14,6 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app.controllers.capitated_contract_pdf_controller import router as capitated_pdf_router
+from app.controllers.file_controller import router as files_router
+from app.controllers.templates_controller import router as templates_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -21,20 +26,18 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
-from app.controllers.templates_controller import router as templates_router
-from app.controllers.file_controller import router as files_router
-from app.controllers.capitated_contract_pdf_controller import router as capitated_pdf_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
     from common.database import engine
+
     await engine.dispose()
 
 
 app = FastAPI(
-    title=f"Yastubo — Documents",
+    title="Yastubo — Documents",
     version="1.0.0",
     debug=settings.app_debug,
     lifespan=lifespan,
@@ -58,7 +61,10 @@ app.include_router(capitated_pdf_router)
 
 @app.exception_handler(RequestNotFoundException)
 async def request_not_found_handler(request: Request, exc: RequestNotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context})
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context},
+    )
 
 
 @app.exception_handler(TokenException)
@@ -68,7 +74,10 @@ async def token_exception_handler(request: Request, exc: TokenException):
 
 @app.exception_handler(TransactionNotFoundException)
 async def transaction_not_found_handler(request: Request, exc: TransactionNotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context})
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context},
+    )
 
 
 @app.exception_handler(BaseAppException)

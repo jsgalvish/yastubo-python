@@ -2,6 +2,7 @@
 Schemas Pydantic para endpoints de Business Units (admin).
 Equivale a BusinessUnitApiController.php.
 """
+
 from __future__ import annotations
 
 from typing import Literal

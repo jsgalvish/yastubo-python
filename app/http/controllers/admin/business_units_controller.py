@@ -34,6 +34,7 @@ Endpoints GSA Commissions:
 
 Permiso: admin.business_units.manage
 """
+
 from __future__ import annotations
 
 import math
@@ -182,9 +183,8 @@ async def list_units(
     db: AsyncSession = Depends(get_db),
 ) -> UnitListResponse:
     """Lista unidades por tipo con filtros de status y búsqueda."""
-    base_q = (
-        select(BusinessUnit)
-        .options(selectinload(BusinessUnit.memberships), selectinload(BusinessUnit.children))
+    base_q = select(BusinessUnit).options(
+        selectinload(BusinessUnit.memberships), selectinload(BusinessUnit.children)
     )
     if type:
         base_q = base_q.where(BusinessUnit.type == type)
@@ -199,9 +199,12 @@ async def list_units(
     base_q = base_q.order_by(BusinessUnit.name)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    units = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().unique().all())
+    units = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page)))
+        .scalars()
+        .unique()
+        .all()
+    )
 
     return UnitListResponse(
         data=[_unit_out(u) for u in units],
@@ -338,7 +341,7 @@ async def change_type(
     else:
         raise HTTPException(status_code=422, detail="Conversión no permitida.")
 
-    _validate_parent_rules(unit.type, unit.parent_id)
+    _validate_parent_rules(unit.type, unit.parent_id)  # type: ignore[arg-type]
 
     await db.commit()
     unit = await _get_unit(unit_id, db)
@@ -362,7 +365,7 @@ async def move(
         if new_parent is None:
             raise HTTPException(status_code=422, detail="Unidad padre no encontrada.")
 
-    _validate_parent_rules(unit.type, body.parent_id)
+    _validate_parent_rules(unit.type, body.parent_id)  # type: ignore[arg-type]
 
     if new_parent is not None:
         if new_parent.id == unit.id:
@@ -377,9 +380,7 @@ async def move(
             if node_id in visited:
                 break
             visited.add(node_id)
-            nr = await db.execute(
-                select(BusinessUnit.parent_id).where(BusinessUnit.id == node_id)
-            )
+            nr = await db.execute(select(BusinessUnit.parent_id).where(BusinessUnit.id == node_id))
             row = nr.one_or_none()
             node_id = row[0] if row else None
 
@@ -402,7 +403,12 @@ async def update_branding(
     if unit.type == "freelance":
         raise HTTPException(status_code=422, detail="Freelance no permite editar branding.")
 
-    for field in ("branding_text_dark", "branding_bg_light", "branding_text_light", "branding_bg_dark"):
+    for field in (
+        "branding_text_dark",
+        "branding_bg_light",
+        "branding_text_light",
+        "branding_bg_dark",
+    ):
         value = getattr(body, field, None)
         if value is not None:
             value = value.strip() or None
@@ -504,7 +510,9 @@ async def members(
     await _get_unit(unit_id, db)
     r = await db.execute(
         select(BusinessUnitMembership)
-        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .options(
+            selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role)
+        )
         .where(BusinessUnitMembership.business_unit_id == unit_id)
         .order_by(BusinessUnitMembership.id)
     )
@@ -547,7 +555,9 @@ async def member_link(
 
     r = await db.execute(
         select(BusinessUnitMembership)
-        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .options(
+            selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role)
+        )
         .where(BusinessUnitMembership.id == membership.id)
     )
     m = r.scalar_one()
@@ -558,7 +568,9 @@ async def member_link(
     )
 
 
-@router.post("/units/{unit_id}/members/create-user", response_model=CreateUserMemberResponse, status_code=201)
+@router.post(
+    "/units/{unit_id}/members/create-user", response_model=CreateUserMemberResponse, status_code=201
+)
 async def member_create_user(
     unit_id: int,
     body: CreateUserMemberRequest,
@@ -626,7 +638,9 @@ async def member_create_user(
     # Recargar con relaciones
     r = await db.execute(
         select(BusinessUnitMembership)
-        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .options(
+            selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role)
+        )
         .where(BusinessUnitMembership.id == membership.id)
     )
     m = r.scalar_one()
@@ -648,7 +662,9 @@ async def member_update_role(
     """Actualiza el rol de un miembro."""
     r = await db.execute(
         select(BusinessUnitMembership)
-        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .options(
+            selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role)
+        )
         .where(
             BusinessUnitMembership.id == membership_id,
             BusinessUnitMembership.business_unit_id == unit_id,
@@ -663,7 +679,9 @@ async def member_update_role(
 
     r = await db.execute(
         select(BusinessUnitMembership)
-        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .options(
+            selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role)
+        )
         .where(BusinessUnitMembership.id == m.id)
     )
     m = r.scalar_one()
@@ -685,7 +703,9 @@ async def member_update_status(
     """Cambia status de un miembro (active/inactive)."""
     r = await db.execute(
         select(BusinessUnitMembership)
-        .options(selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role))
+        .options(
+            selectinload(BusinessUnitMembership.user), selectinload(BusinessUnitMembership.role)
+        )
         .where(
             BusinessUnitMembership.id == membership_id,
             BusinessUnitMembership.business_unit_id == unit_id,
@@ -749,19 +769,23 @@ async def gsa_commissions(
     )
     items = []
     for reg in r.scalars().all():
-        items.append(GSACommissionOut(
-            id=reg.id,
-            source_type=reg.source_type,
-            source_id=reg.source_id,
-            beneficiary_user_id=reg.beneficiary_user_id,
-            commission=float(reg.commission) if reg.commission is not None else None,
-            user_email=reg.beneficiary.email if reg.beneficiary else None,
-            user_display_name=reg.beneficiary.full_name if reg.beneficiary else None,
-        ))
+        items.append(
+            GSACommissionOut(
+                id=reg.id,
+                source_type=reg.source_type,
+                source_id=reg.source_id,
+                beneficiary_user_id=reg.beneficiary_user_id,
+                commission=float(reg.commission) if reg.commission is not None else None,
+                user_email=reg.beneficiary.email if reg.beneficiary else None,
+                user_display_name=reg.beneficiary.full_name if reg.beneficiary else None,
+            )
+        )
     return GSACommissionsResponse(data=items)
 
 
-@router.get("/units/{unit_id}/gsa-commissions/available", response_model=PaginatedAvailableGSAResponse)
+@router.get(
+    "/units/{unit_id}/gsa-commissions/available", response_model=PaginatedAvailableGSAResponse
+)
 async def gsa_commissions_available(
     unit_id: int,
     q: str = Query(default=""),
@@ -773,17 +797,21 @@ async def gsa_commissions_available(
     """Usuarios disponibles para comisiones GSA."""
     await _get_unit(unit_id, db)
 
-    base_q = select(User).where(User.realm == "admin", User.status == "active", User.deleted_at.is_(None))
+    base_q = select(User).where(
+        User.realm == "admin", User.status == "active", User.deleted_at.is_(None)
+    )
     search = q.strip()
     if search:
         like = f"%{search}%"
-        base_q = base_q.where(User.email.ilike(like) | User.first_name.ilike(like) | User.last_name.ilike(like))
+        base_q = base_q.where(
+            User.email.ilike(like) | User.first_name.ilike(like) | User.last_name.ilike(like)
+        )
 
     base_q = base_q.order_by(User.first_name, User.last_name)
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    users = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    users = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     assigned_r = await db.execute(
         select(Regalia.beneficiary_user_id).where(
@@ -794,7 +822,9 @@ async def gsa_commissions_available(
 
     data = [
         AvailableGSAUserItem(
-            id=u.id, email=u.email, display_name=u.full_name,
+            id=u.id,
+            email=u.email,
+            display_name=u.full_name,
             is_assigned=u.id in assigned_ids,
         )
         for u in users
@@ -802,7 +832,9 @@ async def gsa_commissions_available(
     return PaginatedAvailableGSAResponse(data=data, meta=_pagination_meta(total, page, per_page))
 
 
-@router.post("/units/{unit_id}/gsa-commissions", response_model=GSACommissionDataResponse, status_code=201)
+@router.post(
+    "/units/{unit_id}/gsa-commissions", response_model=GSACommissionDataResponse, status_code=201
+)
 async def gsa_commissions_store(
     unit_id: int,
     body: StoreGSACommissionRequest,
@@ -840,15 +872,21 @@ async def gsa_commissions_store(
 
     return GSACommissionDataResponse(
         data=GSACommissionOut(
-            id=reg.id, source_type=reg.source_type, source_id=reg.source_id,
+            id=reg.id,
+            source_type=reg.source_type,
+            source_id=reg.source_id,
             beneficiary_user_id=reg.beneficiary_user_id,
-            commission=0, user_email=user.email, user_display_name=user.full_name,
+            commission=0,
+            user_email=user.email,
+            user_display_name=user.full_name,
         ),
         toast={"type": "success", "message": "Comisión GSA creada."},
     )
 
 
-@router.patch("/units/{unit_id}/gsa-commissions/{regalia_id}", response_model=GSACommissionDataResponse)
+@router.patch(
+    "/units/{unit_id}/gsa-commissions/{regalia_id}", response_model=GSACommissionDataResponse
+)
 async def gsa_commissions_update(
     unit_id: int,
     regalia_id: int,
@@ -860,7 +898,9 @@ async def gsa_commissions_update(
     r = await db.execute(
         select(Regalia)
         .options(selectinload(Regalia.beneficiary))
-        .where(Regalia.id == regalia_id, Regalia.source_type == "unit", Regalia.source_id == unit_id)
+        .where(
+            Regalia.id == regalia_id, Regalia.source_type == "unit", Regalia.source_id == unit_id
+        )
     )
     reg = r.scalar_one_or_none()
     if reg is None:
@@ -874,7 +914,9 @@ async def gsa_commissions_update(
 
     return GSACommissionDataResponse(
         data=GSACommissionOut(
-            id=reg.id, source_type=reg.source_type, source_id=reg.source_id,
+            id=reg.id,
+            source_type=reg.source_type,
+            source_id=reg.source_id,
             beneficiary_user_id=reg.beneficiary_user_id,
             commission=float(reg.commission) if reg.commission is not None else None,
             user_email=reg.beneficiary.email if reg.beneficiary else None,
@@ -893,7 +935,9 @@ async def gsa_commissions_destroy(
 ) -> dict:
     """Elimina una comisión GSA."""
     r = await db.execute(
-        select(Regalia).where(Regalia.id == regalia_id, Regalia.source_type == "unit", Regalia.source_id == unit_id)
+        select(Regalia).where(
+            Regalia.id == regalia_id, Regalia.source_type == "unit", Regalia.source_id == unit_id
+        )
     )
     reg = r.scalar_one_or_none()
     if reg is None:

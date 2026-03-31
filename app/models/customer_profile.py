@@ -50,7 +50,7 @@ class CustomerProfile(SoftDeleteMixin, TimestampMixin, Base):
     emergency_relation: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Misc
-    tags: Mapped[str | None] = mapped_column(Text, nullable=True)           # JSON array
+    tags: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
     notes_internal: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relaciones

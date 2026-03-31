@@ -42,15 +42,17 @@ class PasswordPolicy:
         # Partes del usuario prohibidas
         email = context.get("email", "")
         field_map = {
-            "first_name":    context.get("first_name", ""),
-            "last_name":     context.get("last_name", ""),
-            "display_name":  context.get("display_name", ""),
-            "email_local":   email.split("@")[0] if email else "",
+            "first_name": context.get("first_name", ""),
+            "last_name": context.get("last_name", ""),
+            "display_name": context.get("display_name", ""),
+            "email_local": email.split("@")[0] if email else "",
         }
         for key in cfg.get("forbid_user_parts", []):
             candidate = field_map.get(key, "").lower()
             if candidate and candidate in pwd_lower:
-                errors.append("La contraseña no debe incluir información personal (nombre, email, etc.).")
+                errors.append(
+                    "La contraseña no debe incluir información personal (nombre, email, etc.)."
+                )
                 break
 
         return errors
@@ -63,19 +65,19 @@ class PasswordPolicy:
             "min": cfg["min"],
             "max": cfg.get("max", 128),
             "require": {
-                "uppercase":  bool(req.get("uppercase")),
-                "lowercase":  bool(req.get("lowercase")),
-                "numbers":    bool(req.get("numbers")),
-                "symbols":    bool(req.get("symbols")),
+                "uppercase": bool(req.get("uppercase")),
+                "lowercase": bool(req.get("lowercase")),
+                "numbers": bool(req.get("numbers")),
+                "symbols": bool(req.get("symbols")),
                 "mixed_case": bool(req.get("mixed_case")),
             },
             "messages": {
-                "min":        f"Debe tener al menos {cfg['min']} caracteres.",
-                "uppercase":  "Debe incluir al menos una mayúscula.",
-                "lowercase":  "Debe incluir al menos una minúscula.",
-                "numbers":    "Debe incluir al menos un número.",
-                "symbols":    "Debe incluir al menos un símbolo.",
-                "max":        f"No debe exceder {cfg.get('max', 128)} caracteres.",
+                "min": f"Debe tener al menos {cfg['min']} caracteres.",
+                "uppercase": "Debe incluir al menos una mayúscula.",
+                "lowercase": "Debe incluir al menos una minúscula.",
+                "numbers": "Debe incluir al menos un número.",
+                "symbols": "Debe incluir al menos un símbolo.",
+                "max": f"No debe exceder {cfg.get('max', 128)} caracteres.",
                 "noPersonal": "No debe incluir tu nombre ni tu email.",
             },
         }

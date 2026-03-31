@@ -5,6 +5,7 @@ PlanVersionRepatriationCountry (admin).
 Equivale a la validación de PlanVersionCountryController.php
 y PlanVersionRepatriationCountryController.php.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class PlanCountryOut(BaseModel):
     """País asociado a una versión de plan (con precio)."""
+
     id: int
     name: dict
     iso2: str | None = None
@@ -29,6 +31,7 @@ class PlanCountryOut(BaseModel):
 
 class ModalCountryOut(BaseModel):
     """País para el modal de selección (con flag attached y precio)."""
+
     id: int
     name: dict
     iso2: str | None = None
@@ -86,6 +89,7 @@ class CountryDataToastResponse(BaseModel):
 
 class RepatriationCountryOut(BaseModel):
     """País de repatriación (sin precio)."""
+
     id: int
     name: dict
     iso2: str | None = None
@@ -100,6 +104,7 @@ class RepatriationCountryOut(BaseModel):
 
 class RepatriationModalCountryOut(BaseModel):
     """País para modal de repatriación (con flag attached)."""
+
     id: int
     name: dict
     iso2: str | None = None
@@ -129,19 +134,23 @@ class RepatriationCountryIndexResponse(BaseModel):
 
 class AttachCountriesRequest(BaseModel):
     """Request para asociar países."""
+
     country_ids: list[int] = Field(default_factory=list)
 
 
 class AttachZoneRequest(BaseModel):
     """Request para asociar todos los países de una zona."""
+
     zone_id: int
 
 
 class UpdateCountryPriceRequest(BaseModel):
     """Request para actualizar el precio de un país."""
+
     price: float | None = None
 
 
 class DetachByZoneRequest(BaseModel):
     """Request para desasociar los países de una zona."""
+
     zone_id: int

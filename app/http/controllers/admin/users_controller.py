@@ -112,9 +112,7 @@ async def _sync_roles(db: AsyncSession, user: User, role_names: list[str]) -> No
                 await svc.assign_role(user, role)
 
 
-async def _load_roles_for_users(
-    db: AsyncSession, user_ids: list[int]
-) -> dict[int, list[str]]:
+async def _load_roles_for_users(db: AsyncSession, user_ids: list[int]) -> dict[int, list[str]]:
     """Carga los roles de múltiples usuarios en una sola query (evita N+1)."""
     if not user_ids:
         return {}
@@ -428,9 +426,7 @@ async def show(
     svc = PermissionService(db)
     role_names = [r.name for r in await svc.get_roles(user)]
 
-    profile_r = await db.execute(
-        select(StaffProfile).where(StaffProfile.user_id == user_id)
-    )
+    profile_r = await db.execute(select(StaffProfile).where(StaffProfile.user_id == user_id))
     staff_profile = profile_r.scalar_one_or_none()
 
     return _build_user_out(user, role_names, staff_profile)
@@ -497,16 +493,18 @@ async def update(
     user.status = body.status
 
     # Upsert staff_profile
-    profile_r = await db.execute(
-        select(StaffProfile).where(StaffProfile.user_id == user_id)
-    )
+    profile_r = await db.execute(select(StaffProfile).where(StaffProfile.user_id == user_id))
     staff_profile = profile_r.scalar_one_or_none()
     if staff_profile is None:
         staff_profile = StaffProfile(user_id=user_id)
         db.add(staff_profile)
 
-    staff_profile.work_phone = body.work_phone if body.work_phone is not None else staff_profile.work_phone
-    staff_profile.notes_admin = body.notes_admin if body.notes_admin is not None else staff_profile.notes_admin
+    staff_profile.work_phone = (
+        body.work_phone if body.work_phone is not None else staff_profile.work_phone
+    )
+    staff_profile.notes_admin = (
+        body.notes_admin if body.notes_admin is not None else staff_profile.notes_admin
+    )
     staff_profile.commission_regular_first_year_pct = body.commission_regular_first_year_pct
     staff_profile.commission_regular_renewal_pct = body.commission_regular_renewal_pct
     staff_profile.commission_capitados_pct = body.commission_capitados_pct

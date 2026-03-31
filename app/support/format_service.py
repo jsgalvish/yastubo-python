@@ -79,13 +79,14 @@ class FormatService:
 
     # ── Privados ──────────────────────────────────────────────────────────────
 
-    def _to_datetime(self, value: Any) -> datetime | None:
+    def _to_datetime(self, value: Any) -> datetime | None:  # type: ignore[valid-type]
         if isinstance(value, datetime):
             return value
         if isinstance(value, (int, float)):
             return datetime.fromtimestamp(value)
         if isinstance(value, str) and value.strip():
             from dateutil.parser import ParserError, parse
+
             try:
                 return parse(value)
             except (ParserError, ValueError):
@@ -96,6 +97,7 @@ class FormatService:
         if locale:
             return locale
         from app.config import settings
+
         return (settings.app_timezone and "es") or "es"
 
     def _resolve_config_for_locale(self, locale: str) -> dict:
@@ -105,9 +107,9 @@ class FormatService:
         if FORMAT_LOCALES:
             return next(iter(FORMAT_LOCALES.values()))
         return {
-            "number_locale":   "en_US",
-            "date_format":     "%Y-%m-%d",
-            "time_format":     "%H:%M",
+            "number_locale": "en_US",
+            "date_format": "%Y-%m-%d",
+            "time_format": "%H:%M",
             "datetime_format": "%Y-%m-%d %H:%M",
-            "js_date_format":  "yyyy-MM-dd",
+            "js_date_format": "yyyy-MM-dd",
         }

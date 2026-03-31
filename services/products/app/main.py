@@ -2,11 +2,13 @@
 Yastubo — Service: Products
 Port: 8002
 """
+
 from __future__ import annotations
 
+import os
+import sys
 from contextlib import asynccontextmanager
 
-import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from fastapi import FastAPI, Request
@@ -14,6 +16,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app.controllers.config_controller import router as config_router
+from app.controllers.countries_controller import router as countries_router
+from app.controllers.coverages_controller import catalog_router, pv_cov_router
+from app.controllers.locale_controller import router as locale_router
+from app.controllers.plan_version_countries_controller import (
+    pv_country_router,
+    pv_repatriation_router,
+)
+from app.controllers.plan_versions_controller import router as plan_versions_router
+from app.controllers.products_controller import router as products_router
+from app.controllers.zones_controller import router as zones_router
 from common.config import settings
 from common.exceptions import (
     BaseAppException,
@@ -21,25 +34,18 @@ from common.exceptions import (
     TokenException,
     TransactionNotFoundException,
 )
-from app.controllers.products_controller import router as products_router
-from app.controllers.plan_versions_controller import router as plan_versions_router
-from app.controllers.plan_version_countries_controller import pv_country_router, pv_repatriation_router
-from app.controllers.coverages_controller import catalog_router, pv_cov_router
-from app.controllers.countries_controller import router as countries_router
-from app.controllers.zones_controller import router as zones_router
-from app.controllers.locale_controller import router as locale_router
-from app.controllers.config_controller import router as config_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
     from common.database import engine
+
     await engine.dispose()
 
 
 app = FastAPI(
-    title=f"Yastubo — Products",
+    title="Yastubo — Products",
     version="1.0.0",
     debug=settings.app_debug,
     lifespan=lifespan,
@@ -70,7 +76,10 @@ app.include_router(config_router)
 
 @app.exception_handler(RequestNotFoundException)
 async def request_not_found_handler(request: Request, exc: RequestNotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context})
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context},
+    )
 
 
 @app.exception_handler(TokenException)
@@ -80,7 +89,10 @@ async def token_exception_handler(request: Request, exc: TokenException):
 
 @app.exception_handler(TransactionNotFoundException)
 async def transaction_not_found_handler(request: Request, exc: TransactionNotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context})
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "error_code": exc.error_code, "context": exc.context},
+    )
 
 
 @app.exception_handler(BaseAppException)

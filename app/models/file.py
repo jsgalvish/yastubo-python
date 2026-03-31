@@ -32,6 +32,7 @@ class File(TimestampMixin, Base):
     def url(self) -> str | None:
         """Retorna la URL pública del archivo (si es público)."""
         from app.config import settings
+
         if self.disk == "public":
             return f"{settings.app_url}/storage/{self.path}"
         return None
@@ -39,4 +40,5 @@ class File(TimestampMixin, Base):
     def local_path(self) -> str:
         """Retorna la ruta absoluta local del archivo."""
         from app.config import settings
+
         return os.path.join(settings.app_storage_dir, self.path)

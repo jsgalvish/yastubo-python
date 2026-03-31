@@ -32,16 +32,16 @@ class Product(HasTranslatableJson, TimestampMixin, Base):
         Integer, ForeignKey("companies.id"), nullable=True
     )
     product_type: Mapped[str] = mapped_column(String(30), nullable=False)
-    name: Mapped[str | None] = mapped_column(Text, nullable=True)         # JSON {"es":..., "en":...}
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+    description: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON {"es":..., "en":...}
     status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     show_in_widget: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Relaciones
     company: Mapped[Company | None] = relationship("Company", back_populates="products")
-    versions: Mapped[list[PlanVersion]] = relationship(
-        "PlanVersion", back_populates="product"
-    )
+    versions: Mapped[list[PlanVersion]] = relationship("PlanVersion", back_populates="product")
 
     @property
     def name_es(self) -> str | None:

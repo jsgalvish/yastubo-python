@@ -25,19 +25,18 @@ Endpoints Version:
 
 Permiso: admin.templates.edit
 """
+
 from __future__ import annotations
 
 import json
 import secrets
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.template_request import (
     StoreTemplateRequest,
     StoreVersionRequest,
@@ -51,6 +50,8 @@ from app.requests.template_request import (
     VersionDataResponse,
     VersionOut,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.template import Template
 from common.models.template_version import TemplateVersion
 from common.models.user import User
@@ -85,10 +86,7 @@ def _version_out(v: TemplateVersion) -> VersionOut:
 
 
 async def _get_template(tid: int, db: AsyncSession) -> Template:
-    r = await db.execute(
-        select(Template)
-        .where(Template.id == tid, Template.deleted_at.is_(None))
-    )
+    r = await db.execute(select(Template).where(Template.id == tid, Template.deleted_at.is_(None)))
     t = r.scalar_one_or_none()
     if t is None:
         raise HTTPException(status_code=404, detail="Plantilla no encontrada.")
@@ -140,9 +138,7 @@ async def index(
 ) -> TemplateIndexResponse:
     """Lista todas las plantillas activas."""
     r = await db.execute(
-        select(Template)
-        .where(Template.deleted_at.is_(None))
-        .order_by(Template.name)
+        select(Template).where(Template.deleted_at.is_(None)).order_by(Template.name)
     )
     return TemplateIndexResponse(data=[_template_out(t) for t in r.scalars().all()])
 
@@ -188,10 +184,12 @@ async def show(
         .order_by(TemplateVersion.id)
     )
 
-    return TemplateShowResponse(data={
-        "template": _template_out(t).model_dump(),
-        "versions": [_version_out(v).model_dump() for v in versions_r.scalars().all()],
-    })
+    return TemplateShowResponse(
+        data={
+            "template": _template_out(t).model_dump(),
+            "versions": [_version_out(v).model_dump() for v in versions_r.scalars().all()],
+        }
+    )
 
 
 @router.patch("/{template_id}/basic", response_model=dict)
@@ -244,8 +242,9 @@ async def destroy(
 ) -> dict:
     """Soft-delete de una plantilla."""
     t = await _get_template(template_id, db)
-    from datetime import datetime, timezone
-    t.deleted_at = datetime.now(timezone.utc)
+    from datetime import datetime
+
+    t.deleted_at = datetime.now(UTC)
     await db.commit()
     return {"toast": {"type": "success", "message": "Plantilla eliminada."}}
 
@@ -408,7 +407,11 @@ async def deactivate(
     return {"toast": {"type": "success", "message": "Versión desactivada."}}
 
 
-@router.post("/{template_id}/versions/{version_id}/clone", response_model=VersionDataResponse, status_code=201)
+@router.post(
+    "/{template_id}/versions/{version_id}/clone",
+    response_model=VersionDataResponse,
+    status_code=201,
+)
 async def clone_version(
     template_id: int,
     version_id: int,
@@ -469,8 +472,8 @@ async def preview_version_pdf(
     t = await _get_template(template_id, db)
     v = await _get_version(template_id, version_id, db)
 
+    from common.services.pdf.pdf_service import html_to_pdf_async
     from common.services.template_render.template_render_service import TemplateRenderService
-    from common.services.pdf.pdf_service import render_template, html_to_pdf_async
 
     render_service = TemplateRenderService(db)
     data = await render_service.build_merged_data(t, v)
@@ -494,8 +497,8 @@ async def preview_active_pdf(
 
     v = await _get_version(template_id, t.active_template_version_id, db)
 
+    from common.services.pdf.pdf_service import html_to_pdf_async
     from common.services.template_render.template_render_service import TemplateRenderService
-    from common.services.pdf.pdf_service import render_template, html_to_pdf_async
 
     render_service = TemplateRenderService(db)
     data = await render_service.build_merged_data(t, v)

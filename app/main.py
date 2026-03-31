@@ -5,6 +5,7 @@ Cambios aplicados por auditoría de skills:
   - HIGH-3: CORS middleware para permitir requests cross-origin
   - HIGH-4: Lifespan context manager para startup/shutdown
 """
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

@@ -19,6 +19,7 @@ Endpoints PlanVersionRepatriationCountry:
 
 Permiso requerido: admin.products.manage
 """
+
 from __future__ import annotations
 
 import json
@@ -141,7 +142,10 @@ def _transform_repatriation_modal_country(country: Country, attached: bool) -> d
 
 
 async def _get_zone_or_404(
-    zone_id: int, db: AsyncSession, *, require_active: bool = False,
+    zone_id: int,
+    db: AsyncSession,
+    *,
+    require_active: bool = False,
 ) -> Zone:
     stmt = select(Zone).where(Zone.id == zone_id)
     if require_active:
@@ -237,10 +241,7 @@ async def countries_index(
         attached_map[country.id] = float(price) if price is not None else None
 
     # plan_countries: solo los asociados
-    plan_countries = [
-        _transform_plan_country(country, price)
-        for country, price in attached_rows
-    ]
+    plan_countries = [_transform_plan_country(country, price) for country, price in attached_rows]
 
     # countries: todos con flag attached + precio
     countries = [
@@ -609,8 +610,7 @@ async def repatriation_index(
     plan_countries = [_transform_repatriation_country(c) for c in attached_countries]
 
     countries = [
-        _transform_repatriation_modal_country(c, c.id in attached_ids)
-        for c in all_countries_list
+        _transform_repatriation_modal_country(c, c.id in attached_ids) for c in all_countries_list
     ]
 
     zones = await _get_zones_with_count(db)

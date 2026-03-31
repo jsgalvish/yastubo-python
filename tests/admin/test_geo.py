@@ -7,6 +7,7 @@ Estrategia:
 - Fixtures scope="module" con SQLite en memoria.
 - Datos semilla reutilizados entre tests.
 """
+
 from __future__ import annotations
 
 import json
@@ -452,9 +453,7 @@ class TestZoneToggleActive:
 
 
 class TestZoneCountries:
-    async def test_attach_country(
-        self, client, actor_token_admin, seed_zone_id, async_engine
-    ):
+    async def test_attach_country(self, client, actor_token_admin, seed_zone_id, async_engine):
         """Asociar un país a una zona."""
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as db:
@@ -485,9 +484,7 @@ class TestZoneCountries:
         assert r2.status_code == 200
         assert any(c["id"] == country_id for c in r2.json()["countries"])
 
-    async def test_attach_idempotente(
-        self, client, actor_token_admin, seed_zone_id, async_engine
-    ):
+    async def test_attach_idempotente(self, client, actor_token_admin, seed_zone_id, async_engine):
         """Asociar el mismo país dos veces no genera error."""
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as db:
@@ -524,9 +521,7 @@ class TestZoneCountries:
         )
         assert r.status_code == 404
 
-    async def test_detach_country(
-        self, client, actor_token_admin, seed_zone_id, async_engine
-    ):
+    async def test_detach_country(self, client, actor_token_admin, seed_zone_id, async_engine):
         """Desasociar un país de una zona."""
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as db:
@@ -580,9 +575,7 @@ class TestZoneCountries:
         assert all("attached" in c for c in body["countries"])
         assert all("continent_label" in c for c in body["countries"])
 
-    async def test_zone_no_existente_retorna_404_en_countries(
-        self, client, actor_token_admin
-    ):
+    async def test_zone_no_existente_retorna_404_en_countries(self, client, actor_token_admin):
         r = await client.get(
             "/admin/zones/99999/countries",
             headers={"Authorization": f"Bearer {actor_token_admin}"},

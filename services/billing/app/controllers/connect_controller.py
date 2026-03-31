@@ -8,16 +8,15 @@ Endpoints:
   POST   /admin/connect/accounts/{id}/link → generar link de onboarding
   POST   /admin/connect/transfer           → transferir comisión
 """
+
 from __future__ import annotations
 
 import os
 
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from common.database import get_db
 from common.middleware.permission import require_permission
 from common.models.user import User
 
@@ -84,7 +83,7 @@ async def create_express_account(
         )
 
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error Stripe Connect: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error Stripe Connect: {e!s}")
 
 
 @router.get("/accounts")
@@ -97,18 +96,20 @@ async def list_express_accounts(
         data = []
         for acc in accounts.data:
             meta = getattr(acc, "metadata", {}) or {}
-            data.append({
-                "id": acc.id,
-                "email": getattr(acc, "email", None),
-                "country": getattr(acc, "country", None),
-                "charges_enabled": getattr(acc, "charges_enabled", False),
-                "payouts_enabled": getattr(acc, "payouts_enabled", False),
-                "name": meta.get("name", "") if isinstance(meta, dict) else "",
-                "user_id": meta.get("user_id", "") if isinstance(meta, dict) else "",
-            })
+            data.append(
+                {
+                    "id": acc.id,
+                    "email": getattr(acc, "email", None),
+                    "country": getattr(acc, "country", None),
+                    "charges_enabled": getattr(acc, "charges_enabled", False),
+                    "payouts_enabled": getattr(acc, "payouts_enabled", False),
+                    "name": meta.get("name", "") if isinstance(meta, dict) else "",
+                    "user_id": meta.get("user_id", "") if isinstance(meta, dict) else "",
+                }
+            )
         return {"data": data}
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error: {e!s}")
 
 
 @router.post("/accounts/{account_id}/link")
@@ -127,7 +128,7 @@ async def create_onboarding_link(
         )
         return {"url": link.url}
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error: {e!s}")
 
 
 @router.post("/transfer")
@@ -145,4 +146,4 @@ async def create_transfer(
         )
         return {"transfer_id": transfer.id, "amount": body.amount_cents, "status": "completed"}
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error: {e!s}")

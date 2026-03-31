@@ -18,8 +18,10 @@ class UnitOfMeasure(HasTranslatableJson, TimestampMixin, Base):
     TYPE_NONE = "none"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str | None] = mapped_column(Text, nullable=True)         # JSON {"es":..., "en":...}
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON {"es":..., "en":...}
+    description: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON {"es":..., "en":...}
     measure_type: Mapped[str] = mapped_column(String(20), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
 

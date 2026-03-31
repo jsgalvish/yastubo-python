@@ -3,11 +3,12 @@ Schemas Pydantic para endpoints de Countries y Zones (admin).
 Equivale a StoreCountryRequest, UpdateCountryRequest,
 StoreZoneRequest, UpdateZoneRequest en PHP.
 """
+
 from __future__ import annotations
 
 import json as _json
 import re
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -31,7 +32,7 @@ class StoreCountryRequest(BaseModel):
     iso2: str = Field(..., min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")
     iso3: str = Field(..., min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
     continent_code: str = Field(..., min_length=2, max_length=2)
-    phone_code: Optional[str] = Field(None, max_length=10)
+    phone_code: str | None = Field(None, max_length=10)
 
     @field_validator("continent_code")
     @classmethod
@@ -48,7 +49,7 @@ class StoreCountryRequest(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def uppercase_iso(self) -> "StoreCountryRequest":
+    def uppercase_iso(self) -> StoreCountryRequest:
         self.iso2 = self.iso2.upper()
         self.iso3 = self.iso3.upper()
         return self
@@ -59,7 +60,7 @@ class UpdateCountryRequest(BaseModel):
     iso2: str = Field(..., min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")
     iso3: str = Field(..., min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
     continent_code: str = Field(..., min_length=2, max_length=2)
-    phone_code: Optional[str] = Field(None, max_length=10)
+    phone_code: str | None = Field(None, max_length=10)
 
     @field_validator("continent_code")
     @classmethod
@@ -76,7 +77,7 @@ class UpdateCountryRequest(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def uppercase_iso(self) -> "UpdateCountryRequest":
+    def uppercase_iso(self) -> UpdateCountryRequest:
         self.iso2 = self.iso2.upper()
         self.iso3 = self.iso3.upper()
         return self
@@ -84,12 +85,12 @@ class UpdateCountryRequest(BaseModel):
 
 class CountryOut(BaseModel):
     id: int
-    name: Optional[Any] = None
-    iso2: Optional[str] = None
-    iso3: Optional[str] = None
-    continent_code: Optional[str] = None
-    continent_label: Optional[str] = None
-    phone_code: Optional[str] = None
+    name: Any | None = None
+    iso2: str | None = None
+    iso3: str | None = None
+    continent_code: str | None = None
+    continent_label: str | None = None
+    phone_code: str | None = None
     is_active: bool = True
 
     model_config = {"from_attributes": True}
@@ -109,10 +110,10 @@ class CountryForZoneOut(BaseModel):
     """Resumen de país en respuestas de zona."""
 
     id: int
-    name: Optional[Any] = None
-    continent_code: Optional[str] = None
-    continent_label: Optional[str] = None
-    phone_code: Optional[str] = None
+    name: Any | None = None
+    continent_code: str | None = None
+    continent_label: str | None = None
+    phone_code: str | None = None
     is_active: bool = True
 
     model_config = {"from_attributes": True}
@@ -139,18 +140,18 @@ class CountryAvailableOut(CountryForZoneOut):
 
 class StoreZoneRequest(BaseModel):
     name: str = Field(..., max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class UpdateZoneRequest(BaseModel):
     name: str = Field(..., max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class ZoneSimpleOut(BaseModel):
     id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool = True
 
     model_config = {"from_attributes": True}
@@ -159,7 +160,7 @@ class ZoneSimpleOut(BaseModel):
 class ZoneOut(BaseModel):
     id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool = True
     countries: list[CountryForZoneOut] = []
     countries_count: int = 0

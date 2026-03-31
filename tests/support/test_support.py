@@ -9,6 +9,7 @@ from app.support.realm import Realm, _current_realm_var
 
 # ── Realm ─────────────────────────────────────────────────────────────────────
 
+
 class TestRealm:
     def setup_method(self):
         _current_realm_var.set(None)
@@ -47,6 +48,7 @@ class TestRealm:
 
 # ── CapitatedRejectionCodes ───────────────────────────────────────────────────
 
+
 class TestCapitatedRejectionCodes:
     def test_constants_exist(self):
         assert CapitatedRejectionCodes.PLAN_INVALID_PRODUCT == "PLAN_INVALID_PRODUCT"
@@ -60,6 +62,7 @@ class TestCapitatedRejectionCodes:
 
 
 # ── JsonDecode ────────────────────────────────────────────────────────────────
+
 
 class TestJsonDecode:
     def test_attribute_access(self):
@@ -93,7 +96,7 @@ class TestJsonDecode:
         assert result["value"] == 42
 
     def test_get_array(self):
-        result = JsonDecode.get('[1, 2, 3]')
+        result = JsonDecode.get("[1, 2, 3]")
         assert result == [1, 2, 3]
 
     def test_get_nested(self):
@@ -105,6 +108,7 @@ class TestJsonDecode:
 
 
 # ── FormatService ─────────────────────────────────────────────────────────────
+
 
 class TestFormatService:
     def test_date_es(self):
@@ -151,6 +155,7 @@ class TestFormatService:
 
 # ── PasswordPolicy ────────────────────────────────────────────────────────────
 
+
 class TestPasswordPolicy:
     def setup_method(self):
         self.policy = PasswordPolicy()
@@ -195,6 +200,7 @@ class TestPasswordPolicy:
 
 
 # ── FormatService extended ────────────────────────────────────────────────────
+
 
 class TestFormatServiceExtended:
     def test_get_locale(self):
@@ -262,6 +268,7 @@ class TestFormatServiceExtended:
 
 
 # ── env_any ───────────────────────────────────────────────────────────────────
+
 
 class TestEnvAny:
     def test_false_when_not_set(self):

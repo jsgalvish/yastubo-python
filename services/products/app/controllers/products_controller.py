@@ -15,6 +15,7 @@ Cambios aplicados por auditoría de skills:
   - MED-7: _actor → _current_user
   - MED-8: type hints en helpers
 """
+
 from __future__ import annotations
 
 import json
@@ -23,8 +24,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.product_request import (
     ProductDataResponse,
     ProductDataToastResponse,
@@ -33,6 +32,8 @@ from app.requests.product_request import (
     StoreProductRequest,
     UpdateProductRequest,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.product import Product
 from common.models.user import User
 
@@ -71,9 +72,7 @@ def _build_product_out(product: Product) -> ProductOut:
 
 async def _get_product(product_id: int, db: AsyncSession) -> Product:
     """Carga un producto por ID. 404 si no existe."""
-    result = await db.execute(
-        select(Product).where(Product.id == product_id)
-    )
+    result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado.")
@@ -136,9 +135,7 @@ async def store(
     product = Product()
     product.name = json.dumps(body.name.model_dump(), ensure_ascii=False)
     product.description = (
-        json.dumps(body.description.model_dump(), ensure_ascii=False)
-        if body.description
-        else None
+        json.dumps(body.description.model_dump(), ensure_ascii=False) if body.description else None
     )
     product.product_type = body.product_type
     product.show_in_widget = body.show_in_widget

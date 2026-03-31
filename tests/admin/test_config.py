@@ -8,6 +8,7 @@ Estrategia:
 - Config CRUD: store, show, updateDefinition, updateValue, destroy.
 - Validación de token único por categoría.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
@@ -42,16 +43,23 @@ async def actor_token(async_engine):
     Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         actor = User(
-            realm="admin", email="config_actor@test.com",
-            password=_hashed("Pass1!"), first_name="Config", last_name="Actor",
-            status="active", force_password_change=False,
+            realm="admin",
+            email="config_actor@test.com",
+            password=_hashed("Pass1!"),
+            first_name="Config",
+            last_name="Actor",
+            status="active",
+            force_password_change=False,
         )
         db.add(actor)
         await db.flush()
 
         for pname in (
-            "admin.config.read", "admin.config.create",
-            "admin.config.edit", "admin.config.fill", "admin.config.delete",
+            "admin.config.read",
+            "admin.config.create",
+            "admin.config.edit",
+            "admin.config.fill",
+            "admin.config.delete",
         ):
             perm = Permission(name=pname, guard_name="admin")
             db.add(perm)
@@ -100,14 +108,21 @@ class TestDashboard:
 
 class TestConfigStore:
     async def test_sin_token_retorna_401(self, client):
-        r = await client.post("/admin/config", json={
-            "category": "general", "name": "X", "token": "x", "type": "integer",
-        })
+        r = await client.post(
+            "/admin/config",
+            json={
+                "category": "general",
+                "name": "X",
+                "token": "x",
+                "type": "integer",
+            },
+        )
         assert r.status_code == 401
 
     async def test_crea_item(self, client, actor_token):
         r = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={
                 "category": "general",
                 "name": "Nombre Empresa",
@@ -123,11 +138,13 @@ class TestConfigStore:
 
     async def test_token_duplicado_retorna_422(self, client, actor_token):
         await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "dup", "name": "Dup", "token": "dup_token", "type": "integer"},
         )
         r = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "dup", "name": "Dup2", "token": "dup_token", "type": "integer"},
         )
         assert r.status_code == 422
@@ -139,7 +156,8 @@ class TestConfigStore:
 class TestConfigShow:
     async def test_show_item(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "show", "name": "Show Item", "token": "show_item", "type": "integer"},
         )
         iid = cr.json()["item"]["id"]
@@ -170,13 +188,15 @@ class TestConfigIndex:
 class TestConfigUpdateDefinition:
     async def test_update_definition(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "def", "name": "Def Item", "token": "def_item", "type": "integer"},
         )
         iid = cr.json()["item"]["id"]
 
         r = await client.put(
-            f"/admin/config/{iid}/definition", headers=_auth(actor_token),
+            f"/admin/config/{iid}/definition",
+            headers=_auth(actor_token),
             json={"name": "Renamed", "type": "decimal"},
         )
         assert r.status_code == 200
@@ -190,13 +210,15 @@ class TestConfigUpdateDefinition:
 class TestConfigUpdateValue:
     async def test_update_integer_value(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "val", "name": "Int Item", "token": "int_item", "type": "integer"},
         )
         iid = cr.json()["item"]["id"]
 
         r = await client.put(
-            f"/admin/config/{iid}/value", headers=_auth(actor_token),
+            f"/admin/config/{iid}/value",
+            headers=_auth(actor_token),
             json={"value": 42},
         )
         assert r.status_code == 200
@@ -204,13 +226,20 @@ class TestConfigUpdateValue:
 
     async def test_update_text_value(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
-            json={"category": "val", "name": "Text Item", "token": "text_item", "type": "input_text_plain"},
+            "/admin/config",
+            headers=_auth(actor_token),
+            json={
+                "category": "val",
+                "name": "Text Item",
+                "token": "text_item",
+                "type": "input_text_plain",
+            },
         )
         iid = cr.json()["item"]["id"]
 
         r = await client.put(
-            f"/admin/config/{iid}/value", headers=_auth(actor_token),
+            f"/admin/config/{iid}/value",
+            headers=_auth(actor_token),
             json={"value": "Hello World"},
         )
         assert r.status_code == 200
@@ -218,13 +247,20 @@ class TestConfigUpdateValue:
 
     async def test_update_translated_value(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
-            json={"category": "val", "name": "Trans Item", "token": "trans_item", "type": "input_text_translated"},
+            "/admin/config",
+            headers=_auth(actor_token),
+            json={
+                "category": "val",
+                "name": "Trans Item",
+                "token": "trans_item",
+                "type": "input_text_translated",
+            },
         )
         iid = cr.json()["item"]["id"]
 
         r = await client.put(
-            f"/admin/config/{iid}/value", headers=_auth(actor_token),
+            f"/admin/config/{iid}/value",
+            headers=_auth(actor_token),
             json={"value": {"es": "Hola", "en": "Hello"}},
         )
         assert r.status_code == 200
@@ -232,13 +268,15 @@ class TestConfigUpdateValue:
 
     async def test_update_null_value(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "val", "name": "Null Item", "token": "null_item", "type": "integer"},
         )
         iid = cr.json()["item"]["id"]
 
         r = await client.put(
-            f"/admin/config/{iid}/value", headers=_auth(actor_token),
+            f"/admin/config/{iid}/value",
+            headers=_auth(actor_token),
             json={"value": None},
         )
         assert r.status_code == 200
@@ -251,7 +289,8 @@ class TestConfigUpdateValue:
 class TestConfigDestroy:
     async def test_destroy(self, client, actor_token):
         cr = await client.post(
-            "/admin/config", headers=_auth(actor_token),
+            "/admin/config",
+            headers=_auth(actor_token),
             json={"category": "del", "name": "Del Item", "token": "del_item", "type": "integer"},
         )
         iid = cr.json()["item"]["id"]

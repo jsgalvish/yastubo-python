@@ -7,6 +7,7 @@ Estrategia:
 - seed_role_id / seed_permission_id: datos base reutilizados en múltiples tests.
 - Cada test que crea datos usa nombres únicos para evitar colisiones.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
@@ -117,9 +118,7 @@ class TestMatrixData:
         assert r.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_guard_invalido_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_guard_invalido_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.get(
             "/admin/acl/roles/invalid_guard/matrix",
             headers=_auth(actor_token),
@@ -187,9 +186,7 @@ class TestStoreRole:
         assert data["id"] > 0
 
     @pytest.mark.asyncio
-    async def test_crea_rol_con_label_y_scope(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_crea_rol_con_label_y_scope(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/acl/roles/admin/roles",
             headers=_auth(actor_token),
@@ -229,9 +226,7 @@ class TestStoreRole:
         assert r.status_code == 201
 
     @pytest.mark.asyncio
-    async def test_guard_invalido_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_guard_invalido_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/acl/roles/superadmin/roles",
             headers=_auth(actor_token),
@@ -245,9 +240,7 @@ class TestStoreRole:
 
 class TestUpdateRole:
     @pytest.mark.asyncio
-    async def test_sin_auth_retorna_401(
-        self, client: AsyncClient, seed_role_id: int
-    ):
+    async def test_sin_auth_retorna_401(self, client: AsyncClient, seed_role_id: int):
         r = await client.put(
             f"/admin/acl/roles/admin/roles/{seed_role_id}",
             json={"name": "nuevo"},
@@ -255,9 +248,7 @@ class TestUpdateRole:
         assert r.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_actualiza_nombre(
-        self, client: AsyncClient, actor_token: str, seed_role_id: int
-    ):
+    async def test_actualiza_nombre(self, client: AsyncClient, actor_token: str, seed_role_id: int):
         r = await client.put(
             f"/admin/acl/roles/admin/roles/{seed_role_id}",
             headers=_auth(actor_token),
@@ -280,9 +271,7 @@ class TestUpdateRole:
         assert r.json()["scope"] == "unit"
 
     @pytest.mark.asyncio
-    async def test_rol_no_encontrado_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_rol_no_encontrado_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.put(
             "/admin/acl/roles/admin/roles/999999",
             headers=_auth(actor_token),
@@ -309,9 +298,7 @@ class TestUpdateRole:
 class TestStorePermission:
     @pytest.mark.asyncio
     async def test_sin_auth_retorna_401(self, client: AsyncClient):
-        r = await client.post(
-            "/admin/acl/roles/admin/permissions", json={"name": "x"}
-        )
+        r = await client.post("/admin/acl/roles/admin/permissions", json={"name": "x"})
         assert r.status_code == 401
 
     @pytest.mark.asyncio
@@ -328,9 +315,7 @@ class TestStorePermission:
         assert data["description"] == "Permiso de prueba"
 
     @pytest.mark.asyncio
-    async def test_nombre_duplicado_retorna_422(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_nombre_duplicado_retorna_422(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/acl/roles/admin/permissions",
             headers=_auth(actor_token),
@@ -339,9 +324,7 @@ class TestStorePermission:
         assert r.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_guard_invalido_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_guard_invalido_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.post(
             "/admin/acl/roles/invalidguard/permissions",
             headers=_auth(actor_token),
@@ -355,9 +338,7 @@ class TestStorePermission:
 
 class TestUpdatePermission:
     @pytest.mark.asyncio
-    async def test_sin_auth_retorna_401(
-        self, client: AsyncClient, seed_permission_id: int
-    ):
+    async def test_sin_auth_retorna_401(self, client: AsyncClient, seed_permission_id: int):
         r = await client.put(
             f"/admin/acl/roles/admin/permissions/{seed_permission_id}",
             json={"name": "nuevo"},
@@ -389,9 +370,7 @@ class TestUpdatePermission:
         assert r.json()["name"] == "acl.seed.perm.updated"
 
     @pytest.mark.asyncio
-    async def test_permiso_no_encontrado_retorna_404(
-        self, client: AsyncClient, actor_token: str
-    ):
+    async def test_permiso_no_encontrado_retorna_404(self, client: AsyncClient, actor_token: str):
         r = await client.put(
             "/admin/acl/roles/admin/permissions/999999",
             headers=_auth(actor_token),

@@ -9,6 +9,7 @@ Estrategia:
 - GSA Commissions: store, update, destroy, available.
 - Reglas: jerarquía padre, duplicados, validación de status.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
@@ -46,9 +47,13 @@ async def actor_token(async_engine):
     Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         actor = User(
-            realm="admin", email="bu_actor@test.com",
-            password=_hashed("Pass1!"), first_name="BU", last_name="Actor",
-            status="active", force_password_change=False,
+            realm="admin",
+            email="bu_actor@test.com",
+            password=_hashed("Pass1!"),
+            first_name="BU",
+            last_name="Actor",
+            status="active",
+            force_password_change=False,
         )
         db.add(actor)
         await db.flush()
@@ -68,9 +73,13 @@ async def seed_member_user_id(async_engine):
     Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         user = User(
-            realm="admin", email="member@test.com",
-            password=_hashed("Pass1!"), first_name="Member", last_name="User",
-            status="active", force_password_change=False,
+            realm="admin",
+            email="member@test.com",
+            password=_hashed("Pass1!"),
+            first_name="Member",
+            last_name="User",
+            status="active",
+            force_password_change=False,
         )
         db.add(user)
         await db.commit()
@@ -122,7 +131,8 @@ class TestUnitStore:
 
     async def test_crea_consolidador(self, client, actor_token):
         r = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Consolidador A"},
         )
         assert r.status_code == 201
@@ -132,13 +142,15 @@ class TestUnitStore:
     async def test_crea_office_con_padre(self, client, actor_token):
         # Crear consolidador
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Parent"},
         )
         parent_id = cr.json()["data"]["id"]
 
         r = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "office", "name": "Office B", "parent_id": parent_id},
         )
         assert r.status_code == 201
@@ -146,14 +158,16 @@ class TestUnitStore:
 
     async def test_consolidador_con_padre_retorna_422(self, client, actor_token):
         r = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Bad", "parent_id": 1},
         )
         assert r.status_code == 422
 
     async def test_counter_sin_padre_retorna_422(self, client, actor_token):
         r = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "counter", "name": "Bad Counter"},
         )
         assert r.status_code == 422
@@ -162,7 +176,8 @@ class TestUnitStore:
 class TestUnitList:
     async def test_lista_por_tipo(self, client, actor_token):
         r = await client.get(
-            f"{_BASE}/units?type=consolidator", headers=_auth(actor_token),
+            f"{_BASE}/units?type=consolidator",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 200
         assert "data" in r.json()
@@ -174,7 +189,8 @@ class TestUnitList:
 class TestUnitShow:
     async def test_show(self, client, actor_token):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Show Unit"},
         )
         uid = cr.json()["data"]["id"]
@@ -190,13 +206,15 @@ class TestUnitShow:
 class TestUnitChildren:
     async def test_children(self, client, actor_token):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Parent Children"},
         )
         pid = cr.json()["data"]["id"]
 
         await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "office", "name": "Child 1", "parent_id": pid},
         )
 
@@ -208,13 +226,15 @@ class TestUnitChildren:
 class TestUnitUpdateBasic:
     async def test_update_name(self, client, actor_token):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "freelance", "name": "Old Name"},
         )
         uid = cr.json()["data"]["id"]
 
         r = await client.patch(
-            f"{_BASE}/units/{uid}/basic", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/basic",
+            headers=_auth(actor_token),
             json={"name": "New Name"},
         )
         assert r.status_code == 200
@@ -224,14 +244,16 @@ class TestUnitUpdateBasic:
 class TestUnitUpdateStatus:
     async def test_toggle_status(self, client, actor_token):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Status Unit"},
         )
         uid = cr.json()["data"]["id"]
         assert cr.json()["data"]["status"] == "active"
 
         r = await client.patch(
-            f"{_BASE}/units/{uid}/status", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/status",
+            headers=_auth(actor_token),
             json={"status": "inactive"},
         )
         assert r.status_code == 200
@@ -246,13 +268,15 @@ class TestUnitUpdateStatus:
 class TestMembers:
     async def test_link_member(self, client, actor_token, seed_member_user_id, seed_role_id):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Members Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         r = await client.post(
-            f"{_BASE}/units/{uid}/members", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/members",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id, "role_id": seed_role_id},
         )
         assert r.status_code == 201
@@ -262,7 +286,8 @@ class TestMembers:
     async def test_list_members(self, client, actor_token, seed_member_user_id):
         # Buscar una unidad con miembro
         units_r = await client.get(
-            f"{_BASE}/units?type=consolidator", headers=_auth(actor_token),
+            f"{_BASE}/units?type=consolidator",
+            headers=_auth(actor_token),
         )
         uid = None
         for u in units_r.json()["data"]:
@@ -277,36 +302,42 @@ class TestMembers:
 
     async def test_duplicate_member_retorna_422(self, client, actor_token, seed_member_user_id):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Dup Member Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         await client.post(
-            f"{_BASE}/units/{uid}/members", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/members",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id},
         )
         r2 = await client.post(
-            f"{_BASE}/units/{uid}/members", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/members",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id},
         )
         assert r2.status_code == 422
 
     async def test_remove_member(self, client, actor_token, seed_member_user_id):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "Remove Member"},
         )
         uid = cr.json()["data"]["id"]
 
         mr = await client.post(
-            f"{_BASE}/units/{uid}/members", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/members",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id},
         )
         mid = mr.json()["data"]["id"]
 
         r = await client.delete(
-            f"{_BASE}/units/{uid}/members/{mid}", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/members/{mid}",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 200
 
@@ -319,13 +350,15 @@ class TestMembers:
 class TestGSACommissions:
     async def test_store_commission(self, client, actor_token, seed_member_user_id):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "GSA Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         r = await client.post(
-            f"{_BASE}/units/{uid}/gsa-commissions", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id},
         )
         assert r.status_code == 201
@@ -334,19 +367,22 @@ class TestGSACommissions:
 
     async def test_update_commission(self, client, actor_token, seed_member_user_id):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "GSA Update Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         sr = await client.post(
-            f"{_BASE}/units/{uid}/gsa-commissions", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id},
         )
         rid = sr.json()["data"]["id"]
 
         r = await client.patch(
-            f"{_BASE}/units/{uid}/gsa-commissions/{rid}", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions/{rid}",
+            headers=_auth(actor_token),
             json={"commission": 12.5},
         )
         assert r.status_code == 200
@@ -354,31 +390,36 @@ class TestGSACommissions:
 
     async def test_destroy_commission(self, client, actor_token, seed_member_user_id):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "GSA Del Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         sr = await client.post(
-            f"{_BASE}/units/{uid}/gsa-commissions", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions",
+            headers=_auth(actor_token),
             json={"user_id": seed_member_user_id},
         )
         rid = sr.json()["data"]["id"]
 
         r = await client.delete(
-            f"{_BASE}/units/{uid}/gsa-commissions/{rid}", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions/{rid}",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 200
 
     async def test_available_gsa_users(self, client, actor_token):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "GSA Avail Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         r = await client.get(
-            f"{_BASE}/units/{uid}/gsa-commissions/available", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions/available",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 200
         assert "data" in r.json()
@@ -386,13 +427,15 @@ class TestGSACommissions:
 
     async def test_list_commissions(self, client, actor_token):
         cr = await client.post(
-            f"{_BASE}/units", headers=_auth(actor_token),
+            f"{_BASE}/units",
+            headers=_auth(actor_token),
             json={"type": "consolidator", "name": "GSA List Unit"},
         )
         uid = cr.json()["data"]["id"]
 
         r = await client.get(
-            f"{_BASE}/units/{uid}/gsa-commissions", headers=_auth(actor_token),
+            f"{_BASE}/units/{uid}/gsa-commissions",
+            headers=_auth(actor_token),
         )
         assert r.status_code == 200
         assert isinstance(r.json()["data"], list)

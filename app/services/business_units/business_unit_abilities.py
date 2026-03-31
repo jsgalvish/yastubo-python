@@ -26,33 +26,33 @@ LEVEL_GLOBAL = 3
 
 ABILITY_PERMISSION_MAP: dict[str, tuple[str, int]] = {
     # Acceso global a la estructura (listado raiz, etc.)
-    "can_structure_view":           ("unit.structure.view",        LEVEL_LOCAL),
+    "can_structure_view": ("unit.structure.view", LEVEL_LOCAL),
     # Datos basicos
-    "can_basic_view":               ("unit.basic.view",            LEVEL_LOCAL),
-    "can_basic_edit":               ("unit.basic.edit",            LEVEL_LOCAL),
+    "can_basic_view": ("unit.basic.view", LEVEL_LOCAL),
+    "can_basic_edit": ("unit.basic.edit", LEVEL_LOCAL),
     # Branding
-    "can_branding_view":            ("unit.branding.view",         LEVEL_LOCAL),
-    "can_branding_manage":          ("unit.branding.manage",       LEVEL_LOCAL),
+    "can_branding_view": ("unit.branding.view", LEVEL_LOCAL),
+    "can_branding_manage": ("unit.branding.manage", LEVEL_LOCAL),
     # Miembros
-    "can_members_view":             ("unit.members.view",          LEVEL_LOCAL),
-    "can_members_invite":           ("unit.members.invite",        LEVEL_LOCAL),
-    "can_members_manage_roles":     ("unit.members.manage_roles",  LEVEL_LOCAL),
-    "can_members_manage_roles_any": ("unit.members.manage_roles",  LEVEL_INHERITED),
-    "can_members_remove":           ("unit.members.remove",        LEVEL_INHERITED),
+    "can_members_view": ("unit.members.view", LEVEL_LOCAL),
+    "can_members_invite": ("unit.members.invite", LEVEL_LOCAL),
+    "can_members_manage_roles": ("unit.members.manage_roles", LEVEL_LOCAL),
+    "can_members_manage_roles_any": ("unit.members.manage_roles", LEVEL_INHERITED),
+    "can_members_remove": ("unit.members.remove", LEVEL_INHERITED),
     # Hijos (estructura)
-    "can_manage_children":          ("unit.manage_children",       LEVEL_LOCAL),
+    "can_manage_children": ("unit.manage_children", LEVEL_LOCAL),
     # Estado de la unidad
-    "can_toggle_status":            ("unit.structure.manage",      LEVEL_INHERITED),
+    "can_toggle_status": ("unit.structure.manage", LEVEL_INHERITED),
     # Operaciones globales sobre estructura
-    "can_move":                     ("unit.structure.manage",      LEVEL_GLOBAL),
-    "can_change_type":              ("unit.structure.manage",      LEVEL_GLOBAL),
-    "can_create":                   ("unit.structure.manage",      LEVEL_GLOBAL),
+    "can_move": ("unit.structure.manage", LEVEL_GLOBAL),
+    "can_change_type": ("unit.structure.manage", LEVEL_GLOBAL),
+    "can_create": ("unit.structure.manage", LEVEL_GLOBAL),
     # Operaciones globales sobre usuarios
-    "can_pick_active_users":        ("unit.members.invite",        LEVEL_GLOBAL),
-    "can_products_sell":            ("unit.products.sell",          LEVEL_GLOBAL),
-    "can_access":                   ("unit.structure.view",        LEVEL_LOCAL),
+    "can_pick_active_users": ("unit.members.invite", LEVEL_GLOBAL),
+    "can_products_sell": ("unit.products.sell", LEVEL_GLOBAL),
+    "can_access": ("unit.structure.view", LEVEL_LOCAL),
     # GSA
-    "can_edit_gsa_commission":      ("unit.gsa.commission",        LEVEL_GLOBAL),
+    "can_edit_gsa_commission": ("unit.gsa.commission", LEVEL_GLOBAL),
 }
 
 

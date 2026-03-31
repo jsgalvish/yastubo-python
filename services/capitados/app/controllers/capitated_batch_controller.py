@@ -16,11 +16,12 @@ Endpoints Reports:
   GET    /admin/companies/{cid}/capitados/reportes/mensuales                   → months
   GET    /admin/companies/{cid}/capitados/reportes/mensuales/{month}/download  → download
 """
+
 from __future__ import annotations
 
 import io
 import math
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -28,8 +29,6 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.capitated_batch_request import (
     BatchDetailResponse,
     BatchIndexResponse,
@@ -43,6 +42,8 @@ from app.requests.capitated_batch_request import (
     PaginationMeta,
     RollbackResponse,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.capitated_batch_item_log import CapitatedBatchItemLog
 from common.models.capitated_batch_log import CapitatedBatchLog
 from common.models.capitated_monthly_record import CapitatedMonthlyRecord
@@ -141,8 +142,8 @@ def _make_unique_excel_sheet_title(base_title: str, used_titles: set[str]) -> st
     """Normaliza, acota a 31 caracteres, evita caracteres inválidos y asegura unicidad."""
     import re as _re
 
-    title = _re.sub(r'[\\/?*\[\]:]', ' ', base_title)
-    title = _re.sub(r'\s+', ' ', title).strip() or "Hoja"
+    title = _re.sub(r"[\\/?*\[\]:]", " ", base_title)
+    title = _re.sub(r"\s+", " ", title).strip() or "Hoja"
     title = title[:31]
 
     candidate = title
@@ -189,9 +190,9 @@ async def batch_index(
     base_q = base_q.order_by(CapitatedBatchLog.id.desc())
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     return BatchIndexResponse(
         data=[_batch_out(b) for b in items],
@@ -229,10 +230,12 @@ async def batch_template(
     products = []
     for p in all_products:
         pv_r = await db.execute(
-            select(PlanVersion).where(
+            select(PlanVersion)
+            .where(
                 PlanVersion.product_id == p.id,
                 PlanVersion.status == PlanVersion.STATUS_ACTIVE,
-            ).limit(1)
+            )
+            .limit(1)
         )
         if pv_r.scalar_one_or_none() is not None:
             products.append(p)
@@ -271,7 +274,7 @@ async def batch_template(
     wb.save(buf)
     buf.seek(0)
 
-    now_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    now_str = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"capitados_estructura_company_{company.id}_{now_str}.xlsx"
 
     return StreamingResponse(
@@ -360,9 +363,9 @@ async def batch_items(
     base_q = base_q.order_by(CapitatedBatchItemLog.row_number)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     return BatchItemsResponse(
         data=[_item_out(i) for i in items],
@@ -393,9 +396,9 @@ async def batch_monthly_records(
     base_q = base_q.order_by(CapitatedMonthlyRecord.id)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     return MonthlyRecordsBatchResponse(
         data=[_mr_out(mr) for mr in items],
@@ -422,7 +425,7 @@ async def batch_rollback(
     if batch.rolled_back_at is not None:
         raise HTTPException(status_code=422, detail="El lote ya fue revertido.")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Marcar monthly records activos como rolled_back
     records_r = await db.execute(
@@ -476,7 +479,7 @@ async def rollback_monthly_record(
         raise HTTPException(status_code=422, detail="El registro ya fue revertido.")
 
     mr.status = CapitatedMonthlyRecord.STATUS_ROLLED_BACK
-    mr.rolled_back_at = datetime.now(timezone.utc)
+    mr.rolled_back_at = datetime.now(UTC)
     mr.rolled_back_by_user_id = _current_user.id
 
     await db.commit()
@@ -501,7 +504,9 @@ async def report_months(
         select(
             CapitatedMonthlyRecord.coverage_month,
             func.sum(case((is_active, 1), else_=0)).label("active_count"),
-            func.sum(case((is_active, CapitatedMonthlyRecord.price_final), else_=0)).label("active_total"),
+            func.sum(case((is_active, CapitatedMonthlyRecord.price_final), else_=0)).label(
+                "active_total"
+            ),
         )
         .where(CapitatedMonthlyRecord.company_id == company_id)
         .group_by(CapitatedMonthlyRecord.coverage_month)
@@ -510,11 +515,13 @@ async def report_months(
 
     months = []
     for row in r.all():
-        months.append(MonthSummaryOut(
-            month=str(row[0]) if row[0] else "",
-            active_count=row[1] or 0,
-            active_total=float(row[2]) if row[2] is not None else None,
-        ))
+        months.append(
+            MonthSummaryOut(
+                month=str(row[0]) if row[0] else "",
+                active_count=row[1] or 0,
+                active_total=float(row[2]) if row[2] is not None else None,
+            )
+        )
 
     return MonthlyReportMonthsResponse(months=months)
 
@@ -528,7 +535,6 @@ async def report_download(
 ) -> StreamingResponse:
     """Descarga el reporte mensual en Excel."""
     import openpyxl
-    from openpyxl.utils import get_column_letter
 
     await _get_company(company_id, db)
 
@@ -539,8 +545,6 @@ async def report_download(
             coverage_month = datetime.strptime(month, "%Y-%m").date().replace(day=1)
         except ValueError:
             raise HTTPException(status_code=422, detail="Formato de mes inválido.")
-
-    from common.models.country import Country
 
     r = await db.execute(
         select(CapitatedMonthlyRecord)
@@ -568,14 +572,26 @@ async def report_download(
     wb.remove(wb.active)
 
     headers = [
-        "ID", "# Contrato", "Mes", "ID Persona", "Persona",
-        "Genero", "Edad reportada",
-        "Residencia ISO3", "Residencia ISO2", "Residencia",
-        "Repatriacion ISO3", "Repatriacion ISO2", "Repatriacion",
-        "Fuente del precio", "Precio base", "Recargo por edad", "Precio total",
+        "ID",
+        "# Contrato",
+        "Mes",
+        "ID Persona",
+        "Persona",
+        "Genero",
+        "Edad reportada",
+        "Residencia ISO3",
+        "Residencia ISO2",
+        "Residencia",
+        "Repatriacion ISO3",
+        "Repatriacion ISO2",
+        "Repatriacion",
+        "Fuente del precio",
+        "Precio base",
+        "Recargo por edad",
+        "Precio total",
     ]
 
-    for key, rows in groups.items():
+    for _, rows in groups.items():
         first = rows[0]
         product = first.product
         status = first.status
@@ -585,6 +601,7 @@ async def report_download(
         if isinstance(raw_name, str) and raw_name.startswith("{"):
             try:
                 import json as _json
+
                 parsed = _json.loads(raw_name)
                 product_name = parsed.get("es") or parsed.get("en") or raw_name
             except Exception:
@@ -608,25 +625,27 @@ async def report_download(
             res_c = rec.residence_country
             rep_c = rec.repatriation_country
 
-            ws.append([
-                rec.id,
-                rec.contract_id,
-                rec.coverage_month.strftime("%m/%Y") if rec.coverage_month else "",
-                rec.person_id,
-                rec.full_name,
-                rec.sex,
-                rec.age_reported,
-                res_c.iso3 if res_c else None,
-                res_c.iso2 if res_c else None,
-                res_c.name if res_c else None,
-                rep_c.iso3 if rep_c else None,
-                rep_c.iso2 if rep_c else None,
-                rep_c.name if rep_c else None,
-                rec.price_source,
-                float(rec.price_base) if rec.price_base is not None else None,
-                age_surcharge,
-                float(rec.price_final) if rec.price_final is not None else None,
-            ])
+            ws.append(
+                [
+                    rec.id,
+                    rec.contract_id,
+                    rec.coverage_month.strftime("%m/%Y") if rec.coverage_month else "",
+                    rec.person_id,
+                    rec.full_name,
+                    rec.sex,
+                    rec.age_reported,
+                    res_c.iso3 if res_c else None,
+                    res_c.iso2 if res_c else None,
+                    res_c.name if res_c else None,
+                    rep_c.iso3 if rep_c else None,
+                    rep_c.iso2 if rep_c else None,
+                    rep_c.name if rep_c else None,
+                    rec.price_source,
+                    float(rec.price_base) if rec.price_base is not None else None,
+                    age_surcharge,
+                    float(rec.price_final) if rec.price_final is not None else None,
+                ]
+            )
 
     if not wb.sheetnames:
         ws = wb.create_sheet(title="Sin datos")

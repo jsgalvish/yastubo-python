@@ -16,6 +16,7 @@ Endpoints Config:
 
 Permisos: admin.config.read / admin.config.create / admin.config.edit / admin.config.fill / admin.config.delete
 """
+
 from __future__ import annotations
 
 import json
@@ -98,9 +99,7 @@ async def config_index(
     db: AsyncSession = Depends(get_db),
 ) -> ConfigIndexResponse:
     """Lista todos los items de configuración."""
-    r = await db.execute(
-        select(ConfigItem).order_by(ConfigItem.category, ConfigItem.name)
-    )
+    r = await db.execute(select(ConfigItem).order_by(ConfigItem.category, ConfigItem.name))
     items = [_item_out(i) for i in r.scalars().all()]
 
     return ConfigIndexResponse(
@@ -195,7 +194,7 @@ async def config_update_definition(
     if "name" in fields:
         item.name = body.name
     if "type" in fields:
-        item.type = body.type
+        item.type = body.type  # type: ignore[assignment]
     if "config" in fields:
         item.config = json.dumps(body.config) if body.config else None
 
@@ -228,13 +227,22 @@ async def config_update_value(
     elif item_type == "date":
         item.value_date = val
     elif item_type in (
-        "input_text_translated", "textarea_translated", "html_translated",
+        "input_text_translated",
+        "textarea_translated",
+        "html_translated",
     ):
         item.value_trans = json.dumps(val, ensure_ascii=False) if val else None
     elif item_type in (
-        "input_text_plain", "textarea_plain", "html_plain",
-        "email", "url", "phone", "color", "json",
-        "model_reference", "enum",
+        "input_text_plain",
+        "textarea_plain",
+        "html_plain",
+        "email",
+        "url",
+        "phone",
+        "color",
+        "json",
+        "model_reference",
+        "enum",
     ):
         item.value_text = val
     else:

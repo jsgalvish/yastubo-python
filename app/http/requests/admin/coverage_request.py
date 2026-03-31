@@ -5,6 +5,7 @@ Equivale a CoverageCatalogController.php + PlanVersionCoverageController.php.
 Skills aplicados:
   - Pydantic: Literal types, ConfigDict, response models tipados
 """
+
 from __future__ import annotations
 
 from typing import Literal

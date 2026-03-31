@@ -25,8 +25,10 @@ class CapitatedProductInsured(TimestampMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "company_id", "product_id", "document_number",
-            name="capitados_insureds_company_product_document_unique"
+            "company_id",
+            "product_id",
+            "document_number",
+            name="capitados_insureds_company_product_document_unique",
         ),
     )
 

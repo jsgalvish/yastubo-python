@@ -16,16 +16,15 @@ Endpoints Config:
 
 Permisos: admin.config.read / admin.config.create / admin.config.edit / admin.config.fill / admin.config.delete
 """
+
 from __future__ import annotations
 
 import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.config_request import (
     BatchCard,
     BeneficiarioStats,
@@ -40,12 +39,13 @@ from app.requests.config_request import (
     UpdateDefinitionRequest,
     UpdateValueRequest,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.capitated_batch_log import CapitatedBatchLog
 from common.models.capitated_product_insured import CapitatedProductInsured
 from common.models.company import Company
 from common.models.config_item import ConfigItem
 from common.models.plan_version import PlanVersion
-from common.models.product import Product
 from common.models.subscription import Subscription
 from common.models.user import User
 
@@ -99,28 +99,42 @@ async def dashboard(
     """Métricas de negocio reales para el dashboard de admin."""
 
     # ── Beneficiarios capitados por status ────────────────────────────────────
-    rows_status = list((await db.execute(
-        select(CapitatedProductInsured.status, func.count().label("cnt"))
-        .group_by(CapitatedProductInsured.status)
-    )).all())
+    rows_status = list(
+        (
+            await db.execute(
+                select(CapitatedProductInsured.status, func.count().label("cnt")).group_by(
+                    CapitatedProductInsured.status
+                )
+            )
+        ).all()
+    )
 
     active = sum(r.cnt for r in rows_status if r.status == "active")
     rolled_back = sum(r.cnt for r in rows_status if r.status == "rolled_back")
     other = sum(r.cnt for r in rows_status if r.status not in ("active", "rolled_back"))
     total_beneficiarios = active + rolled_back + other
 
-    # ── MRR estimado: personas activas × precio promedio de plan activo ───────
-    pv_prices = list((await db.execute(
-        select(PlanVersion.public_price)
-        .where(PlanVersion.status == "active", PlanVersion.public_price.isnot(None))
-    )).scalars().all())
+    # ── MRR estimado: personas activas × precio promedio de plan activo ───────  # noqa: RUF003
+    pv_prices = list(
+        (
+            await db.execute(
+                select(PlanVersion.public_price).where(
+                    PlanVersion.status == "active", PlanVersion.public_price.isnot(None)
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
     avg_price = float(sum(pv_prices) / len(pv_prices)) if pv_prices else 14.99
     mrr_estimate = round(active * avg_price, 2)
 
     # ── Empresas con branding ─────────────────────────────────────────────────
-    companies_rows = list((await db.execute(
-        select(Company).order_by(Company.status.desc(), Company.name)
-    )).scalars().all())
+    companies_rows = list(
+        (await db.execute(select(Company).order_by(Company.status.desc(), Company.name)))
+        .scalars()
+        .all()
+    )
 
     companies = [
         CompanyCard(
@@ -134,12 +148,16 @@ async def dashboard(
     ]
 
     # ── Lotes recientes (batches) ─────────────────────────────────────────────
-    batch_rows = list((await db.execute(
-        select(CapitatedBatchLog, Company.name.label("company_name"))
-        .join(Company, CapitatedBatchLog.company_id == Company.id)
-        .order_by(CapitatedBatchLog.coverage_month.desc())
-        .limit(6)
-    )).all())
+    batch_rows = list(
+        (
+            await db.execute(
+                select(CapitatedBatchLog, Company.name.label("company_name"))
+                .join(Company, CapitatedBatchLog.company_id == Company.id)
+                .order_by(CapitatedBatchLog.coverage_month.desc())
+                .limit(6)
+            )
+        ).all()
+    )
 
     recent_batches = [
         BatchCard(
@@ -156,17 +174,21 @@ async def dashboard(
     ]
 
     # ── Retail subscriptions (Module F) ─────────────────────────────────
-    total_subs = (await db.execute(
-        select(func.count()).select_from(select(Subscription).subquery())
-    )).scalar() or 0
-    active_subs = (await db.execute(
-        select(func.count()).select_from(
-            select(Subscription).where(Subscription.status == "active").subquery()
+    total_subs = (
+        await db.execute(select(func.count()).select_from(select(Subscription).subquery()))
+    ).scalar() or 0
+    active_subs = (
+        await db.execute(
+            select(func.count()).select_from(
+                select(Subscription).where(Subscription.status == "active").subquery()
+            )
         )
-    )).scalar() or 0
-    mrr_retail = (await db.execute(
-        select(func.sum(Subscription.amount_cents)).where(Subscription.status == "active")
-    )).scalar() or 0
+    ).scalar() or 0
+    mrr_retail = (
+        await db.execute(
+            select(func.sum(Subscription.amount_cents)).where(Subscription.status == "active")
+        )
+    ).scalar() or 0
 
     return DashboardResponse(
         beneficiarios=BeneficiarioStats(
@@ -196,9 +218,7 @@ async def config_index(
     db: AsyncSession = Depends(get_db),
 ) -> ConfigIndexResponse:
     """Lista todos los items de configuración."""
-    r = await db.execute(
-        select(ConfigItem).order_by(ConfigItem.category, ConfigItem.name)
-    )
+    r = await db.execute(select(ConfigItem).order_by(ConfigItem.category, ConfigItem.name))
     items = [_item_out(i) for i in r.scalars().all()]
 
     return ConfigIndexResponse(
@@ -326,13 +346,22 @@ async def config_update_value(
     elif item_type == "date":
         item.value_date = val
     elif item_type in (
-        "input_text_translated", "textarea_translated", "html_translated",
+        "input_text_translated",
+        "textarea_translated",
+        "html_translated",
     ):
         item.value_trans = json.dumps(val, ensure_ascii=False) if val else None
     elif item_type in (
-        "input_text_plain", "textarea_plain", "html_plain",
-        "email", "url", "phone", "color", "json",
-        "model_reference", "enum",
+        "input_text_plain",
+        "textarea_plain",
+        "html_plain",
+        "email",
+        "url",
+        "phone",
+        "color",
+        "json",
+        "model_reference",
+        "enum",
     ):
         item.value_text = val
     else:
@@ -468,8 +497,8 @@ async def config_delete_file(
     if not current_file_id:
         raise HTTPException(status_code=404, detail="No hay archivo asociado.")
 
-    from common.services.uploaded_file.uploaded_file_service import UploadedFileService
     from common.models.file import File as FileModel
+    from common.services.uploaded_file.uploaded_file_service import UploadedFileService
 
     r = await db.execute(select(FileModel).where(FileModel.id == current_file_id))
     file_model = r.scalar_one_or_none()

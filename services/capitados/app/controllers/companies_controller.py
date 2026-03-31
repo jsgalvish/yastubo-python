@@ -24,18 +24,16 @@ Endpoints de CommissionUser:
 
 Permiso requerido: admin.companies.manage
 """
+
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, func, select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from common.database import get_db
-from common.middleware.permission import require_permission
 from app.requests.company_request import (
     AvailableUserItemOut,
     CommissionUserOut,
@@ -53,6 +51,8 @@ from app.requests.company_request import (
     UserBriefOut,
     UserSearchItemOut,
 )
+from common.database import get_db
+from common.middleware.permission import require_permission
 from common.models.company import Company
 from common.models.company_commission_user import CompanyCommissionUser
 from common.models.company_user import CompanyUser
@@ -66,6 +66,7 @@ _VALID_STATUSES = {Company.STATUS_ACTIVE, Company.STATUS_INACTIVE, Company.STATU
 
 
 # ─────────────────────────── Helpers ─────────────────────────────────────────
+
 
 def _color_out(val: str | None) -> str | None:
     """Añade '#' al color si tiene valor (equivale a brandingConfig en PHP)."""
@@ -134,9 +135,7 @@ async def _get_company(company_id: int, db: AsyncSession) -> Company:
     """
     db.expire_all()
     result = await db.execute(
-        select(Company)
-        .options(selectinload(Company.users))
-        .where(Company.id == company_id)
+        select(Company).options(selectinload(Company.users)).where(Company.id == company_id)
     )
     company = result.scalar_one_or_none()
     if company is None:
@@ -146,10 +145,11 @@ async def _get_company(company_id: int, db: AsyncSession) -> Company:
 
 # ─────────────────────────── Company: index / check-short-code ───────────────
 
+
 @router.get("/check-short-code", response_model=ShortCodeCheckOut)
 async def check_short_code(
     short_code: str = Query(default=""),
-    company_id: Optional[int] = Query(default=None),
+    company_id: int | None = Query(default=None),
     _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):
@@ -213,6 +213,7 @@ async def index(
 
 # ─────────────────────────── Company: store / show / update ──────────────────
 
+
 @router.post("", response_model=dict, status_code=201)
 async def store(
     body: StoreCompanyRequest,
@@ -222,9 +223,9 @@ async def store(
     """Crea una nueva empresa. Equivale a store() en PHP."""
     sc = body.short_code.strip().upper()
 
-    existing = (await db.execute(
-        select(Company).where(func.upper(Company.short_code) == sc)
-    )).scalar_one_or_none()
+    existing = (
+        await db.execute(select(Company).where(func.upper(Company.short_code) == sc))
+    ).scalar_one_or_none()
     if existing is not None:
         raise HTTPException(status_code=422, detail="El short_code ya existe.")
 
@@ -284,9 +285,7 @@ async def show(
         )
         .order_by(Template.name)
     )
-    pdf_templates = [
-        PdfTemplateOut(id=t.id, name=t.name) for t in pdf_result.scalars().all()
-    ]
+    pdf_templates = [PdfTemplateOut(id=t.id, name=t.name) for t in pdf_result.scalars().all()]
 
     return CompanyDetailOut(
         data=_build_company_out(company),
@@ -316,12 +315,14 @@ async def update(
 
     if "short_code" in fields and body.short_code:
         sc = body.short_code.strip().upper()
-        clash = (await db.execute(
-            select(Company).where(
-                func.upper(Company.short_code) == sc,
-                Company.id != company_id,
+        clash = (
+            await db.execute(
+                select(Company).where(
+                    func.upper(Company.short_code) == sc,
+                    Company.id != company_id,
+                )
             )
-        )).scalar_one_or_none()
+        ).scalar_one_or_none()
         if clash:
             raise HTTPException(status_code=422, detail="El short_code ya existe.")
         company.short_code = sc
@@ -337,7 +338,12 @@ async def update(
         company.commission_beneficiary_user_id = body.commission_beneficiary_user_id
 
     # Branding: strip '#' antes de guardar
-    for color_field in ("branding_text_dark", "branding_bg_light", "branding_text_light", "branding_bg_dark"):
+    for color_field in (
+        "branding_text_dark",
+        "branding_bg_light",
+        "branding_text_light",
+        "branding_bg_dark",
+    ):
         if color_field in fields:
             raw = getattr(body, color_field)
             setattr(company, color_field, raw.lstrip("#") if raw else None)
@@ -345,7 +351,7 @@ async def update(
     # Sync de usuarios (reemplaza todos)
     if "users" in fields:
         await db.execute(delete(CompanyUser).where(CompanyUser.company_id == company_id))
-        for uid in (body.users or []):
+        for uid in body.users or []:
             db.add(CompanyUser(company_id=company_id, user_id=uid))
 
     await db.commit()
@@ -354,6 +360,7 @@ async def update(
 
 
 # ─────────────────────────── Company: acciones de estado ─────────────────────
+
 
 @router.put("/{company_id}/suspend", response_model=dict)
 async def suspend(
@@ -409,6 +416,7 @@ async def activate(
 
 # ─────────────────────────── Company: usuarios asignados ─────────────────────
 
+
 @router.get("/{company_id}/users/search", response_model=PaginatedUsersOut)
 async def search_users(
     company_id: int,
@@ -436,7 +444,9 @@ async def search_users(
     total = total_result.scalar() or 0
     last_page = max(1, math.ceil(total / per_page))
 
-    items = list((await db.execute(q.offset((page - 1) * per_page).limit(per_page))).scalars().all())
+    items = list(
+        (await db.execute(q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     # IDs ya asignados a esta empresa
     attached_result = await db.execute(
@@ -477,12 +487,14 @@ async def attach_user(
     if user_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
-    already = (await db.execute(
-        select(CompanyUser).where(
-            CompanyUser.company_id == company_id,
-            CompanyUser.user_id == user_id,
+    already = (
+        await db.execute(
+            select(CompanyUser).where(
+                CompanyUser.company_id == company_id,
+                CompanyUser.user_id == user_id,
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if already is None:
         db.add(CompanyUser(company_id=company_id, user_id=user_id))
@@ -524,7 +536,10 @@ async def detach_user(
 
 # ─────────────────────────── Commission Users ────────────────────────────────
 
-async def _get_commission_user(company_id: int, ccu_id: int, db: AsyncSession) -> CompanyCommissionUser:
+
+async def _get_commission_user(
+    company_id: int, ccu_id: int, db: AsyncSession
+) -> CompanyCommissionUser:
     """Carga un CompanyCommissionUser verificando que pertenece a la empresa."""
     result = await db.execute(
         select(CompanyCommissionUser)
@@ -546,7 +561,9 @@ def _build_ccu_out(ccu: CompanyCommissionUser) -> CommissionUserOut:
         id=ccu.id,
         user_id=ccu.user_id,
         commission=f"{float(ccu.commission or 0):.2f}",
-        user=None if user is None else {
+        user=None
+        if user is None
+        else {
             "id": user.id,
             "email": user.email,
             "display_name": user.full_name,
@@ -579,9 +596,9 @@ async def commission_users_available(
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
     last_page = max(1, math.ceil(total / per_page))
 
-    users = list((await db.execute(
-        base_q.offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    users = list(
+        (await db.execute(base_q.offset((page - 1) * per_page).limit(per_page))).scalars().all()
+    )
 
     # Mapa user_id → ccu.id para los ya asignados
     assigned_result = await db.execute(
@@ -642,12 +659,14 @@ async def commission_users_store(
     if user_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
-    already = (await db.execute(
-        select(CompanyCommissionUser).where(
-            CompanyCommissionUser.company_id == company_id,
-            CompanyCommissionUser.user_id == body.user_id,
+    already = (
+        await db.execute(
+            select(CompanyCommissionUser).where(
+                CompanyCommissionUser.company_id == company_id,
+                CompanyCommissionUser.user_id == body.user_id,
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if already is not None:
         raise HTTPException(

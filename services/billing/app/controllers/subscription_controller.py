@@ -10,8 +10,10 @@ Endpoints:
   GET    /admin/subscriptions              → listado admin
   GET    /admin/subscriptions/stats        → métricas
 """
+
 from __future__ import annotations
 
+import contextlib
 import os
 import uuid
 from datetime import datetime
@@ -90,12 +92,14 @@ async def subscription_status(
     db: AsyncSession = Depends(get_db),
 ) -> SubscriptionStatusOut:
     """Estado actual de la suscripción del cliente."""
-    sub = (await db.execute(
-        select(Subscription)
-        .where(Subscription.user_id == current_user.id)
-        .order_by(Subscription.id.desc())
-        .limit(1)
-    )).scalar_one_or_none()
+    sub = (
+        await db.execute(
+            select(Subscription)
+            .where(Subscription.user_id == current_user.id)
+            .order_by(Subscription.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
 
     if not sub:
         return SubscriptionStatusOut(status="none")
@@ -120,12 +124,14 @@ async def create_subscription(
 ) -> SubscriptionStatusOut:
     """Crea una suscripción en Stripe y registra localmente."""
     # Check existing active subscription
-    existing = (await db.execute(
-        select(Subscription).where(
-            Subscription.user_id == current_user.id,
-            Subscription.status.in_(["active", "past_due"]),
+    existing = (
+        await db.execute(
+            select(Subscription).where(
+                Subscription.user_id == current_user.id,
+                Subscription.status.in_(["active", "past_due"]),
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if existing:
         raise HTTPException(status_code=422, detail="Ya tienes una suscripción activa.")
@@ -138,7 +144,7 @@ async def create_subscription(
             metadata={"user_id": str(current_user.id)},
         )
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error con Stripe: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error con Stripe: {e!s}")
 
     # Create Stripe subscription
     try:
@@ -150,14 +156,16 @@ async def create_subscription(
             metadata={"user_id": str(current_user.id)},
         )
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error creando suscripción: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error creando suscripción: {e!s}")
 
     # Check referral
     referred_by = None
     if body.referral_code:
-        referrer_sub = (await db.execute(
-            select(Subscription).where(Subscription.referral_code == body.referral_code)
-        )).scalar_one_or_none()
+        referrer_sub = (
+            await db.execute(
+                select(Subscription).where(Subscription.referral_code == body.referral_code)
+            )
+        ).scalar_one_or_none()
         if referrer_sub:
             referred_by = referrer_sub.user_id
 
@@ -209,12 +217,14 @@ async def create_checkout(
 ) -> CheckoutSessionOut:
     """Crea una sesión de Stripe Checkout para suscripción con tarjeta."""
     # Check existing
-    existing = (await db.execute(
-        select(Subscription).where(
-            Subscription.user_id == current_user.id,
-            Subscription.status.in_(["active", "past_due"]),
+    existing = (
+        await db.execute(
+            select(Subscription).where(
+                Subscription.user_id == current_user.id,
+                Subscription.status.in_(["active", "past_due"]),
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=422, detail="Ya tienes una suscripción activa.")
 
@@ -230,9 +240,11 @@ async def create_checkout(
     sub.currency = "usd"
     sub.referral_code = ref_code
     if body.referral_code:
-        referrer = (await db.execute(
-            select(Subscription).where(Subscription.referral_code == body.referral_code)
-        )).scalar_one_or_none()
+        referrer = (
+            await db.execute(
+                select(Subscription).where(Subscription.referral_code == body.referral_code)
+            )
+        ).scalar_one_or_none()
         if referrer:
             sub.referred_by_user_id = referrer.user_id
     db.add(sub)
@@ -255,7 +267,7 @@ async def create_checkout(
             },
         )
     except stripe.StripeError as e:
-        raise HTTPException(status_code=502, detail=f"Error con Stripe: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error con Stripe: {e!s}")
 
     return CheckoutSessionOut(checkout_url=session.url, session_id=session.id)
 
@@ -266,12 +278,14 @@ async def sync_subscription(
     db: AsyncSession = Depends(get_db),
 ) -> SubscriptionStatusOut:
     """Sincroniza el estado de la suscripción con Stripe (llamar después de Checkout)."""
-    sub = (await db.execute(
-        select(Subscription)
-        .where(Subscription.user_id == current_user.id)
-        .order_by(Subscription.id.desc())
-        .limit(1)
-    )).scalar_one_or_none()
+    sub = (
+        await db.execute(
+            select(Subscription)
+            .where(Subscription.user_id == current_user.id)
+            .order_by(Subscription.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
 
     if sub and not sub.stripe_subscription_id:
         # Find Stripe customer by email and link subscription
@@ -284,7 +298,11 @@ async def sync_subscription(
                 if subs.data:
                     stripe_sub_obj = subs.data[0]
                     sub.stripe_subscription_id = stripe_sub_obj.id
-                    sub.stripe_price_id = stripe_sub_obj["items"]["data"][0]["price"]["id"] if stripe_sub_obj["items"]["data"] else None
+                    sub.stripe_price_id = (
+                        stripe_sub_obj["items"]["data"][0]["price"]["id"]
+                        if stripe_sub_obj["items"]["data"]
+                        else None
+                    )
                     await db.commit()
         except stripe.StripeError:
             pass
@@ -296,7 +314,11 @@ async def sync_subscription(
     if sub.stripe_subscription_id:
         try:
             stripe_sub = stripe.Subscription.retrieve(sub.stripe_subscription_id)
-            stripe_status = stripe_sub.get("status") if isinstance(stripe_sub, dict) else getattr(stripe_sub, "status", None)
+            stripe_status = (
+                stripe_sub.get("status")
+                if isinstance(stripe_sub, dict)
+                else getattr(stripe_sub, "status", None)
+            )
             sub.status = {
                 "active": Subscription.STATUS_ACTIVE,
                 "past_due": Subscription.STATUS_PAST_DUE,
@@ -305,8 +327,16 @@ async def sync_subscription(
                 "trialing": Subscription.STATUS_ACTIVE,
             }.get(stripe_status or "", sub.status)
 
-            period_end = stripe_sub.get("current_period_end") if isinstance(stripe_sub, dict) else getattr(stripe_sub, "current_period_end", None)
-            period_start = stripe_sub.get("current_period_start") if isinstance(stripe_sub, dict) else getattr(stripe_sub, "current_period_start", None)
+            period_end = (
+                stripe_sub.get("current_period_end")
+                if isinstance(stripe_sub, dict)
+                else getattr(stripe_sub, "current_period_end", None)
+            )
+            period_start = (
+                stripe_sub.get("current_period_start")
+                if isinstance(stripe_sub, dict)
+                else getattr(stripe_sub, "current_period_start", None)
+            )
             if period_end:
                 sub.current_period_end = datetime.utcfromtimestamp(period_end)
             if period_start:
@@ -318,9 +348,11 @@ async def sync_subscription(
 
     # Create referral commission if newly active
     if sub.status == Subscription.STATUS_ACTIVE and sub.referred_by_user_id:
-        existing_commission = (await db.execute(
-            select(ReferralCommission).where(ReferralCommission.subscription_id == sub.id)
-        )).scalar_one_or_none()
+        existing_commission = (
+            await db.execute(
+                select(ReferralCommission).where(ReferralCommission.subscription_id == sub.id)
+            )
+        ).scalar_one_or_none()
         if not existing_commission:
             commission = ReferralCommission()
             commission.referrer_user_id = sub.referred_by_user_id
@@ -350,22 +382,22 @@ async def cancel_subscription(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Cancela la suscripción del cliente."""
-    sub = (await db.execute(
-        select(Subscription).where(
-            Subscription.user_id == current_user.id,
-            Subscription.status.in_(["active", "past_due"]),
+    sub = (
+        await db.execute(
+            select(Subscription).where(
+                Subscription.user_id == current_user.id,
+                Subscription.status.in_(["active", "past_due"]),
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if not sub:
         raise HTTPException(status_code=404, detail="No tienes suscripción activa.")
 
     # Cancel in Stripe
     if sub.stripe_subscription_id:
-        try:
+        with contextlib.suppress(stripe.StripeError):
             stripe.Subscription.cancel(sub.stripe_subscription_id)
-        except stripe.StripeError:
-            pass  # Still cancel locally
 
     sub.status = Subscription.STATUS_CANCELLED
     sub.canceled_at = datetime.utcnow()
@@ -391,9 +423,17 @@ async def admin_list_subscriptions(
         base_q = base_q.where(Subscription.status == status)
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-    items = list((await db.execute(
-        base_q.order_by(Subscription.id.desc()).offset((page - 1) * per_page).limit(per_page)
-    )).scalars().all())
+    items = list(
+        (
+            await db.execute(
+                base_q.order_by(Subscription.id.desc())
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     # Enrich with user names
     user_ids = list({s.user_id for s in items})
@@ -405,19 +445,21 @@ async def admin_list_subscriptions(
     data = []
     for s in items:
         u = user_map.get(s.user_id)
-        data.append(SubscriptionAdminOut(
-            id=s.id,
-            user_id=s.user_id,
-            user_name=f"{u.first_name} {u.last_name or ''}" if u else None,
-            user_email=u.email if u else None,
-            status=s.status,
-            plan_name=s.plan_name,
-            amount=s.amount_cents / 100,
-            currency=s.currency,
-            current_period_end=str(s.current_period_end) if s.current_period_end else None,
-            referral_code=s.referral_code,
-            created_at=str(s.created_at) if s.created_at else None,
-        ))
+        data.append(
+            SubscriptionAdminOut(
+                id=s.id,
+                user_id=s.user_id,
+                user_name=f"{u.first_name} {u.last_name or ''}" if u else None,
+                user_email=u.email if u else None,
+                status=s.status,
+                plan_name=s.plan_name,
+                amount=s.amount_cents / 100,
+                currency=s.currency,
+                current_period_end=str(s.current_period_end) if s.current_period_end else None,
+                referral_code=s.referral_code,
+                created_at=str(s.created_at) if s.created_at else None,
+            )
+        )
 
     return {"data": data, "meta": {"total": total, "page": page, "per_page": per_page}}
 
@@ -429,24 +471,32 @@ async def admin_subscription_stats(
 ) -> StatsOut:
     """Métricas globales de suscripciones."""
     total = (await db.execute(select(func.count()).select_from(Subscription))).scalar() or 0
-    active = (await db.execute(
-        select(func.count()).select_from(
-            select(Subscription).where(Subscription.status == "active").subquery()
+    active = (
+        await db.execute(
+            select(func.count()).select_from(
+                select(Subscription).where(Subscription.status == "active").subquery()
+            )
         )
-    )).scalar() or 0
-    past_due = (await db.execute(
-        select(func.count()).select_from(
-            select(Subscription).where(Subscription.status == "past_due").subquery()
+    ).scalar() or 0
+    past_due = (
+        await db.execute(
+            select(func.count()).select_from(
+                select(Subscription).where(Subscription.status == "past_due").subquery()
+            )
         )
-    )).scalar() or 0
-    cancelled = (await db.execute(
-        select(func.count()).select_from(
-            select(Subscription).where(Subscription.status == "cancelled").subquery()
+    ).scalar() or 0
+    cancelled = (
+        await db.execute(
+            select(func.count()).select_from(
+                select(Subscription).where(Subscription.status == "cancelled").subquery()
+            )
         )
-    )).scalar() or 0
-    mrr = (await db.execute(
-        select(func.sum(Subscription.amount_cents)).where(Subscription.status == "active")
-    )).scalar() or 0
+    ).scalar() or 0
+    mrr = (
+        await db.execute(
+            select(func.sum(Subscription.amount_cents)).where(Subscription.status == "active")
+        )
+    ).scalar() or 0
 
     return StatsOut(
         total_subscriptions=total,

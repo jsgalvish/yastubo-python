@@ -42,9 +42,7 @@ class BusinessUnit(HasDirectory, TimestampMixin, Base):
     parent: Mapped[BusinessUnit | None] = relationship(
         "BusinessUnit", remote_side="BusinessUnit.id", back_populates="children"
     )
-    children: Mapped[list[BusinessUnit]] = relationship(
-        "BusinessUnit", back_populates="parent"
-    )
+    children: Mapped[list[BusinessUnit]] = relationship("BusinessUnit", back_populates="parent")
 
     # Miembros y comisiones
     memberships: Mapped[list[BusinessUnitMembership]] = relationship(

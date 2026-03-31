@@ -17,14 +17,10 @@ class PlanVersionAgeSurcharge(TimestampMixin, Base):
     __tablename__ = "plan_version_age_surcharges"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    plan_version_id: Mapped[int] = mapped_column(
-        ForeignKey("plan_versions.id"), nullable=False
-    )
+    plan_version_id: Mapped[int] = mapped_column(ForeignKey("plan_versions.id"), nullable=False)
     age_from: Mapped[int] = mapped_column(Integer, nullable=False)
     age_to: Mapped[int] = mapped_column(Integer, nullable=False)
     surcharge_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
 
     # Relaciones
-    plan_version: Mapped[PlanVersion] = relationship(
-        "PlanVersion", back_populates="age_surcharges"
-    )
+    plan_version: Mapped[PlanVersion] = relationship("PlanVersion", back_populates="age_surcharges")

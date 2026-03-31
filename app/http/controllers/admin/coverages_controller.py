@@ -26,6 +26,7 @@ Endpoints PlanVersionCoverage:
 
 Permiso requerido: admin.coverages.manage / admin.products.manage
 """
+
 from __future__ import annotations
 
 import json
@@ -213,9 +214,9 @@ async def store_category(
     db: AsyncSession = Depends(get_db),
 ) -> CategoryDataResponse:
     """Crea una categoría de cobertura."""
-    max_order = (await db.execute(
-        select(func.coalesce(func.max(CoverageCategory.sort_order), 0))
-    )).scalar() or 0
+    max_order = (
+        await db.execute(select(func.coalesce(func.max(CoverageCategory.sort_order), 0)))
+    ).scalar() or 0
 
     cat = CoverageCategory()
     cat.name = _dj(body.name.model_dump())
@@ -339,10 +340,13 @@ async def store_coverage(
     db: AsyncSession = Depends(get_db),
 ) -> CoverageDataResponse:
     """Crea una cobertura."""
-    max_order = (await db.execute(
-        select(func.coalesce(func.max(Coverage.sort_order), 0))
-        .where(Coverage.category_id == body.category_id)
-    )).scalar() or 0
+    max_order = (
+        await db.execute(
+            select(func.coalesce(func.max(Coverage.sort_order), 0)).where(
+                Coverage.category_id == body.category_id
+            )
+        )
+    ).scalar() or 0
 
     cov = Coverage()
     cov.category_id = body.category_id
@@ -476,7 +480,6 @@ async def coverage_usages(
     if cov is None:
         raise HTTPException(status_code=404, detail="Cobertura no encontrada.")
 
-
     pvc_r = await db.execute(
         select(PlanVersionCoverage)
         .options(
@@ -491,14 +494,16 @@ async def coverage_usages(
     for pvc in rows:
         pv = pvc.plan_version
         product = pv.product if pv else None
-        usages.append({
-            "product_version_id": pvc.plan_version_id,
-            "version_id": pv.id if pv else None,
-            "product_id": product.id if product else None,
-            "product_name": _pj(product.name) if product else None,
-            "product_link": None,
-            "version_link": None,
-        })
+        usages.append(
+            {
+                "product_version_id": pvc.plan_version_id,
+                "version_id": pv.id if pv else None,
+                "product_id": product.id if product else None,
+                "product_name": _pj(product.name) if product else None,
+                "product_link": None,
+                "version_link": None,
+            }
+        )
 
     return {"data": usages}
 
@@ -520,8 +525,9 @@ async def pv_available(
 
     # IDs ya asociados
     attached_r = await db.execute(
-        select(PlanVersionCoverage.coverage_id, PlanVersionCoverage.id)
-        .where(PlanVersionCoverage.plan_version_id == version_id)
+        select(PlanVersionCoverage.coverage_id, PlanVersionCoverage.id).where(
+            PlanVersionCoverage.plan_version_id == version_id
+        )
     )
     attached_map = {row[0]: row[1] for row in attached_r.all()}
 
@@ -538,16 +544,18 @@ async def pv_available(
         for c in cat.coverages:
             if c.status != "active":
                 continue
-            items.append(AvailableCoverageItem(
-                id=c.id,
-                name=_pj(c.name),
-                description=_pj(c.description),
-                unit_id=c.unit_id,
-                unit_name=_pj(c.unit.name) if c.unit else None,
-                unit_measure_type=c.unit.measure_type if c.unit else None,
-                attached=c.id in attached_map,
-                plan_version_coverage_id=attached_map.get(c.id),
-            ))
+            items.append(
+                AvailableCoverageItem(
+                    id=c.id,
+                    name=_pj(c.name),
+                    description=_pj(c.description),
+                    unit_id=c.unit_id,
+                    unit_name=_pj(c.unit.name) if c.unit else None,
+                    unit_measure_type=c.unit.measure_type if c.unit else None,
+                    attached=c.id in attached_map,
+                    plan_version_coverage_id=attached_map.get(c.id),
+                )
+            )
         result.append(AvailableCategoryOut(id=cat.id, name=_pj(cat.name), coverages=items))
 
     return AvailableCoveragesResponse(data=result)
@@ -580,10 +588,13 @@ async def pv_store(
     if existing:
         return PlanVersionCoverageDataResponse(data=_pv_coverage_out(existing))
 
-    max_order = (await db.execute(
-        select(func.coalesce(func.max(PlanVersionCoverage.sort_order), 0))
-        .where(PlanVersionCoverage.plan_version_id == version_id)
-    )).scalar() or 0
+    max_order = (
+        await db.execute(
+            select(func.coalesce(func.max(PlanVersionCoverage.sort_order), 0)).where(
+                PlanVersionCoverage.plan_version_id == version_id
+            )
+        )
+    ).scalar() or 0
 
     pvc = PlanVersionCoverage()
     pvc.plan_version_id = version_id

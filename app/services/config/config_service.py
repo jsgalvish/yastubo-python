@@ -4,6 +4,7 @@ Servicio de configuración.
 Migrado de App\\Services\\Config\\Config.php (Laravel).
 Provee acceso cacheado a ítems de configuración agrupados por categoría.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import select
@@ -64,26 +65,20 @@ class ConfigService:
         self._branding_web = branding
         return self._branding_web
 
-    async def search_by_category(
-        self, category: str
-    ) -> dict[str, int | float | str | None]:
+    async def search_by_category(self, category: str) -> dict[str, int | float | str | None]:
         """
         Retorna un diccionario ``{token: valor}`` para todos los
         ConfigItem de la categoría indicada.
 
         Equivale a ``ConfigItem::searchByCategory($cat)`` en PHP.
         """
-        result = await self._db.execute(
-            select(ConfigItem).where(ConfigItem.category == category)
-        )
+        result = await self._db.execute(select(ConfigItem).where(ConfigItem.category == category))
         items = result.scalars().all()
         return {item.token: item.get_value() for item in items}
 
     async def get_by_token(self, token: str) -> int | float | str | None:
         """Retorna el valor de un ítem de configuración por su token."""
-        result = await self._db.execute(
-            select(ConfigItem).where(ConfigItem.token == token)
-        )
+        result = await self._db.execute(select(ConfigItem).where(ConfigItem.token == token))
         item = result.scalar_one_or_none()
         if item is None:
             return None

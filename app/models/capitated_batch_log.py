@@ -36,14 +36,10 @@ class CapitatedBatchLog(TimestampMixin, Base):
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)
     coverage_month: Mapped[date] = mapped_column(Date, nullable=False)
     source: Mapped[str] = mapped_column(String(32), default="excel", nullable=False)
-    source_file_id: Mapped[int | None] = mapped_column(
-        ForeignKey("files.id"), nullable=True
-    )
+    source_file_id: Mapped[int | None] = mapped_column(ForeignKey("files.id"), nullable=True)
     original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    created_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    created_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -56,9 +52,7 @@ class CapitatedBatchLog(TimestampMixin, Base):
     total_plan_errors: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Auditoría de reglas
-    is_any_month_allowed: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
+    is_any_month_allowed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     cutoff_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     total_rolled_back: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -73,9 +67,5 @@ class CapitatedBatchLog(TimestampMixin, Base):
 
     # Relaciones
     company: Mapped[Company] = relationship("Company")
-    source_file: Mapped[File | None] = relationship(
-        "File", foreign_keys=[source_file_id]
-    )
-    created_by: Mapped[User | None] = relationship(
-        "User", foreign_keys=[created_by_user_id]
-    )
+    source_file: Mapped[File | None] = relationship("File", foreign_keys=[source_file_id])
+    created_by: Mapped[User | None] = relationship("User", foreign_keys=[created_by_user_id])

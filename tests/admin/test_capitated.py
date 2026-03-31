@@ -7,6 +7,7 @@ Estrategia:
 - Seed: empresa + producto capitado + persona + contrato.
 - Endpoints read-only: persons index/show, contracts index/show.
 """
+
 from __future__ import annotations
 
 import json
@@ -50,9 +51,13 @@ async def actor_token(async_engine):
     Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         actor = User(
-            realm="admin", email="capitated_actor@test.com",
-            password=_hashed("Pass1!"), first_name="Cap", last_name="Actor",
-            status="active", force_password_change=False,
+            realm="admin",
+            email="capitated_actor@test.com",
+            password=_hashed("Pass1!"),
+            first_name="Cap",
+            last_name="Actor",
+            status="active",
+            force_password_change=False,
         )
         db.add(actor)
         await db.flush()

@@ -7,6 +7,7 @@ Estrategia:
 - seed_company_id: empresa base para tests de update/show/actions.
 - seed_user_id / seed_user2_id: usuarios para attach/detach.
 """
+
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
@@ -24,6 +25,7 @@ from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
 
 # ─────────────────────── Fixtures de infraestructura ─────────────────────────
+
 
 @pytest_asyncio.fixture(scope="module")
 async def async_engine():
@@ -140,6 +142,7 @@ async def client(async_engine):
 
 # ─────────────────────── Company: index ──────────────────────────────────────
 
+
 class TestCompanyIndex:
     async def test_sin_token_retorna_401(self, client):
         r = await client.get("/admin/companies")
@@ -183,6 +186,7 @@ class TestCompanyIndex:
 
 # ─────────────────────── Company: check-short-code ───────────────────────────
 
+
 class TestCheckShortCode:
     async def test_codigo_disponible(self, client, actor_token):
         r = await client.get(
@@ -224,6 +228,7 @@ class TestCheckShortCode:
 
 # ─────────────────────── Company: store ──────────────────────────────────────
 
+
 class TestCompanyStore:
     async def test_crea_empresa(self, client, actor_token):
         r = await client.post(
@@ -257,6 +262,7 @@ class TestCompanyStore:
 
 # ─────────────────────── Company: show ───────────────────────────────────────
 
+
 class TestCompanyShow:
     async def test_show_con_detalle(self, client, actor_token, seed_company_id):
         r = await client.get(
@@ -282,6 +288,7 @@ class TestCompanyShow:
 
 # ─────────────────────── Company: update ─────────────────────────────────────
 
+
 class TestCompanyUpdate:
     async def test_actualiza_nombre(self, client, actor_token, seed_company_id):
         r = await client.put(
@@ -303,7 +310,9 @@ class TestCompanyUpdate:
         branding = r.json()["data"]["branding"]
         assert branding["text_dark"] == "#1A2B3C"
 
-    async def test_short_code_duplicado_retorna_422(self, client, actor_token, seed_company_id, async_engine):
+    async def test_short_code_duplicado_retorna_422(
+        self, client, actor_token, seed_company_id, async_engine
+    ):
         # Crear otra empresa con short_code distinto
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as db:
@@ -329,6 +338,7 @@ class TestCompanyUpdate:
 
 
 # ─────────────────────── Company: acciones de estado ─────────────────────────
+
 
 class TestCompanyStatusActions:
     async def test_suspend_archive_activate(self, client, actor_token, async_engine):
@@ -382,6 +392,7 @@ class TestCompanyStatusActions:
 
 # ─────────────────────── Company: usuarios asignados ─────────────────────────
 
+
 class TestCompanyUsers:
     async def test_attach_user(self, client, actor_token, seed_company_id, seed_user_id):
         r = await client.post(
@@ -398,7 +409,9 @@ class TestCompanyUsers:
         )
         assert r.status_code == 200  # no error al repetir
 
-    async def test_attach_usuario_no_existente_retorna_404(self, client, actor_token, seed_company_id):
+    async def test_attach_usuario_no_existente_retorna_404(
+        self, client, actor_token, seed_company_id
+    ):
         r = await client.post(
             f"/admin/companies/{seed_company_id}/users/99999",
             headers={"Authorization": f"Bearer {actor_token}"},
@@ -427,7 +440,9 @@ class TestCompanyUsers:
         assert r.status_code == 200
         assert seed_user_id not in r.json()["data"]["users_ids"]
 
-    async def test_detach_limpia_beneficiario(self, client, actor_token, async_engine, seed_user_id):
+    async def test_detach_limpia_beneficiario(
+        self, client, actor_token, async_engine, seed_user_id
+    ):
         """Si el usuario era beneficiario de comisiones, se limpia al desasociar."""
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as db:
@@ -459,6 +474,7 @@ class TestCompanyUsers:
 
 # ─────────────────────── Commission Users ────────────────────────────────────
 
+
 class TestCommissionUsers:
     async def test_index_vacio(self, client, actor_token, seed_company_id):
         r = await client.get(
@@ -479,7 +495,9 @@ class TestCommissionUsers:
         assert data["user_id"] == seed_user_id
         assert data["commission"] == "0.00"
 
-    async def test_store_duplicado_retorna_422(self, client, actor_token, seed_company_id, seed_user_id):
+    async def test_store_duplicado_retorna_422(
+        self, client, actor_token, seed_company_id, seed_user_id
+    ):
         r = await client.post(
             f"/admin/companies/{seed_company_id}/commission-users",
             json={"user_id": seed_user_id},
@@ -504,7 +522,9 @@ class TestCommissionUsers:
         assert r.status_code == 200
         assert r.json()["data"]["commission"] == "15.50"
 
-    async def test_available_tiene_attached(self, client, actor_token, seed_company_id, seed_user_id):
+    async def test_available_tiene_attached(
+        self, client, actor_token, seed_company_id, seed_user_id
+    ):
         r = await client.get(
             f"/admin/companies/{seed_company_id}/commission-users/available",
             headers={"Authorization": f"Bearer {actor_token}"},
@@ -517,7 +537,9 @@ class TestCommissionUsers:
         assert user_entry is not None
         assert user_entry["attached"] is True
 
-    async def test_destroy_commission_user(self, client, actor_token, seed_company_id, seed_user2_id):
+    async def test_destroy_commission_user(
+        self, client, actor_token, seed_company_id, seed_user2_id
+    ):
         # Crear un ccu para seed_user2
         store_r = await client.post(
             f"/admin/companies/{seed_company_id}/commission-users",
@@ -535,7 +557,9 @@ class TestCommissionUsers:
         assert r.status_code == 200
         assert "toast" in r.json()
 
-    async def test_commission_user_no_existente_retorna_404(self, client, actor_token, seed_company_id):
+    async def test_commission_user_no_existente_retorna_404(
+        self, client, actor_token, seed_company_id
+    ):
         r = await client.patch(
             f"/admin/companies/{seed_company_id}/commission-users/99999",
             json={"commission": 5.0},

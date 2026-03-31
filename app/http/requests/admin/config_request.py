@@ -2,6 +2,7 @@
 Schemas Pydantic para endpoints de Dashboard & Config (admin).
 Equivale a DashboardController.php + ConfigController.php.
 """
+
 from __future__ import annotations
 
 from typing import Any

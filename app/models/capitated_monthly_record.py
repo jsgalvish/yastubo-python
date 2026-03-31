@@ -27,8 +27,11 @@ class CapitatedMonthlyRecord(TimestampMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "company_id", "product_id", "person_id", "coverage_month",
-            name="capitados_monthly_records_unique"
+            "company_id",
+            "product_id",
+            "person_id",
+            "coverage_month",
+            name="capitados_monthly_records_unique",
         ),
     )
 
@@ -38,13 +41,9 @@ class CapitatedMonthlyRecord(TimestampMixin, Base):
     person_id: Mapped[int] = mapped_column(
         ForeignKey("capitados_product_insureds.id"), nullable=False
     )
-    contract_id: Mapped[int] = mapped_column(
-        ForeignKey("capitados_contracts.id"), nullable=False
-    )
+    contract_id: Mapped[int] = mapped_column(ForeignKey("capitados_contracts.id"), nullable=False)
     coverage_month: Mapped[date] = mapped_column(Date, nullable=False)
-    plan_version_id: Mapped[int] = mapped_column(
-        ForeignKey("plan_versions.id"), nullable=False
-    )
+    plan_version_id: Mapped[int] = mapped_column(ForeignKey("plan_versions.id"), nullable=False)
     load_batch_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Snapshot de persona

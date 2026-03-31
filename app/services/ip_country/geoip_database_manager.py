@@ -126,9 +126,7 @@ class GeoIpDatabaseManager:
                 page_url = cfg.get("discover_page_url")
                 regex = cfg.get("discover_regex")
                 if not page_url or not regex:
-                    raise RuntimeError(
-                        f"Falta discover_page_url/discover_regex para [{provider}]."
-                    )
+                    raise RuntimeError(f"Falta discover_page_url/discover_regex para [{provider}].")
 
                 timeout = int(cfg.get("http_timeout_seconds", 60))
 
@@ -157,9 +155,7 @@ class GeoIpDatabaseManager:
                 template = cfg.get("download_url_template")
                 file_code = cfg.get("file_code")
                 if not template or not file_code:
-                    raise RuntimeError(
-                        "IP2Location: falta download_url_template o file_code."
-                    )
+                    raise RuntimeError("IP2Location: falta download_url_template o file_code.")
 
                 url = template.replace("{token}", token).replace("{file}", file_code)
                 timeout = int(cfg.get("http_timeout_seconds", 120))
@@ -233,9 +229,10 @@ class GeoIpDatabaseManager:
         if cfg.get("account_id") and cfg.get("license_key"):
             auth = httpx.BasicAuth(cfg["account_id"], cfg["license_key"])
 
-        async with httpx.AsyncClient(
-            timeout=timeout_seconds, follow_redirects=True, auth=auth
-        ) as client, client.stream("GET", url) as resp:
+        async with (
+            httpx.AsyncClient(timeout=timeout_seconds, follow_redirects=True, auth=auth) as client,
+            client.stream("GET", url) as resp,
+        ):
             resp.raise_for_status()
             with dest.open("wb") as f:
                 async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):

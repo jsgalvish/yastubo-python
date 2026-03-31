@@ -6,6 +6,7 @@ Skills aplicados:
   - Pydantic: Literal types, ConfigDict, schema separation
   - FastAPI: response models tipados
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -20,6 +21,7 @@ PlanVersionStatus = Literal["inactive", "active", "archived"]
 
 class PlanVersionOut(BaseModel):
     """Representación de una versión de plan en respuestas API."""
+
     id: int
     product_id: int
     name: str
@@ -66,16 +68,19 @@ class PlanVersionDeleteResponse(BaseModel):
 
 class StorePlanVersionRequest(BaseModel):
     """Request para crear una versión de plan."""
+
     name: str = Field(..., max_length=255)
 
 
 class ClonePlanVersionRequest(BaseModel):
     """Request para clonar una versión de plan."""
+
     name: str = Field(..., max_length=255)
 
 
 class UpdatePlanVersionRequest(BaseModel):
     """Request para actualizar una versión de plan (parcial)."""
+
     name: str | None = Field(None, max_length=255)
     status: PlanVersionStatus | None = None
     max_entry_age: int | None = Field(None, ge=0)
