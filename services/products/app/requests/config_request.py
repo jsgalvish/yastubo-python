@@ -38,9 +38,17 @@ class BeneficiarioStats(BaseModel):
     total: int
 
 
+class RetailStats(BaseModel):
+    total_subscriptions: int
+    active: int
+    mrr_cents: int
+
+
 class DashboardResponse(BaseModel):
     beneficiarios: BeneficiarioStats
-    mrr_estimate: float
+    mrr_capitado: float
+    mrr_retail_cents: int
+    retail: RetailStats
     companies: list[CompanyCard]
     recent_batches: list[BatchCard]
 

@@ -35,6 +35,7 @@ from app.requests.config_request import (
     ConfigItemMessageResponse,
     ConfigItemOut,
     DashboardResponse,
+    RetailStats,
     StoreConfigItemRequest,
     UpdateDefinitionRequest,
     UpdateValueRequest,
@@ -45,6 +46,7 @@ from common.models.company import Company
 from common.models.config_item import ConfigItem
 from common.models.plan_version import PlanVersion
 from common.models.product import Product
+from common.models.subscription import Subscription
 from common.models.user import User
 
 router = APIRouter(tags=["admin:config"])
@@ -153,6 +155,19 @@ async def dashboard(
         for row in batch_rows
     ]
 
+    # ── Retail subscriptions (Module F) ─────────────────────────────────
+    total_subs = (await db.execute(
+        select(func.count()).select_from(select(Subscription).subquery())
+    )).scalar() or 0
+    active_subs = (await db.execute(
+        select(func.count()).select_from(
+            select(Subscription).where(Subscription.status == "active").subquery()
+        )
+    )).scalar() or 0
+    mrr_retail = (await db.execute(
+        select(func.sum(Subscription.amount_cents)).where(Subscription.status == "active")
+    )).scalar() or 0
+
     return DashboardResponse(
         beneficiarios=BeneficiarioStats(
             active=active,
@@ -160,7 +175,13 @@ async def dashboard(
             other=other,
             total=total_beneficiarios,
         ),
-        mrr_estimate=mrr_estimate,
+        mrr_capitado=mrr_estimate,
+        mrr_retail_cents=mrr_retail,
+        retail=RetailStats(
+            total_subscriptions=total_subs,
+            active=active_subs,
+            mrr_cents=mrr_retail,
+        ),
         companies=companies,
         recent_batches=recent_batches,
     )
