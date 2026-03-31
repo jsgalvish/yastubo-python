@@ -20,22 +20,18 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models.user import User
 from app.http.middleware.auth import get_admin_user
 from app.http.requests.admin.geo_request import (
-    CountryAvailableOut,
-    CountryForZoneOut,
     StoreZoneRequest,
     UpdateZoneRequest,
-    ZoneOut,
-    ZoneSimpleOut,
 )
 from app.models.country import Country
+from app.models.user import User
 from app.models.zone import Zone, country_zone
 from config.continents import CONTINENTS
 

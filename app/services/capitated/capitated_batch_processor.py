@@ -14,7 +14,7 @@ import hashlib
 import json
 import logging
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -30,7 +30,10 @@ from app.models.capitated_monthly_record import CapitatedMonthlyRecord
 from app.models.capitated_product_insured import CapitatedProductInsured
 from app.models.company import Company
 from app.models.country import Country
-from app.models.plan_version import PlanVersion, plan_version_countries, plan_version_repatriation_countries
+from app.models.plan_version import (
+    PlanVersion,
+    plan_version_countries,
+)
 from app.models.product import Product
 from app.services.uploaded_file.uploaded_file_service import UploadedFileService
 from app.support.capitated_rejection_codes import CapitatedRejectionCodes
@@ -83,7 +86,7 @@ class CapitatedBatchProcessor:
                 status=CapitatedBatchLog.STATUS_FAILED,
                 is_any_month_allowed=is_any_month_allowed,
                 cutoff_day=cutoff_day,
-                processed_at=datetime.now(timezone.utc),
+                processed_at=datetime.now(UTC),
                 summary_json=json.dumps(
                     {"error_summary": "El archivo subido no es valido."},
                     ensure_ascii=False,
@@ -126,10 +129,10 @@ class CapitatedBatchProcessor:
 
         # 3) Intentar leer el Excel con openpyxl
         try:
-            import openpyxl  # noqa: F811
+            import openpyxl
         except ImportError:
             batch.status = CapitatedBatchLog.STATUS_FAILED
-            batch.processed_at = datetime.now(timezone.utc)
+            batch.processed_at = datetime.now(UTC)
             batch.summary_json = json.dumps(
                 {"error_summary": "openpyxl no esta instalado en el servidor."},
                 ensure_ascii=False,
@@ -141,7 +144,7 @@ class CapitatedBatchProcessor:
             wb = openpyxl.load_workbook(local_path, read_only=True, data_only=True)
         except Exception as exc:
             batch.status = CapitatedBatchLog.STATUS_FAILED
-            batch.processed_at = datetime.now(timezone.utc)
+            batch.processed_at = datetime.now(UTC)
             batch.summary_json = json.dumps(
                 {"error_summary": f"No se pudo leer el archivo Excel: {str(exc)[:500]}"},
                 ensure_ascii=False,
@@ -158,7 +161,7 @@ class CapitatedBatchProcessor:
         except Exception as exc:
             if batch.status != CapitatedBatchLog.STATUS_FAILED:
                 batch.status = CapitatedBatchLog.STATUS_FAILED
-                batch.processed_at = datetime.now(timezone.utc)
+                batch.processed_at = datetime.now(UTC)
                 batch.summary_json = json.dumps(
                     {"error_summary": str(exc)[:1000]},
                     ensure_ascii=False,
@@ -192,7 +195,7 @@ class CapitatedBatchProcessor:
             batch.total_duplicated = 0
             batch.total_incongruences = 0
             batch.total_rolled_back = 0
-            batch.processed_at = datetime.now(timezone.utc)
+            batch.processed_at = datetime.now(UTC)
             batch.summary_json = json.dumps(
                 {
                     "error_summary": "Errores de estructura/plan impiden procesar el archivo.",
@@ -323,14 +326,12 @@ class CapitatedBatchProcessor:
                             rejection_code = CapitatedRejectionCodes.PERSON_COUNTRY_CODE_NOT_FOUND
                             rejection_detail = "No se pudo resolver pais de repatriacion a registro de pais."
 
-                if result == "applied":
-                    if res_iso3 not in res_allowed:
+                if result == "applied" and res_iso3 not in res_allowed:
                         result = "rejected"
                         rejection_code = CapitatedRejectionCodes.PERSON_RESIDENCE_NOT_ALLOWED
                         rejection_detail = "Pais de residencia no permitido para esta version de plan."
 
-                if result == "applied" and rep_allowed:
-                    if rep_iso3 not in rep_allowed:
+                if result == "applied" and rep_allowed and rep_iso3 not in rep_allowed:
                         result = "rejected"
                         rejection_code = CapitatedRejectionCodes.PERSON_REPATRIATION_NOT_ALLOWED
                         rejection_detail = "Pais de repatriacion no permitido para esta version de plan."
@@ -416,11 +417,10 @@ class CapitatedBatchProcessor:
 
                                 if coverage_month > expected_next:
                                     # Quiebre de continuidad
-                                    if plan_version.max_entry_age and age is not None:
-                                        if age > plan_version.max_entry_age:
-                                            result = "rejected"
-                                            rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
-                                            rejection_detail = "Excede edad maxima para contratacion"
+                                    if plan_version.max_entry_age and age is not None and age > plan_version.max_entry_age:
+                                        result = "rejected"
+                                        rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                        rejection_detail = "Excede edad maxima para contratacion"
 
                                     if result == "applied":
                                         if (
@@ -428,7 +428,7 @@ class CapitatedBatchProcessor:
                                             and existing_contract.status == CapitatedContract.STATUS_ACTIVE
                                         ):
                                             existing_contract.status = CapitatedContract.STATUS_EXPIRED
-                                            existing_contract.terminated_at = datetime.now(timezone.utc)
+                                            existing_contract.terminated_at = datetime.now(UTC)
                                             existing_contract.termination_reason = (
                                                 f"Quiebre de continuidad al cargar el mes {coverage_month.strftime('%Y-%m')}."
                                             )
@@ -441,11 +441,10 @@ class CapitatedBatchProcessor:
                                 else:
                                     # Continuidad normal
                                     if existing_contract:
-                                        if plan_version.max_renewal_age and age is not None:
-                                            if age > plan_version.max_renewal_age:
-                                                result = "rejected"
-                                                rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
-                                                rejection_detail = "Excede edad maxima para renovacion"
+                                        if plan_version.max_renewal_age and age is not None and age > plan_version.max_renewal_age:
+                                            result = "rejected"
+                                            rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                            rejection_detail = "Excede edad maxima para renovacion"
 
                                         if result == "applied":
                                             existing_contract.status = CapitatedContract.STATUS_ACTIVE
@@ -453,11 +452,10 @@ class CapitatedBatchProcessor:
                                             await self._db.flush()
                                             contract = existing_contract
                                     else:
-                                        if plan_version.max_entry_age and age is not None:
-                                            if age > plan_version.max_entry_age:
-                                                result = "rejected"
-                                                rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
-                                                rejection_detail = "Excede edad maxima para contratacion"
+                                        if plan_version.max_entry_age and age is not None and age > plan_version.max_entry_age:
+                                            result = "rejected"
+                                            rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                            rejection_detail = "Excede edad maxima para contratacion"
 
                                         if result == "applied":
                                             contract = await self._create_new_contract(
@@ -472,11 +470,10 @@ class CapitatedBatchProcessor:
                                     )
                         else:
                             # Primera vez: nuevo contrato
-                            if plan_version.max_entry_age and age is not None:
-                                if age > plan_version.max_entry_age:
-                                    result = "rejected"
-                                    rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
-                                    rejection_detail = "Excede edad maxima para contratacion"
+                            if plan_version.max_entry_age and age is not None and age > plan_version.max_entry_age:
+                                result = "rejected"
+                                rejection_code = CapitatedRejectionCodes.PERSON_AGE_INVALID
+                                rejection_detail = "Excede edad maxima para contratacion"
 
                             if result == "applied":
                                 contract = await self._create_new_contract(
@@ -604,7 +601,7 @@ class CapitatedBatchProcessor:
             if total_applied > 0
             else CapitatedBatchLog.STATUS_PROCESSED_ZERO
         )
-        batch.processed_at = datetime.now(timezone.utc)
+        batch.processed_at = datetime.now(UTC)
         batch.total_rows = total_rows
         batch.total_applied = total_applied
         batch.total_rejected = total_rejected
@@ -894,7 +891,7 @@ class CapitatedBatchProcessor:
 
         # Marcar como rolled_back
         record.status = CapitatedMonthlyRecord.STATUS_ROLLED_BACK
-        record.rolled_back_at = datetime.now(timezone.utc)
+        record.rolled_back_at = datetime.now(UTC)
         record.rolled_back_by_user_id = user_id
 
         # Ajustar contrato
@@ -938,7 +935,7 @@ class CapitatedBatchProcessor:
             return
 
         contract.status = CapitatedContract.STATUS_ROLLED_BACK
-        contract.terminated_at = datetime.now(timezone.utc)
+        contract.terminated_at = datetime.now(UTC)
         contract.termination_reason = "Rollback: sin registros mensuales activos."
 
         # Verificar si quedan otros contratos activos para esta persona/producto
@@ -973,7 +970,7 @@ class CapitatedBatchProcessor:
             return
 
         person.status = CapitatedProductInsured.STATUS_ROLLED_BACK
-        person.rolled_back_at = datetime.now(timezone.utc)
+        person.rolled_back_at = datetime.now(UTC)
         person.rolled_back_by_user_id = user_id
 
     async def _recalculate_batch_stats(
@@ -1006,7 +1003,7 @@ class CapitatedBatchProcessor:
 
         if total_active == 0 and total_rolled_back > 0:
             batch.status = CapitatedBatchLog.STATUS_ROLLED_BACK
-            batch.rolled_back_at = datetime.now(timezone.utc)
+            batch.rolled_back_at = datetime.now(UTC)
             batch.rolled_back_by_user_id = user_id
 
     async def _refresh_contracts_status(self, company: Company) -> int:

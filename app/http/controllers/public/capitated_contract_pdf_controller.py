@@ -25,7 +25,6 @@ from app.models.capitated_monthly_record import CapitatedMonthlyRecord
 from app.models.company import Company
 from app.models.config_item import ConfigItem
 from app.models.coverage import Coverage
-from app.models.coverage_category import CoverageCategory
 from app.models.file import File as FileModel
 from app.models.plan_version import PlanVersion
 from app.models.plan_version_coverage import PlanVersionCoverage
@@ -360,7 +359,7 @@ async def show_pdf_by_uuid(
     # 10. Generate PDF
     try:
         from pathlib import Path
-        base_path = Path(__file__).resolve().parent.parent.parent / "services" / "pdf"
+        base_path = Path(__file__).resolve().parent.parent.parent / "services" / "pdf"  # noqa: ASYNC240
         base_url = base_path.as_uri() + "/"
         pdf_bytes = await html_to_pdf_async(html, base_url=base_url)
     except Exception as exc:

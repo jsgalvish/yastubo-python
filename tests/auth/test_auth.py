@@ -8,22 +8,23 @@ Estrategia:
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt as _bcrypt_lib
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from jose import JWTError, jwt as jose_jwt
+from jose import JWTError
+from jose import jwt as jose_jwt
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 import app.models  # asegura que Base.metadata tenga todos los modelos
+from app.config import settings
 from app.database import get_db
 from app.main import app
 from app.models import Base, User
 from app.services.auth_service import AuthService
 from app.services.token_service import ALGORITHM, create_access_token, decode_token
-from app.config import settings
 
 
 def _hash(plain: str) -> str:
@@ -110,7 +111,7 @@ class TestTokenService:
             "sub": "1",
             "realm": "admin",
             "force_password_change": False,
-            "exp": datetime.now(timezone.utc) - timedelta(seconds=10),
+            "exp": datetime.now(UTC) - timedelta(seconds=10),
         }
         token = jose_jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
         with pytest.raises(JWTError):

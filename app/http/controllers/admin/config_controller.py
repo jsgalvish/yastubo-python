@@ -370,8 +370,8 @@ async def config_delete_file(
     if not current_file_id:
         raise HTTPException(status_code=404, detail="No hay archivo asociado.")
 
-    from app.services.uploaded_file.uploaded_file_service import UploadedFileService
     from app.models.file import File as FileModel
+    from app.services.uploaded_file.uploaded_file_service import UploadedFileService
 
     r = await db.execute(select(FileModel).where(FileModel.id == current_file_id))
     file_model = r.scalar_one_or_none()

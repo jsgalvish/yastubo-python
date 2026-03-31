@@ -9,12 +9,12 @@ from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.capitated_batch_log import CapitatedBatchLog
-    from app.models.product import Product
-    from app.models.plan_version import PlanVersion
-    from app.models.capitated_product_insured import CapitatedProductInsured
     from app.models.capitated_contract import CapitatedContract
     from app.models.capitated_monthly_record import CapitatedMonthlyRecord
+    from app.models.capitated_product_insured import CapitatedProductInsured
     from app.models.country import Country
+    from app.models.plan_version import PlanVersion
+    from app.models.product import Product
 
 
 class CapitatedBatchItemLog(TimestampMixin, Base):

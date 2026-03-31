@@ -44,6 +44,7 @@ def render_template(content: str, data: dict) -> str:
 def html_to_pdf(html: str, base_url: str | None = None) -> bytes:
     """Convierte HTML a PDF usando WeasyPrint."""
     from pathlib import Path
+
     from weasyprint import HTML
 
     # Siempre usar el directorio de este archivo como base para resolver imágenes

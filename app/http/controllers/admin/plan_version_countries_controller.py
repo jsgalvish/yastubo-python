@@ -24,7 +24,8 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import delete as sa_delete, func, insert, select
+from sqlalchemy import delete as sa_delete
+from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db

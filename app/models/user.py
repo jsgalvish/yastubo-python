@@ -10,13 +10,13 @@ from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 from app.models.concerns.has_directory import HasDirectory
 
 if TYPE_CHECKING:
-    from app.models.staff_profile import StaffProfile
+    from app.models.audit_log import AuditLog
+    from app.models.business_unit_membership import BusinessUnitMembership
+    from app.models.company_user import CompanyUser
     from app.models.customer_profile import CustomerProfile
     from app.models.password_history import PasswordHistory
+    from app.models.staff_profile import StaffProfile
     from app.models.user_preference import UserPreference
-    from app.models.audit_log import AuditLog
-    from app.models.company_user import CompanyUser
-    from app.models.business_unit_membership import BusinessUnitMembership
 
 
 REALM_ADMIN = "admin"

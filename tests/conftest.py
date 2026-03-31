@@ -9,8 +9,8 @@ Referencia skill: python-testing → conftest.py for shared fixtures.
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
-import pytest_asyncio
 import httpx
+import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -19,7 +19,6 @@ from app.main import app
 from app.models import Base, Permission, User
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────── Helpers ─────────────────────────────────────────────
 

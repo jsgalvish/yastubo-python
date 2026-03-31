@@ -20,14 +20,13 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.user import User
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.geo_request import (
-    CountryOut,
     StoreCountryRequest,
     UpdateCountryRequest,
 )
 from app.models.country import Country
+from app.models.user import User
 from config.continents import CONTINENTS
 
 router = APIRouter(prefix="/admin/countries", tags=["admin:countries"])

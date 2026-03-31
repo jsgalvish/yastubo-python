@@ -9,8 +9,8 @@ from app.models.base import Base, TimestampMixin
 from app.models.concerns.has_directory import HasDirectory
 
 if TYPE_CHECKING:
-    from app.models.company_user import CompanyUser
     from app.models.company_commission_user import CompanyCommissionUser
+    from app.models.company_user import CompanyUser
     from app.models.product import Product
     from app.models.user import User
 

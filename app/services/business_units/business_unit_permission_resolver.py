@@ -59,7 +59,7 @@ PERMISSION_KEYS: list[str] = [
 
 def _empty_permissions() -> dict[str, int]:
     """Devuelve un dict de permisos inicializado en LEVEL_NONE."""
-    return {key: LEVEL_NONE for key in PERMISSION_KEYS}
+    return dict.fromkeys(PERMISSION_KEYS, LEVEL_NONE)
 
 
 class BusinessUnitPermissionResolver:

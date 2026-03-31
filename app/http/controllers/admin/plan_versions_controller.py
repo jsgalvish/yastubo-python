@@ -31,7 +31,8 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import select, update as sa_update
+from sqlalchemy import select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -48,8 +49,8 @@ from app.http.requests.admin.plan_version_request import (
     PlanVersionDeleteResponse,
     PlanVersionIndexResponse,
     PlanVersionOut,
-    StorePlanVersionRequest,
     StoreAgeSurchargeRequest,
+    StorePlanVersionRequest,
     TermsHtmlDataResponse,
     UpdateAgeSurchargeRequest,
     UpdatePlanVersionRequest,
@@ -355,14 +356,12 @@ async def pdf_preview(
 ) -> Response:
     """Genera un PDF de preview para la versión de plan."""
     from app.models.coverage import Coverage
-    from app.models.coverage_category import CoverageCategory
+    from app.models.file import File as FileModel
     from app.models.plan_version_coverage import PlanVersionCoverage
     from app.models.template import Template
     from app.models.template_version import TemplateVersion
-    from app.models.unit_of_measure import UnitOfMeasure
-    from app.models.file import File as FileModel
-    from app.services.template_render.template_render_service import TemplateRenderService
     from app.services.pdf.pdf_service import html_to_pdf_async
+    from app.services.template_render.template_render_service import TemplateRenderService
     from app.support.json_decode import JsonDecode
 
     version = await _get_version(product_id, version_id, db)

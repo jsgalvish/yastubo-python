@@ -7,7 +7,6 @@ from app.support.json_decode import JsonDecode
 from app.support.password_policy import PasswordPolicy
 from app.support.realm import Realm, _current_realm_var
 
-
 # ── Realm ─────────────────────────────────────────────────────────────────────
 
 class TestRealm:
@@ -141,7 +140,7 @@ class TestFormatService:
 
     def test_decimal_or_dash_none(self):
         fmt = FormatService("es")
-        assert fmt.decimal_or_dash(None) == "–"
+        assert fmt.decimal_or_dash(None) == "–"  # noqa: RUF001
 
     def test_money(self):
         fmt = FormatService("en")
@@ -193,6 +192,73 @@ class TestPasswordPolicy:
         assert "min" in data
         assert "require" in data
         assert "messages" in data
+
+
+# ── FormatService extended ────────────────────────────────────────────────────
+
+class TestFormatServiceExtended:
+    def test_get_locale(self):
+        fmt = FormatService("en")
+        assert fmt.get_locale() == "en"
+
+    def test_get_config(self):
+        fmt = FormatService("es")
+        cfg = fmt.get_config()
+        assert isinstance(cfg, dict)
+        assert "number_locale" in cfg
+
+    def test_time_none_returns_none(self):
+        fmt = FormatService("es")
+        assert fmt.time(None) is None
+
+    def test_time_from_string(self):
+        fmt = FormatService("es")
+        result = fmt.time("2026-03-10 14:30:00")
+        assert result is not None
+        assert "14" in result
+
+    def test_datetime_none_returns_none(self):
+        fmt = FormatService("es")
+        assert fmt.datetime(None) is None
+
+    def test_datetime_from_string(self):
+        fmt = FormatService("es")
+        result = fmt.datetime("2026-03-10 14:30:00")
+        assert result is not None
+
+    def test_datetime_from_timestamp(self):
+        fmt = FormatService("en")
+        result = fmt.datetime(1700000000)
+        assert result is not None
+
+    def test_integer_none_not_nullable(self):
+        fmt = FormatService("es")
+        result = fmt.integer(None, nullable=False)
+        assert result == "0"
+
+    def test_money_none_returns_none(self):
+        fmt = FormatService("es")
+        assert fmt.money(None) is None
+
+    def test_money_with_code(self):
+        fmt = FormatService("en")
+        result = fmt.money(100.0, "USD", with_code=True)
+        assert result is not None
+        assert "USD" in result
+
+    def test_date_from_timestamp(self):
+        fmt = FormatService("es")
+        result = fmt.date(1700000000)
+        assert result is not None
+
+    def test_date_invalid_string(self):
+        fmt = FormatService("es")
+        result = fmt.date("not-a-date")
+        assert result is None
+
+    def test_unknown_locale_fallback(self):
+        fmt = FormatService("zz")  # inexistente — fallback al primero
+        assert fmt.get_config() is not None
 
 
 # ── env_any ───────────────────────────────────────────────────────────────────

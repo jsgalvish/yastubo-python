@@ -13,7 +13,6 @@ import json
 
 import bcrypt as _bcrypt_lib
 import httpx
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -26,7 +25,6 @@ from app.models.country import Country
 from app.models.zone import Zone
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────── Fixtures de infraestructura ─────────────────────────
 

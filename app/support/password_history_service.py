@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt as _bcrypt_lib
 from sqlalchemy import select
@@ -59,11 +59,7 @@ class PasswordHistoryService:
             .order_by(PasswordHistory.created_at.desc())
             .limit(limit)
         )
-        for record in result.scalars().all():
-            if _bcrypt_verify(plain, record.password_hash):
-                return True
-
-        return False
+        return any(_bcrypt_verify(plain, record.password_hash) for record in result.scalars().all())
 
     async def remember(self, user: object, old_hash: str | None) -> None:
         """
@@ -82,7 +78,7 @@ class PasswordHistoryService:
         record = PasswordHistory(
             user_id=user.id,  # type: ignore[attr-defined]
             password_hash=old_hash,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self._db.add(record)
         await self._db.flush()
@@ -102,7 +98,7 @@ class PasswordHistoryService:
         # Purgar por antigüedad (opcional)
         days: int = int(cfg.get("retention_days", 0))
         if days > 0:
-            cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+            cutoff = datetime.now(UTC) - timedelta(days=days)
             result = await self._db.execute(
                 select(PasswordHistory).where(
                     PasswordHistory.user_id == user.id,  # type: ignore[attr-defined]

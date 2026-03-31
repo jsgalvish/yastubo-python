@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import logging
 import math
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import JWTError
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
-from app.http.middleware.auth import _bearer, _UNAUTHORIZED
+from app.http.middleware.auth import _UNAUTHORIZED, _bearer
 from app.http.middleware.permission import require_permission, require_role
 from app.http.requests.admin.user_request import (
     CreateUserRequest,
@@ -29,8 +33,8 @@ from app.models.staff_profile import StaffProfile
 from app.models.user import User
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token, decode_token
-from fastapi.security import HTTPAuthorizationCredentials
-from jose import JWTError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/users", tags=["admin:users"])
 impersonate_router = APIRouter(prefix="/admin", tags=["admin:users"])
@@ -57,10 +61,11 @@ async def _get_user(db: AsyncSession, user_id: int) -> User:
     return user
 
 
-def _make_temp_password() -> str:
-    """Genera y hashea una contraseña temporal aleatoria."""
+def _make_temp_password() -> tuple[str, str]:
+    """Genera una contraseña temporal aleatoria y retorna (plain, hashed)."""
     plain = secrets.token_urlsafe(16)
-    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
+    hashed = bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
+    return plain, hashed
 
 
 def _validate_vendor_commissions(roles: list[str], data: dict) -> dict[str, str]:
@@ -74,9 +79,8 @@ def _validate_vendor_commissions(roles: list[str], data: dict) -> dict[str, str]
             errors["commission_regular_first_year_pct"] = "Obligatorio para vendedor regular."
         if data.get("commission_regular_renewal_pct") is None:
             errors["commission_regular_renewal_pct"] = "Obligatorio para vendedor regular."
-    if "vendedor_capitados" in roles:
-        if data.get("commission_capitados_pct") is None:
-            errors["commission_capitados_pct"] = "Obligatorio para vendedor capitados."
+    if "vendedor_capitados" in roles and data.get("commission_capitados_pct") is None:
+        errors["commission_capitados_pct"] = "Obligatorio para vendedor capitados."
     return errors
 
 
@@ -349,6 +353,7 @@ async def store(
         )
 
     # Crear usuario con contraseña temporal y force_password_change=True
+    temp_plain, temp_hashed = _make_temp_password()
     user = User(
         realm="admin",
         first_name=body.first_name,
@@ -356,7 +361,7 @@ async def store(
         display_name=body.display_name,
         email=body.email,
         status=body.status,
-        password=_make_temp_password(),
+        password=temp_hashed,
         force_password_change=True,
     )
     db.add(user)
@@ -386,6 +391,15 @@ async def store(
 
     await db.commit()
     await db.refresh(user)
+
+    # Enviar email de bienvenida con credenciales temporales
+    try:
+        from app.notifications.admin.welcome import send_welcome_admin
+
+        login_url = f"{settings.app_url}/admin/login"
+        await send_welcome_admin(user, login_url, temp_plain)
+    except Exception:
+        logger.exception("Error enviando email de bienvenida a %s", user.email)
 
     return _build_user_out(user, body.roles, staff_profile)
 
@@ -532,7 +546,7 @@ async def destroy(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
 
-    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_at = datetime.now(UTC)
     await db.commit()
 
 
@@ -727,15 +741,30 @@ async def send_reset(
 ) -> dict:
     """
     POST /admin/users/{id}/send-reset — marca al usuario para reseteo de
-    contraseña. El envío de email se implementará en Phase 5.
+    contraseña y envía el email de restablecimiento.
     Equivale a UsersController::sendReset() de PHP.
     """
     user = await _get_user(db, user_id)
 
     user.force_password_change = True
+
+    # Generar token de reset y guardarlo en remember_token
+    token = secrets.token_urlsafe(48)
+    user.remember_token = token
+
     await db.commit()
 
-    return {"toast": "Usuario marcado para reseteo de contraseña."}
+    url = f"{settings.app_url}/admin/reset-password/{token}?email={user.email}"
+
+    # Enviar email de reset
+    try:
+        from app.notifications.admin.reset_password import send_reset_password_admin
+
+        await send_reset_password_admin(user, url, minutes=30)
+    except Exception:
+        logger.exception("Error enviando email de reset a %s", user.email)
+
+    return {"toast": "Email de reseteo de contraseña enviado."}
 
 
 # ── Lock / Unlock ─────────────────────────────────────────────────────────────

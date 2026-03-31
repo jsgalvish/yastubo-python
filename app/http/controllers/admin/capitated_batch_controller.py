@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import io
 import math
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -271,7 +271,7 @@ async def batch_template(
     wb.save(buf)
     buf.seek(0)
 
-    now_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    now_str = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"capitados_estructura_company_{company.id}_{now_str}.xlsx"
 
     return StreamingResponse(
@@ -422,7 +422,7 @@ async def batch_rollback(
     if batch.rolled_back_at is not None:
         raise HTTPException(status_code=422, detail="El lote ya fue revertido.")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Marcar monthly records activos como rolled_back
     records_r = await db.execute(
@@ -476,7 +476,7 @@ async def rollback_monthly_record(
         raise HTTPException(status_code=422, detail="El registro ya fue revertido.")
 
     mr.status = CapitatedMonthlyRecord.STATUS_ROLLED_BACK
-    mr.rolled_back_at = datetime.now(timezone.utc)
+    mr.rolled_back_at = datetime.now(UTC)
     mr.rolled_back_by_user_id = _current_user.id
 
     await db.commit()
@@ -531,7 +531,6 @@ async def report_download(
 ) -> StreamingResponse:
     """Descarga el reporte mensual en Excel."""
     import openpyxl
-    from openpyxl.utils import get_column_letter
 
     await _get_company(company_id, db)
 
@@ -543,7 +542,6 @@ async def report_download(
         except ValueError:
             raise HTTPException(status_code=422, detail="Formato de mes inválido.")
 
-    from app.models.country import Country
 
     r = await db.execute(
         select(CapitatedMonthlyRecord)
@@ -578,7 +576,7 @@ async def report_download(
         "Fuente del precio", "Precio base", "Recargo por edad", "Precio total",
     ]
 
-    for key, rows in groups.items():
+    for _, rows in groups.items():
         first = rows[0]
         product = first.product
         status = first.status

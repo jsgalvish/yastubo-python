@@ -7,7 +7,7 @@ Skills aplicados:
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,12 +19,12 @@ CoverageStatus = Literal["active", "archived"]
 
 class TranslatableName(BaseModel):
     es: str = Field(..., max_length=255)
-    en: Optional[str] = Field(None, max_length=255)
+    en: str | None = Field(None, max_length=255)
 
 
 class TranslatableText(BaseModel):
-    es: Optional[str] = None
-    en: Optional[str] = None
+    es: str | None = None
+    en: str | None = None
 
 
 # ─────────────────────────── UnitOfMeasure ───────────────────────────────────
@@ -32,8 +32,8 @@ class TranslatableText(BaseModel):
 
 class UnitOut(BaseModel):
     id: int
-    name: Optional[dict] = None
-    description: Optional[dict] = None
+    name: dict | None = None
+    description: dict | None = None
     measure_type: str
     status: str
 
@@ -45,13 +45,13 @@ class UnitOut(BaseModel):
 
 class CoverageOut(BaseModel):
     id: int
-    category_id: Optional[int] = None
-    unit_id: Optional[int] = None
-    name: Optional[dict] = None
-    description: Optional[dict] = None
+    category_id: int | None = None
+    unit_id: int | None = None
+    name: dict | None = None
+    description: dict | None = None
     status: str
-    sort_order: Optional[int] = None
-    unit: Optional[UnitOut] = None
+    sort_order: int | None = None
+    unit: UnitOut | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -65,10 +65,10 @@ class CoverageDataResponse(BaseModel):
 
 class CategoryOut(BaseModel):
     id: int
-    name: Optional[dict] = None
-    description: Optional[dict] = None
+    name: dict | None = None
+    description: dict | None = None
     status: str
-    sort_order: Optional[int] = None
+    sort_order: int | None = None
     coverages: list[CoverageOut] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -92,7 +92,7 @@ class ArchivedCategoriesResponse(BaseModel):
 
 class StoreCategoryRequest(BaseModel):
     name: TranslatableName
-    description: Optional[TranslatableText] = None
+    description: TranslatableText | None = None
 
 
 class ReorderItem(BaseModel):
@@ -111,14 +111,14 @@ class StoreCoverageRequest(BaseModel):
     category_id: int
     unit_id: int
     name: TranslatableName
-    description: Optional[TranslatableText] = None
+    description: TranslatableText | None = None
 
 
 class UpdateCoverageRequest(BaseModel):
-    category_id: Optional[int] = None
-    unit_id: Optional[int] = None
-    name: Optional[TranslatableName] = None
-    description: Optional[TranslatableText] = None
+    category_id: int | None = None
+    unit_id: int | None = None
+    name: TranslatableName | None = None
+    description: TranslatableText | None = None
 
 
 # ─────────────────────────── PlanVersionCoverage ─────────────────────────────
@@ -128,17 +128,17 @@ class PlanVersionCoverageOut(BaseModel):
     id: int
     plan_version_id: int
     coverage_id: int
-    sort_order: Optional[int] = None
-    value_int: Optional[int] = None
-    value_decimal: Optional[float] = None
-    value_text: Optional[dict] = None
-    notes: Optional[dict] = None
-    coverage_name: Optional[dict] = None
-    coverage_description: Optional[dict] = None
-    unit_name: Optional[dict] = None
-    unit_measure_type: Optional[str] = None
-    category_id: Optional[int] = None
-    category_name: Optional[dict] = None
+    sort_order: int | None = None
+    value_int: int | None = None
+    value_decimal: float | None = None
+    value_text: dict | None = None
+    notes: dict | None = None
+    coverage_name: dict | None = None
+    coverage_description: dict | None = None
+    unit_name: dict | None = None
+    unit_measure_type: str | None = None
+    category_id: int | None = None
+    category_name: dict | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -149,18 +149,18 @@ class PlanVersionCoverageDataResponse(BaseModel):
 
 class AvailableCoverageItem(BaseModel):
     id: int
-    name: Optional[dict] = None
-    description: Optional[dict] = None
-    unit_id: Optional[int] = None
-    unit_name: Optional[dict] = None
-    unit_measure_type: Optional[str] = None
+    name: dict | None = None
+    description: dict | None = None
+    unit_id: int | None = None
+    unit_name: dict | None = None
+    unit_measure_type: str | None = None
     attached: bool = False
-    plan_version_coverage_id: Optional[int] = None
+    plan_version_coverage_id: int | None = None
 
 
 class AvailableCategoryOut(BaseModel):
     id: int
-    name: Optional[dict] = None
+    name: dict | None = None
     coverages: list[AvailableCoverageItem] = []
 
 
@@ -177,7 +177,7 @@ class ReorderPVCoveragesRequest(BaseModel):
 
 
 class UpdatePVCoverageValueRequest(BaseModel):
-    value_int: Optional[int] = None
-    value_decimal: Optional[float] = None
-    value_text: Optional[TranslatableText] = None
-    notes: Optional[TranslatableText] = None
+    value_int: int | None = None
+    value_decimal: float | None = None
+    value_text: TranslatableText | None = None
+    notes: TranslatableText | None = None

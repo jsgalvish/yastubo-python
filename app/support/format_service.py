@@ -45,7 +45,7 @@ class FormatService:
     def integer(self, value: Any, nullable: bool = True) -> str | None:
         if value is None:
             return None if nullable else "0"
-        numeric = int(round(float(value)))
+        numeric = round(float(value))
         locale = self._config.get("number_locale", "en_US")
         return babel_decimal(numeric, format="#,##0", locale=locale)
 
@@ -75,7 +75,7 @@ class FormatService:
 
     def decimal_or_dash(self, value: Any, decimals: int = 2) -> str:
         result = self.decimal(value, decimals, nullable=True)
-        return "–" if result is None else result
+        return "–" if result is None else result  # noqa: RUF001
 
     # ── Privados ──────────────────────────────────────────────────────────────
 
@@ -85,7 +85,7 @@ class FormatService:
         if isinstance(value, (int, float)):
             return datetime.fromtimestamp(value)
         if isinstance(value, str) and value.strip():
-            from dateutil.parser import parse, ParserError
+            from dateutil.parser import ParserError, parse
             try:
                 return parse(value)
             except (ParserError, ValueError):
@@ -96,7 +96,7 @@ class FormatService:
         if locale:
             return locale
         from app.config import settings
-        return settings.app_timezone and "es" or "es"
+        return (settings.app_timezone and "es") or "es"
 
     def _resolve_config_for_locale(self, locale: str) -> dict:
         if locale in FORMAT_LOCALES:

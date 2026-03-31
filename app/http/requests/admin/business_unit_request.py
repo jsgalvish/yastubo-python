@@ -4,7 +4,7 @@ Equivale a BusinessUnitApiController.php.
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,9 +18,9 @@ UnitStatus = Literal["active", "inactive"]
 class UnitOut(BaseModel):
     id: int
     name: str
-    type: Optional[str] = None
-    status: Optional[str] = None
-    parent_id: Optional[int] = None
+    type: str | None = None
+    status: str | None = None
+    parent_id: int | None = None
     members_count: int = 0
     children_count: int = 0
 
@@ -28,11 +28,11 @@ class UnitOut(BaseModel):
 
 
 class UnitDetailOut(UnitOut):
-    branding_text_dark: Optional[str] = None
-    branding_bg_light: Optional[str] = None
-    branding_text_light: Optional[str] = None
-    branding_bg_dark: Optional[str] = None
-    branding_logo_file_id: Optional[int] = None
+    branding_text_dark: str | None = None
+    branding_bg_light: str | None = None
+    branding_text_light: str | None = None
+    branding_bg_dark: str | None = None
+    branding_logo_file_id: int | None = None
 
 
 class UnitDataResponse(BaseModel):
@@ -65,7 +65,7 @@ class ChildrenResponse(BaseModel):
 class StoreUnitRequest(BaseModel):
     type: UnitType
     name: str = Field(..., max_length=255)
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
 
 
 class UpdateBasicRequest(BaseModel):
@@ -83,11 +83,11 @@ class MemberOut(BaseModel):
     id: int
     business_unit_id: int
     user_id: int
-    role_id: Optional[int] = None
-    status: Optional[str] = None
-    user_email: Optional[str] = None
-    user_display_name: Optional[str] = None
-    role_name: Optional[str] = None
+    role_id: int | None = None
+    status: str | None = None
+    user_email: str | None = None
+    user_display_name: str | None = None
+    role_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -103,7 +103,7 @@ class MemberDataResponse(BaseModel):
 
 class LinkMemberRequest(BaseModel):
     user_id: int
-    role_id: Optional[int] = None
+    role_id: int | None = None
 
 
 class UpdateMemberRoleRequest(BaseModel):
@@ -122,9 +122,9 @@ class GSACommissionOut(BaseModel):
     source_type: str
     source_id: int
     beneficiary_user_id: int
-    commission: Optional[float] = None
-    user_email: Optional[str] = None
-    user_display_name: Optional[str] = None
+    commission: float | None = None
+    user_email: str | None = None
+    user_display_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -155,7 +155,7 @@ class StoreGSACommissionRequest(BaseModel):
 
 
 class UpdateGSACommissionRequest(BaseModel):
-    commission: Optional[float] = Field(None, ge=0, le=100)
+    commission: float | None = Field(None, ge=0, le=100)
 
 
 # ─────────────────────────── Change Type / Move / Branding ────────────────────
@@ -167,14 +167,14 @@ class ChangeTypeRequest(BaseModel):
 
 
 class MoveUnitRequest(BaseModel):
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
 
 
 class UpdateBrandingRequest(BaseModel):
-    branding_text_dark: Optional[str] = Field(None, max_length=12)
-    branding_bg_light: Optional[str] = Field(None, max_length=12)
-    branding_text_light: Optional[str] = Field(None, max_length=12)
-    branding_bg_dark: Optional[str] = Field(None, max_length=12)
+    branding_text_dark: str | None = Field(None, max_length=12)
+    branding_bg_light: str | None = Field(None, max_length=12)
+    branding_text_light: str | None = Field(None, max_length=12)
+    branding_bg_dark: str | None = Field(None, max_length=12)
     remove_logo: bool = False
 
 
@@ -213,8 +213,8 @@ class CreateUserMemberResponse(BaseModel):
 class RoleOut(BaseModel):
     id: int
     name: str
-    scope: Optional[str] = None
-    level: Optional[int] = None
+    scope: str | None = None
+    level: int | None = None
     role_name: str
 
     model_config = ConfigDict(from_attributes=True)

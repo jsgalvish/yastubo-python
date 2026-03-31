@@ -9,12 +9,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.company import Company
-    from app.models.product import Product
-    from app.models.capitated_product_insured import CapitatedProductInsured
     from app.models.capitated_contract import CapitatedContract
-    from app.models.plan_version import PlanVersion
+    from app.models.capitated_product_insured import CapitatedProductInsured
+    from app.models.company import Company
     from app.models.country import Country
+    from app.models.plan_version import PlanVersion
+    from app.models.product import Product
 
 
 class CapitatedMonthlyRecord(TimestampMixin, Base):

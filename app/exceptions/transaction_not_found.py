@@ -1,4 +1,4 @@
-"""
+r"""
 Excepción para transacciones no encontradas.
 
 Equivale a App\Exceptions\TransactionNotFoundException de PHP.

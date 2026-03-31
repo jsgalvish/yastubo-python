@@ -13,9 +13,8 @@ import json
 from datetime import date
 
 import bcrypt as _bcrypt_lib
-import pytest
-import pytest_asyncio
 import httpx
+import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -29,7 +28,6 @@ from app.models.company import Company
 from app.models.product import Product
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────── Fixtures ────────────────────────────────────────────
 

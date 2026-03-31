@@ -10,8 +10,8 @@ from app.models.concerns.has_translatable_json import HasTranslatableJson
 
 if TYPE_CHECKING:
     from app.models.coverage_category import CoverageCategory
-    from app.models.unit_of_measure import UnitOfMeasure
     from app.models.plan_version_coverage import PlanVersionCoverage
+    from app.models.unit_of_measure import UnitOfMeasure
 
 
 class Coverage(HasTranslatableJson, TimestampMixin, Base):

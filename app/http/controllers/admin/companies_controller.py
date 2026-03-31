@@ -27,12 +27,11 @@ Permiso requerido: admin.companies.manage
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, func, select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.http.middleware.permission import require_permission
@@ -149,7 +148,7 @@ async def _get_company(company_id: int, db: AsyncSession) -> Company:
 @router.get("/check-short-code", response_model=ShortCodeCheckOut)
 async def check_short_code(
     short_code: str = Query(default=""),
-    company_id: Optional[int] = Query(default=None),
+    company_id: int | None = Query(default=None),
     _current_user: User = Depends(require_permission(_PERMISSION)),
     db: AsyncSession = Depends(get_db),
 ):

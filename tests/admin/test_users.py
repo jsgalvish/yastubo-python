@@ -9,6 +9,8 @@ Estrategia:
 """
 from __future__ import annotations
 
+from datetime import UTC
+
 import bcrypt as _bcrypt_lib
 import pytest
 import pytest_asyncio
@@ -22,7 +24,6 @@ from app.models import Base, Permission, User
 from app.models.staff_profile import StaffProfile
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────────── Fixtures ────────────────────────────────────────
 
@@ -170,12 +171,12 @@ class TestUserIndex:
     async def test_excluye_soft_deleted(
         self, client: AsyncClient, actor_token: str, async_engine
     ):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             du = _make_user(email="deleted_hidden@admintest.com")
-            du.deleted_at = datetime.now(timezone.utc)
+            du.deleted_at = datetime.now(UTC)
             session.add(du)
             await session.commit()
 
@@ -392,6 +393,7 @@ class TestCreateUser:
     ):
         """Si el rol es vendedor_regular, las comisiones son obligatorias."""
         from sqlalchemy.ext.asyncio import AsyncSession
+
         from app.models.role import Role
 
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
@@ -482,12 +484,12 @@ class TestShowUser:
     async def test_show_deleted_retorna_404(
         self, client: AsyncClient, actor_token: str, async_engine
     ):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         Session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
         async with Session() as session:
             u = _make_user(email="show_deleted@admintest.com")
-            u.deleted_at = datetime.now(timezone.utc)
+            u.deleted_at = datetime.now(UTC)
             session.add(u)
             await session.commit()
             uid = u.id

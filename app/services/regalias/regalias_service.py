@@ -23,7 +23,6 @@ from app.models.business_unit import BusinessUnit
 from app.models.regalia import Regalia
 from app.models.user import User
 
-
 # Tipos soportados por el backend.
 _SUPPORTED_SOURCE_TYPES = {"user", "unit"}
 
@@ -164,8 +163,7 @@ class RegaliasService:
             )
 
         # Validar ciclos en relaciones usuario-usuario
-        if source_type == "user":
-            if await self._would_create_user_cycle(beneficiary_id, source_id):
+        if source_type == "user" and await self._would_create_user_cycle(beneficiary_id, source_id):
                 raise HTTPException(
                     status_code=422,
                     detail=(
@@ -175,10 +173,9 @@ class RegaliasService:
                 )
 
         # Validar redundancias ciclicas en relaciones de unidades
-        if source_type == "unit":
-            if await self._would_create_unit_redundancy_cycle(
-                beneficiary_id, source_id
-            ):
+        if source_type == "unit" and await self._would_create_unit_redundancy_cycle(
+            beneficiary_id, source_id
+        ):
                 raise HTTPException(
                     status_code=422,
                     detail=(
@@ -344,7 +341,7 @@ class RegaliasService:
 
         # Cargar todas las unidades relevantes (existentes + candidata)
         # con relacion parent para poder recorrer ancestor_chain
-        all_ids = list(set(existing_unit_ids + [unit_id]))
+        all_ids = list({*existing_unit_ids, unit_id})
         units_result = await db.execute(
             select(BusinessUnit)
             .options(selectinload(BusinessUnit.parent))
@@ -374,8 +371,4 @@ class RegaliasService:
 
         # Regla 2: verificar que ninguna unidad ya asignada este en la
         # cadena de ancestros de la candidata
-        for existing_id in existing_unit_ids:
-            if existing_id in candidate_chain_ids:
-                return True
-
-        return False
+        return any(existing_id in candidate_chain_ids for existing_id in existing_unit_ids)

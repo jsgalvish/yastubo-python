@@ -10,6 +10,8 @@ Estrategia:
 """
 from __future__ import annotations
 
+from datetime import UTC
+
 import bcrypt as _bcrypt_lib
 import pytest
 import pytest_asyncio
@@ -23,7 +25,6 @@ from app.models import Base, Permission, Role, User
 from app.models.permission import USER_MODEL_TYPE
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────────── Fixtures SQLite ────────────────────────────────
 
@@ -316,6 +317,7 @@ class TestPermissionMiddleware:
     ):
         """Usuario con el permiso requerido accede al endpoint."""
         from fastapi import Depends
+
         from app.http.middleware.permission import require_permission
 
         # Registrar endpoint temporal
@@ -346,8 +348,9 @@ class TestPermissionMiddleware:
         self, client: AsyncClient, db_session: AsyncSession
     ):
         """Usuario sin el permiso requerido recibe 403."""
-        from app.http.middleware.permission import require_permission
         from fastapi import Depends
+
+        from app.http.middleware.permission import require_permission
 
         @app.get("/test-perm-403")
         async def _ep(u: User = Depends(require_permission("secret.action"))):
@@ -370,8 +373,9 @@ class TestPermissionMiddleware:
         self, client: AsyncClient, db_session: AsyncSession
     ):
         """Usuario con el rol requerido accede al endpoint."""
-        from app.http.middleware.permission import require_role
         from fastapi import Depends
+
+        from app.http.middleware.permission import require_role
 
         @app.get("/test-role-ok")
         async def _ep(u: User = Depends(require_role("superadmin"))):
@@ -400,8 +404,9 @@ class TestPermissionMiddleware:
         self, client: AsyncClient, db_session: AsyncSession
     ):
         """Usuario sin el rol requerido recibe 403."""
-        from app.http.middleware.permission import require_role
         from fastapi import Depends
+
+        from app.http.middleware.permission import require_role
 
         @app.get("/test-role-403")
         async def _ep(u: User = Depends(require_role("superadmin_exclusive"))):
@@ -425,6 +430,7 @@ class TestPermissionMiddleware:
     ):
         """Permiso otorgado vía rol (no directo) es reconocido por require_permission."""
         from fastapi import Depends
+
         from app.http.middleware.permission import require_permission
 
         @app.get("/test-perm-viarole")
@@ -457,12 +463,14 @@ class TestPermissionMiddleware:
         self, client: AsyncClient, db_session: AsyncSession
     ):
         """Token expirado en endpoint protegido retorna 401."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
+
         from fastapi import Depends
         from jose import jwt as _jose_jwt
+
         from app.config import settings
-        from app.services.token_service import ALGORITHM
         from app.http.middleware.permission import require_permission
+        from app.services.token_service import ALGORITHM
 
         @app.get("/test-expired")
         async def _ep(u: User = Depends(require_permission("any.perm"))):
@@ -476,7 +484,7 @@ class TestPermissionMiddleware:
             "sub": str(user.id),
             "realm": "admin",
             "force_password_change": False,
-            "exp": datetime.now(timezone.utc) - timedelta(seconds=10),
+            "exp": datetime.now(UTC) - timedelta(seconds=10),
         }
         expired_token = _jose_jwt.encode(
             expired_payload, settings.secret_key, algorithm=ALGORITHM

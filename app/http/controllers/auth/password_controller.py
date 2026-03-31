@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 import secrets
-from datetime import datetime, timedelta, timezone
 
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.http.middleware.auth import get_admin_user, get_customer_user
@@ -19,8 +17,8 @@ from app.http.requests.auth.password_request import (
 )
 from app.models.user import User
 from app.services.auth_service import AuthService
-from app.support.password_policy import PasswordPolicy
 from app.support.password_history_service import PasswordHistoryService
+from app.support.password_policy import PasswordPolicy
 
 router = APIRouter(tags=["auth"])
 
@@ -187,14 +185,14 @@ async def _forgot_password(realm: str, body: ForgotPasswordRequest, db: AsyncSes
     # Enviar email (best effort, no bloquea)
     try:
         if realm == "admin":
-            from app.notifications.admin.reset_password import send_reset_password_admin
             from app.config import settings
+            from app.notifications.admin.reset_password import send_reset_password_admin
 
             url = f"{settings.app_url}/admin/reset-password/{token}?email={user.email}"
             await send_reset_password_admin(user, url, minutes=30)
         else:
-            from app.notifications.customer.reset_password import send_reset_password_customer
             from app.config import settings
+            from app.notifications.customer.reset_password import send_reset_password_customer
 
             url = f"{settings.app_url}/customer/reset-password/{token}?email={user.email}"
             await send_reset_password_customer(user, url, minutes=30)

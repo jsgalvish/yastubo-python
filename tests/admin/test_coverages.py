@@ -12,9 +12,8 @@ from __future__ import annotations
 import json
 
 import bcrypt as _bcrypt_lib
-import pytest
-import pytest_asyncio
 import httpx
+import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -22,14 +21,11 @@ import app.models
 from app.database import get_db
 from app.main import app
 from app.models import Base, Permission, User
-from app.models.coverage import Coverage
-from app.models.coverage_category import CoverageCategory
 from app.models.plan_version import PlanVersion
 from app.models.product import Product
 from app.models.unit_of_measure import UnitOfMeasure
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────── Fixtures ────────────────────────────────────────────
 

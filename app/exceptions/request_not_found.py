@@ -1,4 +1,4 @@
-"""
+r"""
 Excepción para recursos no encontrados.
 
 Equivale a App\Exceptions\RequestNotFoundException de PHP.

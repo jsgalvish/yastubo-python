@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import uuid as uuid_lib
 
-from sqlalchemy import JSON, Integer, String, Text
+from sqlalchemy import JSON, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin

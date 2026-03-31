@@ -1,4 +1,4 @@
-"""
+r"""
 Dependency para verificar tokens de Google reCAPTCHA v3.
 
 Equivale a App\Http\Middleware\VerifyRecaptcha de PHP.

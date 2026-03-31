@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from jose import JWTError, jwt
+from jose import jwt
 
 from app.config import settings
 
@@ -26,7 +26,7 @@ def create_access_token(
       exp  — timestamp de expiración
       + cualquier campo adicional pasado en extra_claims
     """
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=settings.session_lifetime_minutes
     )
     payload: dict = {

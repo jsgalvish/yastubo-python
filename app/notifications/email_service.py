@@ -52,6 +52,7 @@ async def send_email(
         from_addr: dirección del remitente (usa settings si no se especifica)
     """
     context = context or {}
+    context.setdefault("app_url", getattr(settings, "app_url", ""))
     sender = from_addr or getattr(settings, "smtp_from", "noreply@gfa.com")
 
     # Renderizar template

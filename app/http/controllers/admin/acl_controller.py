@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.user import User
 from app.http.middleware.permission import require_permission
 from app.http.requests.admin.acl_request import (
     MatrixDataOut,
@@ -22,6 +21,7 @@ from app.http.requests.admin.acl_request import (
 )
 from app.models.permission import Permission, role_has_permissions
 from app.models.role import Role
+from app.models.user import User
 
 router = APIRouter(prefix="/admin/acl/roles", tags=["admin:acl"])
 

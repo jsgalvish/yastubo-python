@@ -11,51 +11,28 @@ from __future__ import annotations
 import json
 import os
 
-import pytest
 import pytest_asyncio
-from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-import app.models  # asegura que todos los modelos estén registrados en Base.metadata
 from app.models import (
     Base,
-    CapitatedBatchLog,
-    CapitatedBatchItemLog,
-    CapitatedContract,
-    CapitatedMonthlyRecord,
-    CapitatedProductInsured,
-    CapitatedVoidReason,
-    Company,
-    CompanyCommissionUser,
-    CompanyUser,
     BusinessUnit,
-    BusinessUnitCommissionUser,
-    BusinessUnitMembership,
+    CapitatedBatchLog,
+    CapitatedVoidReason,
     ConfigItem,
     Country,
-    Coverage,
     CoverageCategory,
-    CustomerProfile,
     File,
-    PasswordHistory,
     PlanVersion,
-    PlanVersionAgeSurcharge,
-    PlanVersionCoverage,
     Product,
-    Regalia,
     Role,
-    StaffProfile,
     SystemSetting,
     Template,
-    TemplateVersion,
     UnitOfMeasure,
     User,
-    UserPreference,
-    Zone,
 )
-from app.models.concerns.has_translatable_json import HasTranslatableJson
 from app.models.concerns.has_directory import HasDirectory
-
+from app.models.concerns.has_translatable_json import HasTranslatableJson
 
 # ─────────────────────────── Fixtures SQLite ────────────────────────────────
 

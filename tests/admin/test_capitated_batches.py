@@ -9,12 +9,11 @@ Estrategia:
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import bcrypt as _bcrypt_lib
-import pytest
-import pytest_asyncio
 import httpx
+import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -32,7 +31,6 @@ from app.models.plan_version import PlanVersion
 from app.models.product import Product
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────── Fixtures ────────────────────────────────────────────
 
@@ -120,7 +118,7 @@ async def seed_data(async_engine):
             total_rows=2, total_applied=1, total_rejected=1,
             total_duplicated=0, total_incongruences=0,
             total_plan_errors=0, total_rolled_back=0,
-            processed_at=datetime.now(timezone.utc),
+            processed_at=datetime.now(UTC),
         )
         db.add(batch)
         await db.flush()

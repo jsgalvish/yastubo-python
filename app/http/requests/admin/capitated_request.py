@@ -4,10 +4,7 @@ Equivale a CapitatedPersonController.php + CapitatedContractController.php.
 """
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict
-
 
 # ─────────────────────────── Person ──────────────────────────────────────────
 
@@ -19,10 +16,10 @@ class PersonOut(BaseModel):
     document_number: str
     full_name: str
     sex: str
-    age_reported: Optional[int] = None
-    status: Optional[str] = None
-    residence_country_id: Optional[int] = None
-    repatriation_country_id: Optional[int] = None
+    age_reported: int | None = None
+    status: str | None = None
+    residence_country_id: int | None = None
+    repatriation_country_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,13 +45,13 @@ class ContractOut(BaseModel):
     product_id: int
     person_id: int
     status: str
-    entry_date: Optional[str] = None
-    valid_until: Optional[str] = None
-    entry_age: Optional[int] = None
-    uuid: Optional[str] = None
-    wtime_suicide_ends_at: Optional[str] = None
-    wtime_preexisting_conditions_ends_at: Optional[str] = None
-    wtime_accident_ends_at: Optional[str] = None
+    entry_date: str | None = None
+    valid_until: str | None = None
+    entry_age: int | None = None
+    uuid: str | None = None
+    wtime_suicide_ends_at: str | None = None
+    wtime_preexisting_conditions_ends_at: str | None = None
+    wtime_accident_ends_at: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -71,21 +68,21 @@ class PersonDetailResponse(BaseModel):
 
 class MonthlyRecordOut(BaseModel):
     id: int
-    coverage_month: Optional[str] = None
+    coverage_month: str | None = None
     full_name: str
     sex: str
-    age_reported: Optional[int] = None
-    residence_country_id: Optional[int] = None
-    repatriation_country_id: Optional[int] = None
-    price_base: Optional[float] = None
-    price_final: Optional[float] = None
+    age_reported: int | None = None
+    residence_country_id: int | None = None
+    repatriation_country_id: int | None = None
+    price_base: float | None = None
+    price_final: float | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ContractDetailResponse(BaseModel):
     contract: ContractOut
-    last_monthly_record: Optional[MonthlyRecordOut] = None
+    last_monthly_record: MonthlyRecordOut | None = None
 
 
 # ─────────────────────────── Capitados index ─────────────────────────────────
@@ -100,13 +97,13 @@ class CompanyOut(BaseModel):
 
 class ProductOut(BaseModel):
     id: int
-    company_id: Optional[int] = None
-    status: Optional[str] = None
+    company_id: int | None = None
+    status: str | None = None
     product_type: str
     show_in_widget: bool
-    name: Optional[str] = None
-    description: Optional[str] = None
-    active_plan_version_id: Optional[int] = None
+    name: str | None = None
+    description: str | None = None
+    active_plan_version_id: int | None = None
     has_active_plan_version: bool
 
     model_config = ConfigDict(from_attributes=True)

@@ -40,15 +40,71 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
     "httpx>=0.27.0",
     "ruff>=0.8.0",
-    "aiosqlite>=0.20.0",       # SQLite async para tests de modelos
+    "mypy>=1.13.0",
+    "aiosqlite>=0.20.0",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "-q --tb=short --strict-markers --cov=app --cov-report=term-missing --cov-report=html:coverage_html --cov-fail-under=50"
+filterwarnings = [
+    "ignore::DeprecationWarning:passlib",
+    "ignore::DeprecationWarning:jose",
+    "ignore::sqlalchemy.exc.SAWarning",
+]
+markers = [
+    "unit: pure unit tests, no I/O",
+    "integration: tests that hit the database or HTTP stack",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "ASYNC", # flake8-async
+    "RUF",   # ruff-specific rules
+]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "B008",    # do not perform function calls in default arguments (FastAPI Depends)
+    "B904",    # raise from None inside except (intentional in some places)
+    "SIM108",  # ternary operator (readability preference)
+    "RUF012",  # mutable class attrs without ClassVar (SQLAlchemy patterns)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "common", "services"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = false
+strict_optional = true
+exclude = [
+    "migrations/",
+    ".venv/",
+    "scripts/",
+]

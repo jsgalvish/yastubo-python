@@ -10,9 +10,8 @@ Estrategia:
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
-import pytest
-import pytest_asyncio
 import httpx
+import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 

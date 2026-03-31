@@ -1,4 +1,4 @@
-"""
+r"""
 Excepción para errores de token.
 
 Equivale a App\Exceptions\TokenException de PHP.

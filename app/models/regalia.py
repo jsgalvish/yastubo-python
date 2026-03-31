@@ -9,7 +9,6 @@ from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.business_unit import BusinessUnit
 
 
 class Regalia(TimestampMixin, Base):

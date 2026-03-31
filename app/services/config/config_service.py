@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.config_item import ConfigItem
 
-
 # Claves esperadas para branding_web con valor por defecto None.
 _BRANDING_WEB_KEYS = (
     "favicon",
@@ -51,9 +50,7 @@ class ConfigService:
             return self._branding_web
 
         # Valores por defecto
-        branding: dict[str, int | float | str | None] = {
-            k: None for k in _BRANDING_WEB_KEYS
-        }
+        branding: dict[str, int | float | str | None] = dict.fromkeys(_BRANDING_WEB_KEYS)
 
         # Buscar ítems de la categoría
         result = await self._db.execute(

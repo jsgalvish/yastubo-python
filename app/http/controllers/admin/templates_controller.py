@@ -29,12 +29,12 @@ from __future__ import annotations
 
 import json
 import secrets
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.http.middleware.permission import require_permission
@@ -244,8 +244,8 @@ async def destroy(
 ) -> dict:
     """Soft-delete de una plantilla."""
     t = await _get_template(template_id, db)
-    from datetime import datetime, timezone
-    t.deleted_at = datetime.now(timezone.utc)
+    from datetime import datetime
+    t.deleted_at = datetime.now(UTC)
     await db.commit()
     return {"toast": {"type": "success", "message": "Plantilla eliminada."}}
 
@@ -469,8 +469,8 @@ async def preview_version_pdf(
     t = await _get_template(template_id, db)
     v = await _get_version(template_id, version_id, db)
 
+    from app.services.pdf.pdf_service import html_to_pdf_async
     from app.services.template_render.template_render_service import TemplateRenderService
-    from app.services.pdf.pdf_service import render_template, html_to_pdf_async
 
     render_service = TemplateRenderService(db)
     data = await render_service.build_merged_data(t, v)
@@ -494,8 +494,8 @@ async def preview_active_pdf(
 
     v = await _get_version(template_id, t.active_template_version_id, db)
 
+    from app.services.pdf.pdf_service import html_to_pdf_async
     from app.services.template_render.template_render_service import TemplateRenderService
-    from app.services.pdf.pdf_service import render_template, html_to_pdf_async
 
     render_service = TemplateRenderService(db)
     data = await render_service.build_merged_data(t, v)

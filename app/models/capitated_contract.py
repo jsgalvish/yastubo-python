@@ -10,9 +10,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.capitated_product_insured import CapitatedProductInsured
     from app.models.company import Company
     from app.models.product import Product
-    from app.models.capitated_product_insured import CapitatedProductInsured
 
 
 class CapitatedContract(TimestampMixin, Base):

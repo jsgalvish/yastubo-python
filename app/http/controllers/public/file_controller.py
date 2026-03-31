@@ -13,11 +13,10 @@ from __future__ import annotations
 import mimetypes
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
 
 from app.database import get_db
 from app.models.file import File
@@ -91,6 +90,7 @@ async def show_temporary(
     """
     import hashlib
     import hmac
+
     from app.config import settings
 
     result = await db.execute(select(File).where(File.id == file_id))

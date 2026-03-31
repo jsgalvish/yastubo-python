@@ -7,7 +7,7 @@ Skills aplicados:
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,7 +22,7 @@ class RegaliaOut(BaseModel):
     beneficiary_user_id: int
     source_type: str
     source_id: int
-    commission: Optional[float] = None
+    commission: float | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -36,7 +36,7 @@ class BeneficiaryBriefOut(BaseModel):
     id: int
     display_name: str
     email: str
-    status: Optional[str] = None
+    status: str | None = None
 
 
 class OriginUserOut(BaseModel):
@@ -55,9 +55,9 @@ class RegaliaDetailOut(BaseModel):
     source_type: str
     source_id: int
     beneficiary_user_id: int
-    commission: Optional[float] = None
-    origin_user: Optional[OriginUserOut] = None
-    origin_unit: Optional[OriginUnitOut] = None
+    commission: float | None = None
+    origin_user: OriginUserOut | None = None
+    origin_unit: OriginUnitOut | None = None
 
 
 class BeneficiaryGroupOut(BaseModel):
@@ -81,14 +81,14 @@ class AvailableOriginUserItem(BaseModel):
     id: int
     display_name: str
     email: str
-    status: Optional[str] = None
+    status: str | None = None
     is_assigned: bool = False
 
 
 class AvailableOriginUnitItem(BaseModel):
     id: int
     name: str
-    status: Optional[str] = None
+    status: str | None = None
     is_assigned: bool = False
 
 
@@ -112,4 +112,4 @@ class StoreRegaliaRequest(BaseModel):
 
 
 class UpdateRegaliaRequest(BaseModel):
-    commission: Optional[float] = Field(None, ge=0, le=100)
+    commission: float | None = Field(None, ge=0, le=100)

@@ -9,8 +9,8 @@ from app.models.base import Base, TimestampMixin
 from app.models.concerns.has_directory import HasDirectory
 
 if TYPE_CHECKING:
-    from app.models.business_unit_membership import BusinessUnitMembership
     from app.models.business_unit_commission_user import BusinessUnitCommissionUser
+    from app.models.business_unit_membership import BusinessUnitMembership
 
 
 class BusinessUnit(HasDirectory, TimestampMixin, Base):

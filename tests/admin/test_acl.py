@@ -23,7 +23,6 @@ from app.models.role import Role
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
 
-
 # ─────────────────────────── Fixtures ────────────────────────────────────────
 
 

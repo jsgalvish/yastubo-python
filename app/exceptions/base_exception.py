@@ -1,4 +1,4 @@
-"""
+r"""
 Excepción base de la aplicación.
 
 Equivale a App\Exceptions\BaseException de PHP.

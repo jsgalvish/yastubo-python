@@ -4,7 +4,7 @@ Habilidades de unidad de negocio para un usuario.
 Equivale a App\\Services\\BusinessUnits\\BusinessUnitAbilities de PHP.
 
 Cada habilidad se mapea a un permiso + nivel minimo (LEVEL_*).
-La clase es sincroна: recibe los niveles ya calculados y evalua
+La clase es sincrona: recibe los niveles ya calculados y evalua
 las habilidades sin tocar la BD.
 """
 
@@ -65,11 +65,11 @@ class BusinessUnitAbilities:
     """
 
     __slots__ = (
-        "_permission_levels",
-        "_global_permission_levels",
-        "_user",
-        "_unit",
         "_abilities_cache",
+        "_global_permission_levels",
+        "_permission_levels",
+        "_unit",
+        "_user",
     )
 
     def __init__(

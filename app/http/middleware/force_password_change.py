@@ -1,4 +1,4 @@
-"""
+r"""
 Dependency que bloquea el acceso si el usuario debe cambiar su contraseña.
 
 Equivale a App\Http\Middleware\ForcePasswordChange de PHP.
@@ -9,7 +9,6 @@ código específico que el frontend interpreta para redirigir.
 from __future__ import annotations
 
 from fastapi import Depends, HTTPException, Request, status
-from jose import JWTError
 
 from app.http.middleware.auth import get_current_user
 from app.models.user import User

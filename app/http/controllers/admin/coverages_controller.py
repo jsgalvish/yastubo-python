@@ -476,7 +476,6 @@ async def coverage_usages(
     if cov is None:
         raise HTTPException(status_code=404, detail="Cobertura no encontrada.")
 
-    from app.models.product import Product
 
     pvc_r = await db.execute(
         select(PlanVersionCoverage)

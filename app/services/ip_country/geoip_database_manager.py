@@ -10,6 +10,7 @@ NOTA: Este servicio requiere ``maxminddb`` para leer archivos MMDB.
 
 from __future__ import annotations
 
+import contextlib
 import gzip
 import json
 import logging
@@ -18,9 +19,8 @@ import shutil
 import tarfile
 import tempfile
 import time
-import uuid
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -95,10 +95,8 @@ class GeoIpDatabaseManager:
 
         # Reset reader
         if self._reader is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._reader.close()
-            except Exception:
-                pass
             self._reader = None
 
     # ------------------------------------------------------------------
@@ -202,7 +200,7 @@ class GeoIpDatabaseManager:
             # Metadatos
             meta = {
                 "provider": provider,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
                 "type": db_type,
             }
             meta_path = target_mmdb.parent / "ip-country.meta.json"
@@ -237,14 +235,13 @@ class GeoIpDatabaseManager:
 
         async with httpx.AsyncClient(
             timeout=timeout_seconds, follow_redirects=True, auth=auth
-        ) as client:
-            async with client.stream("GET", url) as resp:
-                resp.raise_for_status()
-                with dest.open("wb") as f:
-                    async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
-                        f.write(chunk)
+        ) as client, client.stream("GET", url) as resp:
+            resp.raise_for_status()
+            with dest.open("wb") as f:
+                async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
+                    f.write(chunk)
 
-        if not dest.is_file() or dest.stat().st_size < 1024:
+        if not dest.is_file() or dest.stat().st_size < 1024:  # noqa: ASYNC240
             raise RuntimeError(f"Archivo descargado invalido o vacio: {dest}")
 
     # ------------------------------------------------------------------

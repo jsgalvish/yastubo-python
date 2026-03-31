@@ -8,10 +8,12 @@ Cambios aplicados por auditoría de skills:
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.exceptions import (
@@ -23,20 +25,20 @@ from app.exceptions import (
 from app.http.controllers.admin import acl_controller as admin_acl
 from app.http.controllers.admin import business_units_controller as admin_business_units
 from app.http.controllers.admin import capitated_batch_controller as admin_capitated_batches
-from app.http.controllers.admin import config_controller as admin_config
 from app.http.controllers.admin import capitated_controller as admin_capitated
 from app.http.controllers.admin import companies_controller as admin_companies
+from app.http.controllers.admin import config_controller as admin_config
+from app.http.controllers.admin import countries_controller as admin_countries
 from app.http.controllers.admin import coverages_controller as admin_coverages
+from app.http.controllers.admin import locale_controller as admin_locale
 from app.http.controllers.admin import plan_version_countries_controller as admin_pv_countries
 from app.http.controllers.admin import plan_versions_controller as admin_plan_versions
 from app.http.controllers.admin import products_controller as admin_products
 from app.http.controllers.admin import regalias_controller as admin_regalias
 from app.http.controllers.admin import templates_controller as admin_templates
-from app.http.controllers.admin import countries_controller as admin_countries
 from app.http.controllers.admin import users_controller as admin_users
 from app.http.controllers.admin import zones_controller as admin_zones
 from app.http.controllers.auth import login_controller, password_controller
-from app.http.controllers.admin import locale_controller as admin_locale
 from app.http.controllers.public import capitated_contract_pdf_controller as public_capitated_pdf
 from app.http.controllers.public import file_controller as public_files
 
@@ -93,6 +95,11 @@ app.include_router(admin_locale.router)
 # ── Public routes (no auth) ──────────────────────────────────────────────────
 app.include_router(public_capitated_pdf.router)
 app.include_router(public_files.router)
+
+# ── Static files (email assets, etc.) ───────────────────────────────────────
+_static_dir = Path(__file__).resolve().parent.parent / "resources" / "static"
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 # ── Exception handlers ───────────────────────────────────────────────────────

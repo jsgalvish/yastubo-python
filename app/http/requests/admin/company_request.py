@@ -5,7 +5,6 @@ Equivale a los Form Requests de PHP para CompanyController y CompanyCommissionUs
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,16 +18,16 @@ _HEX_RE = re.compile(r"^#?[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$")
 class CompanyOut(BaseModel):
     id: int
     name: str
-    short_code: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    status_label: Optional[str] = None
+    short_code: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    description: str | None = None
+    status: str | None = None
+    status_label: str | None = None
     users_ids: list[int] = []
-    commission_beneficiary_user_id: Optional[int] = None
-    branding_logo_file_id: Optional[int] = None
-    pdf_template_id: Optional[int] = None
+    commission_beneficiary_user_id: int | None = None
+    branding_logo_file_id: int | None = None
+    pdf_template_id: int | None = None
     branding: dict = {}
 
     model_config = {"from_attributes": True}
@@ -65,20 +64,20 @@ class StoreCompanyRequest(BaseModel):
 
 
 class UpdateCompanyRequest(BaseModel):
-    name: Optional[str] = Field(None, max_length=255)
-    short_code: Optional[str] = Field(None, min_length=3, max_length=5, pattern=r"^[A-Za-z]+$")
-    phone: Optional[str] = Field(None, max_length=255)
-    email: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = None
-    status: Optional[str] = None
-    users: Optional[list[int]] = None
-    commission_beneficiary_user_id: Optional[int] = None
-    branding_text_dark: Optional[str] = Field(None, max_length=7)
-    branding_bg_light: Optional[str] = Field(None, max_length=7)
-    branding_text_light: Optional[str] = Field(None, max_length=7)
-    branding_bg_dark: Optional[str] = Field(None, max_length=7)
-    branding_logo_remove: Optional[bool] = None
-    pdf_template_id: Optional[int] = None
+    name: str | None = Field(None, max_length=255)
+    short_code: str | None = Field(None, min_length=3, max_length=5, pattern=r"^[A-Za-z]+$")
+    phone: str | None = Field(None, max_length=255)
+    email: str | None = Field(None, max_length=255)
+    description: str | None = None
+    status: str | None = None
+    users: list[int] | None = None
+    commission_beneficiary_user_id: int | None = None
+    branding_text_dark: str | None = Field(None, max_length=7)
+    branding_bg_light: str | None = Field(None, max_length=7)
+    branding_text_light: str | None = Field(None, max_length=7)
+    branding_bg_dark: str | None = Field(None, max_length=7)
+    branding_logo_remove: bool | None = None
+    pdf_template_id: int | None = None
 
     @field_validator("status")
     @classmethod
@@ -129,7 +128,7 @@ class PaginatedUsersOut(BaseModel):
 class ShortCodeCheckOut(BaseModel):
     short_code: str
     is_available: bool
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 # ─────────────────────────── Commission User schemas ─────────────────────────
@@ -147,7 +146,7 @@ class CommissionUserOut(BaseModel):
     id: int
     user_id: int
     commission: str  # formateado con 2 decimales
-    user: Optional[CommissionUserBriefOut] = None
+    user: CommissionUserBriefOut | None = None
 
 
 class StoreCommissionUserRequest(BaseModel):
@@ -163,7 +162,7 @@ class AvailableUserItemOut(BaseModel):
     email: str
     display_name: str
     attached: bool
-    commission_user_id: Optional[int] = None
+    commission_user_id: int | None = None
 
 
 class PaginatedAvailableUsersOut(BaseModel):

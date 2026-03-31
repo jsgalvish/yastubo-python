@@ -11,9 +11,8 @@ Estrategia:
 from __future__ import annotations
 
 import bcrypt as _bcrypt_lib
-import pytest
-import pytest_asyncio
 import httpx
+import pytest_asyncio
 from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -22,10 +21,8 @@ from app.database import get_db
 from app.main import app
 from app.models import Base, Permission, User
 from app.models.business_unit import BusinessUnit
-from app.models.regalia import Regalia
 from app.services.permission_service import PermissionService
 from app.services.token_service import create_access_token
-
 
 # ─────────────────────── Fixtures ────────────────────────────────────────────
 
@@ -207,7 +204,7 @@ class TestRegaliaStore:
 
 class TestRegaliaUpdate:
     async def test_actualiza_comision(self, client, actor_token, seed_users):
-        ben_id, origin_id = seed_users
+        _ben_id, _origin_id = seed_users  # fixture ejecutado por side effects
         # Buscar la regalía existente via beneficiaries
         ben_r = await client.get(
             "/admin/regalias/api/beneficiaries",

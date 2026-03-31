@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import bcrypt as _bcrypt_lib
 from sqlalchemy import select
@@ -58,7 +58,7 @@ class AuthService:
             raise ValueError("Credenciales inválidas o cuenta no activa.")
 
         # Actualizar último acceso
-        user.last_login_at = datetime.now(timezone.utc)
+        user.last_login_at = datetime.now(UTC)
         user.last_login_ip = ip
         self._db.add(user)
         await self._db.flush()

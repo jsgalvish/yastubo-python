@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import ForeignKey, Integer, Numeric, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 from app.models.concerns.has_translatable_json import HasTranslatableJson
 
 if TYPE_CHECKING:
-    from app.models.plan_version import PlanVersion
     from app.models.coverage import Coverage
+    from app.models.plan_version import PlanVersion
 
 
 class PlanVersionCoverage(HasTranslatableJson, SoftDeleteMixin, TimestampMixin, Base):

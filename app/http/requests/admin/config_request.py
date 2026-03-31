@@ -4,10 +4,9 @@ Equivale a DashboardController.php + ConfigController.php.
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ─────────────────────────── Dashboard ───────────────────────────────────────
 
@@ -22,19 +21,19 @@ class DashboardResponse(BaseModel):
 
 class ConfigItemOut(BaseModel):
     id: int
-    category: Optional[str] = None
+    category: str | None = None
     token: str
-    name: Optional[str] = None
+    name: str | None = None
     type: str
-    config: Optional[str] = None
-    value_int: Optional[int] = None
-    value_decimal: Optional[float] = None
-    value_text: Optional[str] = None
-    value_trans: Optional[str] = None
-    value_date: Optional[str] = None
-    value_file_plain_id: Optional[int] = None
-    value_file_es_id: Optional[int] = None
-    value_file_en_id: Optional[int] = None
+    config: str | None = None
+    value_int: int | None = None
+    value_decimal: float | None = None
+    value_text: str | None = None
+    value_trans: str | None = None
+    value_date: str | None = None
+    value_file_plain_id: int | None = None
+    value_file_es_id: int | None = None
+    value_file_en_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,15 +60,15 @@ class StoreConfigItemRequest(BaseModel):
     name: str = Field(..., max_length=255)
     token: str = Field(..., max_length=191)
     type: str = Field(..., max_length=100)
-    config: Optional[dict] = None
+    config: dict | None = None
 
 
 class UpdateDefinitionRequest(BaseModel):
-    category: Optional[str] = None
-    name: Optional[str] = Field(None, max_length=255)
-    token: Optional[str] = Field(None, max_length=191)
-    type: Optional[str] = Field(None, max_length=100)
-    config: Optional[dict] = None
+    category: str | None = None
+    name: str | None = Field(None, max_length=255)
+    token: str | None = Field(None, max_length=191)
+    type: str | None = Field(None, max_length=100)
+    config: dict | None = None
 
 
 class UpdateValueRequest(BaseModel):
@@ -81,8 +80,8 @@ class UpdateValueRequest(BaseModel):
 
 class SystemSettingOut(BaseModel):
     id: int
-    category: Optional[str] = None
+    category: str | None = None
     key: str
-    value_json: Optional[str] = None
+    value_json: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
