@@ -615,6 +615,22 @@ class CapitatedBatchProcessor:
         batch.summary_json = json.dumps({"errors_by_code": errors_by_code}, ensure_ascii=False)
         await self._db.flush()
 
+        # 5) Facturación automática via Stripe (si la empresa tiene stripe_customer_id)
+        if total_applied > 0 and company.stripe_customer_id:
+            try:
+                from common.services.billing.batch_billing_service import BatchBillingService
+                billing = BatchBillingService(self._db)
+                invoice_result = await billing.generate_invoice_for_batch(batch, company)
+                if invoice_result:
+                    batch.summary_json = json.dumps({
+                        "errors_by_code": errors_by_code,
+                        "invoice": invoice_result,
+                    }, ensure_ascii=False)
+                    await self._db.flush()
+            except Exception as e:
+                # Don't block batch processing if billing fails
+                print(f"[BatchProcessor] Billing error (non-blocking): {e}")
+
     # ------------------------------------------------------------------
     # buildSheetMetas
     # ------------------------------------------------------------------

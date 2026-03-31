@@ -38,6 +38,8 @@ class Company(HasDirectory, TimestampMixin, Base):
         Integer, ForeignKey("users.id"), nullable=True
     )
 
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Branding
     branding_logo_file_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("files.id"), nullable=True
