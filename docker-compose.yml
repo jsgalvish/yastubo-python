@@ -121,6 +121,17 @@ services:
     ports:
       - "8006:8006"
 
+  chatbot:
+    <<: *service-base
+    build:
+      context: .
+      dockerfile: services/chatbot/Dockerfile
+    environment:
+      <<: *common-env
+      CHATBOT_API_KEY: ${CHATBOT_API_KEY:-}
+    ports:
+      - "8007:8007"
+
   # ── Frontend ────────────────────────────────────────────────────────────────
 
   frontend:
@@ -149,6 +160,7 @@ services:
       - capitados
       - audit
       - billing
+      - chatbot
 
   # ── Observability ───────────────────────────────────────────────────────────
 
