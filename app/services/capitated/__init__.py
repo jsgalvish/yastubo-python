@@ -1,3 +1,4 @@
-from app.services.capitated.capitated_batch_processor import CapitatedBatchProcessor
+from common.services.capitated import *  # noqa: F403
+from common.services.capitated import CapitatedBatchProcessor
 
 __all__ = ["CapitatedBatchProcessor"]

@@ -1,4 +1,4 @@
-from app.services.ip_country.geoip_database_manager import GeoIpDatabaseManager
-from app.services.ip_country.ip_country_service import IpCountryService
+from common.services.ip_country import *  # noqa: F403
+from common.services.ip_country import GeoIpDatabaseManager, IpCountryService
 
 __all__ = ["GeoIpDatabaseManager", "IpCountryService"]

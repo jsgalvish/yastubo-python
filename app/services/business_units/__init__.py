@@ -1,9 +1,10 @@
-from app.services.business_units.business_unit_abilities import BusinessUnitAbilities
-from app.services.business_units.business_unit_permission_resolver import (
+from common.services.business_units import *  # noqa: F403
+from common.services.business_units import (
     LEVEL_GLOBAL,
     LEVEL_INHERITED,
     LEVEL_LOCAL,
     LEVEL_NONE,
+    BusinessUnitAbilities,
     BusinessUnitPermissionResolver,
 )
 
