@@ -24,6 +24,7 @@ from common.exceptions import (
 from app.controllers.subscription_controller import router as subscription_router
 from app.controllers.stripe_webhook_controller import router as stripe_router
 from app.controllers.connect_controller import router as connect_router
+from app.controllers.crm_controller import router as crm_router
 
 
 @asynccontextmanager
@@ -54,6 +55,7 @@ Instrumentator().instrument(app).expose(app)
 app.include_router(subscription_router)
 app.include_router(stripe_router)
 app.include_router(connect_router)
+app.include_router(crm_router)
 
 
 @app.exception_handler(RequestNotFoundException)
