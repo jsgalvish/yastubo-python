@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     company_name: str = "Global Funeral Assistance"
     company_short_name: str = "GFA"
 
+    # Chatbot (n8n / SofIA)
+    chatbot_api_key: str = ""
+
     @property
     def db_url(self) -> str:
         """URL async para SQLAlchemy (aiomysql)."""

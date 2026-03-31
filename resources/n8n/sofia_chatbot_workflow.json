@@ -1,0 +1,202 @@
+{
+  "name": "SofIA — Chatbot Yastubo",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message_created"],
+        "additionalFields": {}
+      },
+      "id": "chatwoot-trigger",
+      "name": "Chatwoot Trigger",
+      "type": "n8n-nodes-base.chatwootTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-opus-4-6",
+        "options": {
+          "systemMessage": "Eres SofIA, asistente virtual de Yastubo.\n\nCuando un cliente necesite información sobre su contrato o restablecer su contraseña:\n1. Pídele su número de documento (cédula/pasaporte).\n2. Usa la herramienta 'buscar_cliente' con ese documento y el company_id correspondiente.\n3. Si se encuentra, presenta su nombre, estado del contrato y comparte el enlace PDF.\n4. Si quiere restablecer su contraseña, pide su email y usa 'enviar_reset_password'.\n\nResponde siempre en español, de forma amable y concisa.",
+          "maxIterations": 5
+        }
+      },
+      "id": "ai-agent",
+      "name": "SofIA AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-opus-4-6",
+        "options": {}
+      },
+      "id": "claude-model",
+      "name": "Claude Model",
+      "type": "@n8n/n8n-nodes-langchain.lmAnthropicClaude",
+      "typeVersion": 1,
+      "position": [500, 480]
+    },
+    {
+      "parameters": {
+        "name": "buscar_cliente",
+        "description": "Busca un cliente capitado por número de documento. Retorna sus contratos activos y el enlace al PDF de cada contrato.",
+        "method": "GET",
+        "url": "={{ $env.YASTUBO_API_URL }}/chatbot/client",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "doc",
+              "value": "={{ $fromAI('document_number', 'Número de documento del cliente') }}"
+            },
+            {
+              "name": "company_id",
+              "value": "={{ $env.YASTUBO_COMPANY_ID }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "tool-buscar-cliente",
+      "name": "buscar_cliente",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 420],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yastubo-chatbot-key",
+          "name": "Yastubo Chatbot API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "enviar_reset_password",
+        "description": "Envía un correo electrónico de recuperación de contraseña al cliente. Requiere el email registrado.",
+        "method": "POST",
+        "url": "={{ $env.YASTUBO_API_URL }}/chatbot/reset-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $fromAI('email', 'Correo electrónico del cliente') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "tool-reset-password",
+      "name": "enviar_reset_password",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 540],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yastubo-chatbot-key",
+          "name": "Yastubo Chatbot API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "accountId": "={{ $env.CHATWOOT_ACCOUNT_ID }}",
+        "conversationId": "={{ $('Chatwoot Trigger').item.json.id }}",
+        "message": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "id": "chatwoot-send",
+      "name": "Chatwoot Reply",
+      "type": "n8n-nodes-base.chatwoot",
+      "typeVersion": 1,
+      "position": [760, 300]
+    }
+  ],
+  "connections": {
+    "Chatwoot Trigger": {
+      "main": [
+        [
+          {
+            "node": "SofIA AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SofIA AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SofIA AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar_cliente": {
+      "ai_tool": [
+        [
+          {
+            "node": "SofIA AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enviar_reset_password": {
+      "ai_tool": [
+        [
+          {
+            "node": "SofIA AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "_comment": {
+    "setup": [
+      "1. En n8n, crear credencial 'HTTP Header Auth' con nombre 'Yastubo Chatbot API Key':",
+      "   - Header Name: X-Chatbot-Api-Key",
+      "   - Header Value: <valor de CHATBOT_API_KEY en tu .env>",
+      "",
+      "2. Configurar variables de entorno en n8n:",
+      "   - YASTUBO_API_URL: URL base de la API (ej: http://tu-servidor.com)",
+      "   - YASTUBO_COMPANY_ID: ID numérico de la empresa en Yastubo",
+      "   - CHATWOOT_ACCOUNT_ID: ID de tu cuenta en Chatwoot",
+      "",
+      "3. Agregar en tu .env de Yastubo:",
+      "   CHATBOT_API_KEY=un-token-secreto-largo-y-aleatorio",
+      "",
+      "4. Reiniciar el servicio chatbot:",
+      "   docker compose up -d chatbot"
+    ]
+  }
+}
