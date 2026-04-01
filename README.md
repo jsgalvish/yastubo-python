@@ -190,6 +190,14 @@ Cada servicio tambien expone:
 
 El sistema cuenta con **150+ endpoints** distribuidos en los 7 servicios. Consultar [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) para el catalogo completo.
 
+### Documentacion detallada
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Diagramas de arquitectura, division de modulos, flujos de comunicacion |
+| [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) | Catalogo completo de 150+ endpoints por servicio |
+| [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Modelo de datos: 40+ entidades, relaciones, diagramas ER |
+
 ---
 
 ## Estructura del proyecto
