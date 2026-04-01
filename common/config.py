@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     # Database
     db_host: str = "127.0.0.1"
-    db_port: int = 3306
+    db_port: int = 5432
     db_name: str = "gfa"
     db_user: str = "gfa"
     db_password: str = "gfa"
@@ -70,19 +70,22 @@ class Settings(BaseSettings):
     # Chatbot (n8n / SofIA)
     chatbot_api_key: str = ""
 
+    # Zoho CRM
+    zoho_org_url: str = "https://crm.zoho.com/crm/org20113056937"
+
     @property
     def db_url(self) -> str:
-        """URL async para SQLAlchemy (aiomysql)."""
+        """URL async para SQLAlchemy (asyncpg)."""
         return (
-            f"mysql+aiomysql://{self.db_user}:{self.db_password}"
+            f"postgresql+asyncpg://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
 
     @property
     def db_url_sync(self) -> str:
-        """URL sync para Alembic (pymysql)."""
+        """URL sync para Alembic (psycopg2)."""
         return (
-            f"mysql+pymysql://{self.db_user}:{self.db_password}"
+            f"postgresql+psycopg2://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
 

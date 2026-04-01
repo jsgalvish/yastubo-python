@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from common.config import settings
 from common.database import get_db
 from common.middleware.permission import require_permission
 from common.models.user import User
@@ -78,5 +79,5 @@ async def crm_dashboard(
         "contacts": by_type.get("subscription", 0),
         "deals": by_type.get("deal", 0),
         "leads": by_type.get("lead", 0),
-        "zoho_url": "https://crm.zoho.eu/crm/org20113056937",
+        "zoho_url": settings.zoho_org_url,
     }
