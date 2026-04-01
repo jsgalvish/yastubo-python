@@ -275,7 +275,7 @@ async def batch_template(
     wb.save(buf)
     buf.seek(0)
 
-    now_str = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    now_str = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"capitados_estructura_company_{company.id}_{now_str}.xlsx"
 
     return StreamingResponse(
@@ -426,7 +426,7 @@ async def batch_rollback(
     if batch.rolled_back_at is not None:
         raise HTTPException(status_code=422, detail="El lote ya fue revertido.")
 
-    now = datetime.now(UTC)
+    now = datetime.utcnow()
 
     # Marcar monthly records activos como rolled_back
     records_r = await db.execute(
@@ -480,7 +480,7 @@ async def rollback_monthly_record(
         raise HTTPException(status_code=422, detail="El registro ya fue revertido.")
 
     mr.status = CapitatedMonthlyRecord.STATUS_ROLLED_BACK
-    mr.rolled_back_at = datetime.now(UTC)
+    mr.rolled_back_at = datetime.utcnow()
     mr.rolled_back_by_user_id = _current_user.id
 
     await db.commit()

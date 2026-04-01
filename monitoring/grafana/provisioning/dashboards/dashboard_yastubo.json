@@ -1,0 +1,1107 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "yastubo-services",
+    "title": "Yastubo - Microservicios",
+    "tags": [
+      "yastubo"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "refresh": "2s",
+    "style": "dark",
+    "time": {
+      "from": "now-5m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "row",
+        "title": "Estado de Servicios",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "collapsed": false
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "A. Auth",
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 0,
+          "y": 1
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 32
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {
+                    "text": "UP",
+                    "color": "#6F3FE6",
+                    "index": 0
+                  }
+                }
+              },
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "#E6553F",
+                    "index": 1
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#6F3FE6",
+                  "value": 1
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "up{job=\"yastubo-auth\"}",
+            "legendFormat": "auth"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "B. Core",
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 4,
+          "y": 1
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 32
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {
+                    "text": "UP",
+                    "color": "#55D78E",
+                    "index": 0
+                  }
+                }
+              },
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "#E6553F",
+                    "index": 1
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#55D78E",
+                  "value": 1
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "up{job=\"yastubo-products\"}",
+            "legendFormat": "products"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "C. Docs",
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 8,
+          "y": 1
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 32
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {
+                    "text": "UP",
+                    "color": "#FFC84C",
+                    "index": 0
+                  }
+                }
+              },
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "#E6553F",
+                    "index": 1
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#FFC84C",
+                  "value": 1
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "up{job=\"yastubo-documents\"}",
+            "legendFormat": "documents"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "type": "stat",
+        "title": "D. Capitados",
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 12,
+          "y": 1
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 32
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {
+                    "text": "UP",
+                    "color": "#E05830",
+                    "index": 0
+                  }
+                }
+              },
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "#E6553F",
+                    "index": 1
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#E05830",
+                  "value": 1
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "up{job=\"yastubo-capitados\"}",
+            "legendFormat": "capitados"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "type": "stat",
+        "title": "E. Audit",
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 16,
+          "y": 1
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 32
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {
+                    "text": "UP",
+                    "color": "#55C8D7",
+                    "index": 0
+                  }
+                }
+              },
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "#E6553F",
+                    "index": 1
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#55C8D7",
+                  "value": 1
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "up{job=\"yastubo-audit\"}",
+            "legendFormat": "audit"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "type": "stat",
+        "title": "F. Billing",
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 20,
+          "y": 1
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 32
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {
+                    "text": "UP",
+                    "color": "#D755D7",
+                    "index": 0
+                  }
+                }
+              },
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "#E6553F",
+                    "index": 1
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#D755D7",
+                  "value": 1
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "up{job=\"yastubo-billing\"}",
+            "legendFormat": "billing"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "type": "row",
+        "title": "Trafico en Vivo",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 5
+        },
+        "collapsed": false
+      },
+      {
+        "id": 11,
+        "type": "timeseries",
+        "title": "Requests por servicio (ultimo minuto)",
+        "gridPos": {
+          "h": 12,
+          "w": 24,
+          "x": 0,
+          "y": 6
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ]
+          },
+          "fillOpacity": 20
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 3,
+              "fillOpacity": 15,
+              "spanNulls": true,
+              "showPoints": "never"
+            },
+            "unit": "short",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "min": 0,
+            "decimals": 0
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-auth"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#6F3FE6"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-products"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#55D78E"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-documents"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#FFC84C"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-capitados"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#E6553F"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-audit"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#55C8D7"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-billing"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#D755D7"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "sum by (job) (increase(http_request_duration_seconds_count{job=~\"yastubo-.*\", handler!~\"/metrics|/health\"}[1m]))",
+            "legendFormat": "{{job}}"
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "type": "row",
+        "title": "Salud del Sistema",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "collapsed": false
+      },
+      {
+        "id": 21,
+        "type": "timeseries",
+        "title": "Latencia p95 (segundos)",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 19
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 5,
+              "showPoints": "never"
+            },
+            "unit": "s",
+            "color": {
+              "mode": "palette-classic"
+            },
+            "min": 0
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-auth"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#6F3FE6"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-products"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#55D78E"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-documents"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#FFC84C"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-capitados"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#E6553F"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-audit"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#55C8D7"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-billing"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#D755D7"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{job=~\"yastubo-.*\", handler!~\"/metrics|/health\"}[5m])))",
+            "legendFormat": "{{job}}"
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "type": "timeseries",
+        "title": "Errores HTTP 5xx",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 19
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 25,
+              "showPoints": "never"
+            },
+            "unit": "short",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "#E6553F"
+            },
+            "min": 0,
+            "decimals": 0
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "sum by (job) (increase(http_request_duration_seconds_count{status=~\"5..\", job=~\"yastubo-.*\", handler!~\"/metrics|/health\"}[1m]))",
+            "legendFormat": "{{job}} 5xx"
+          }
+        ]
+      },
+      {
+        "id": 30,
+        "type": "row",
+        "title": "Totales",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 27
+        },
+        "collapsed": false
+      },
+      {
+        "id": 31,
+        "type": "stat",
+        "title": "Total Requests",
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 0,
+          "y": 28
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "sum"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "area",
+          "text": {
+            "valueSize": 28
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "#6F3FE6"
+            },
+            "unit": "short"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "sum(http_request_duration_seconds_count{job=~\"yastubo-.*\"})",
+            "legendFormat": "Total"
+          }
+        ]
+      },
+      {
+        "id": 32,
+        "type": "stat",
+        "title": "Servicios Activos",
+        "gridPos": {
+          "h": 5,
+          "w": 6,
+          "x": 6,
+          "y": 28
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "colorMode": "background",
+          "graphMode": "none",
+          "text": {
+            "valueSize": 48
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#E6553F",
+                  "value": null
+                },
+                {
+                  "color": "#FFC84C",
+                  "value": 3
+                },
+                {
+                  "color": "#55D78E",
+                  "value": 6
+                }
+              ]
+            },
+            "color": {
+              "mode": "thresholds"
+            }
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "count(up{job=~\"yastubo-.*\"} == 1)",
+            "legendFormat": "UP"
+          }
+        ]
+      },
+      {
+        "id": 33,
+        "type": "piechart",
+        "title": "Distribuci\u00c3\u00b3n de Requests",
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 27
+        },
+        "options": {
+          "pieType": "donut",
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-auth"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#6F3FE6"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-products"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#55D78E"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-documents"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#FFC84C"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-capitados"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#E6553F"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-audit"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#55C8D7"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "yastubo-billing"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "#D755D7"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "bfhe90klqvpc0a"
+            },
+            "expr": "sum by (job) (http_request_duration_seconds_count{job=~\"yastubo-.*\"})",
+            "legendFormat": "{{job}}"
+          }
+        ]
+      },
+      {
+        "id": 50,
+        "type": "text",
+        "title": "Mapa de Rutas",
+        "gridPos": {
+          "h": 7,
+          "w": 24,
+          "x": 0,
+          "y": 33
+        },
+        "options": {
+          "mode": "markdown",
+          "content": "| Modulo | Servicio | Puerto | Rutas |\n|---|---|---|---|\n| **A. Auth** | auth | 8001 | `/admin/login` `/customer/login` `/admin/users` `/admin/acl` |\n| **B. Core** | products | 8002 | `/admin/products` `/admin/coverages` `/admin/countries` `/admin/config` |\n| **C. Docs** | documents | 8003 | `/admin/templates` `/files/*` |\n| **D. Capitados** | capitados | 8004 | `/admin/companies` `/admin/business-units` `/admin/regalias` |\n| **E. Audit** | audit | 8005 | `/admin/audit` |\n| **F. Billing** | billing | 8006 | `/customer/subscription` `/webhooks/stripe` |"
+        }
+      }
+    ],
+    "timepicker": {},
+    "annotations": {
+      "list": []
+    },
+    "templating": {
+      "list": []
+    }
+  },
+  "overwrite": true,
+  "folderId": 0
+}

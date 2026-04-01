@@ -82,7 +82,7 @@ class PasswordHistoryService:
         record = PasswordHistory(
             user_id=user.id,  # type: ignore[attr-defined]
             password_hash=old_hash,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.utcnow(),
         )
         self._db.add(record)
         await self._db.flush()
@@ -102,7 +102,7 @@ class PasswordHistoryService:
         # Purgar por antigüedad (opcional)
         days: int = int(cfg.get("retention_days", 0))
         if days > 0:
-            cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+            cutoff = datetime.utcnow() - timedelta(days=days)
             result = await self._db.execute(
                 select(PasswordHistory).where(
                     PasswordHistory.user_id == user.id,  # type: ignore[attr-defined]

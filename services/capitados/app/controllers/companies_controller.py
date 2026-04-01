@@ -41,6 +41,7 @@ from common.models.company_commission_user import CompanyCommissionUser
 from common.models.company_user import CompanyUser
 from common.models.template import Template
 from common.models.user import User  # usado en type hints de _current_user
+from common.services.zoho_crm_service import ZohoCrmService
 
 from ..requests.company_request import (
     AvailableUserItemOut,
@@ -238,6 +239,14 @@ async def store(
     db.add(company)
     await db.commit()
     await db.refresh(company)
+
+    # ── Zoho CRM sync (fire-and-forget) ──
+    try:
+        crm = ZohoCrmService(db)
+        await crm.sync_company_to_account(company)
+    except Exception:
+        import logging
+        logging.getLogger("zoho_sync").exception("Sync company %s failed", company.id)
 
     company = await _get_company(company.id, db)
     return {"data": _build_company_out(company)}

@@ -245,7 +245,7 @@ async def destroy(
     t = await _get_template(template_id, db)
     from datetime import datetime
 
-    t.deleted_at = datetime.now(UTC)
+    t.deleted_at = datetime.utcnow()
     await db.commit()
     return {"toast": {"type": "success", "message": "Plantilla eliminada."}}
 

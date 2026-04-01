@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import secrets
-from datetime import UTC, datetime
+from datetime import datetime
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -59,10 +59,11 @@ async def _get_user(db: AsyncSession, user_id: int) -> User:
     return user
 
 
-def _make_temp_password() -> str:
-    """Genera y hashea una contraseña temporal aleatoria."""
+def _make_temp_password() -> tuple[str, str]:
+    """Genera una contraseña temporal aleatoria. Retorna (plain, hashed)."""
     plain = secrets.token_urlsafe(16)
-    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
+    hashed = bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
+    return plain, hashed
 
 
 def _validate_vendor_commissions(roles: list[str], data: dict) -> dict[str, str]:
@@ -348,6 +349,7 @@ async def store(
         )
 
     # Crear usuario con contraseña temporal y force_password_change=True
+    plain_password, hashed_password = _make_temp_password()
     user = User(
         realm="admin",
         first_name=body.first_name,
@@ -355,7 +357,7 @@ async def store(
         display_name=body.display_name,
         email=body.email,
         status=body.status,
-        password=_make_temp_password(),
+        password=hashed_password,
         force_password_change=True,
     )
     db.add(user)
@@ -394,6 +396,19 @@ async def store(
         db=db,
     )
     await db.commit()
+
+    # Enviar correo de bienvenida con contraseña temporal
+    try:
+        from common.config import settings
+        from common.notifications.admin.welcome import send_welcome_admin
+
+        login_url = f"{settings.app_url}/admin/login"
+        await send_welcome_admin(user, login_url, plain_password)
+    except Exception:
+        import logging
+        logging.getLogger("users_controller").exception(
+            "No se pudo enviar correo de bienvenida a %s", user.email
+        )
 
     return _build_user_out(user, body.roles, staff_profile)
 
@@ -549,7 +564,7 @@ async def destroy(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
 
-    user.deleted_at = datetime.now(UTC)
+    user.deleted_at = datetime.utcnow()
     await Audit.log(
         action="user.deleted",
         context={"user_id": user_id, "email": user.email},

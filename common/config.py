@@ -72,6 +72,11 @@ class Settings(BaseSettings):
 
     # Zoho CRM
     zoho_org_url: str = "https://crm.zoho.eu/crm/org20113056937/tab/Home/begin"
+    zoho_client_id: str = ""
+    zoho_client_secret: str = ""
+    zoho_refresh_token: str = ""
+    zoho_api_domain: str = "https://www.zohoapis.eu"
+    zoho_accounts_domain: str = "https://accounts.zoho.eu"
 
     @property
     def db_url(self) -> str:

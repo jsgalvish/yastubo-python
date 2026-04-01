@@ -1,11 +1,11 @@
-FROM python:3.13-slim
+# ── Build stage ────────────────────────────────────────────────────────
+FROM python:3.13-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# System deps for WeasyPrint (documents service) and aiomysql
 RUN apt-get update && apt-get install -y \
     gcc \
-    default-libmysqlclient-dev \
+    libpq-dev \
     pkg-config \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
@@ -14,19 +14,33 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libcairo2 \
     libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY services/documents/requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Runtime stage ─────────────────────────────────────────────────────
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# WeasyPrint runtime deps + PostgreSQL client lib
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    libcairo2 \
+    libglib2.0-0 \
     fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy common package
+COPY --from=builder /install /usr/local
+
 COPY common/ /app/common/
 COPY config/ /app/config/
-
-# Copy service
 COPY services/documents/app/ /app/app/
-
-# Install deps
-COPY services/documents/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PYTHONPATH=/app
 

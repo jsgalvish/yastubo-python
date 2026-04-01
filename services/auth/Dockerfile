@@ -1,27 +1,26 @@
+# ── Build stage ────────────────────────────────────────────────────────
+FROM python:3.13-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+
+COPY services/auth/requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Runtime stage ─────────────────────────────────────────────────────
 FROM python:3.13-slim
 
 WORKDIR /app
 
-# System deps for WeasyPrint (documents service) and aiomysql
-RUN apt-get update && apt-get install -y \
-    gcc \
-    default-libmysqlclient-dev \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libpq5 && rm -rf /var/lib/apt/lists/*
 
-# Copy common package
+COPY --from=builder /install /usr/local
+
 COPY common/ /app/common/
 COPY config/ /app/config/
-
-# Copy service
 COPY services/auth/app/ /app/app/
-
-# Copy email templates
 COPY resources/ /app/resources/
-
-# Install deps
-COPY services/auth/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PYTHONPATH=/app
 

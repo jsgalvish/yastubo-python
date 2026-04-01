@@ -14,13 +14,14 @@ import hashlib
 import json
 import logging
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from fastapi import UploadFile
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from common.config import settings
 from common.models.capitated_batch_item_log import CapitatedBatchItemLog
@@ -83,7 +84,7 @@ class CapitatedBatchProcessor:
                 status=CapitatedBatchLog.STATUS_FAILED,
                 is_any_month_allowed=is_any_month_allowed,
                 cutoff_day=cutoff_day,
-                processed_at=datetime.now(timezone.utc),
+                processed_at=datetime.utcnow(),
                 summary_json=json.dumps(
                     {"error_summary": "El archivo subido no es valido."},
                     ensure_ascii=False,
@@ -129,7 +130,7 @@ class CapitatedBatchProcessor:
             import openpyxl  # noqa: F811
         except ImportError:
             batch.status = CapitatedBatchLog.STATUS_FAILED
-            batch.processed_at = datetime.now(timezone.utc)
+            batch.processed_at = datetime.utcnow()
             batch.summary_json = json.dumps(
                 {"error_summary": "openpyxl no esta instalado en el servidor."},
                 ensure_ascii=False,
@@ -141,7 +142,7 @@ class CapitatedBatchProcessor:
             wb = openpyxl.load_workbook(local_path, read_only=True, data_only=True)
         except Exception as exc:
             batch.status = CapitatedBatchLog.STATUS_FAILED
-            batch.processed_at = datetime.now(timezone.utc)
+            batch.processed_at = datetime.utcnow()
             batch.summary_json = json.dumps(
                 {"error_summary": f"No se pudo leer el archivo Excel: {str(exc)[:500]}"},
                 ensure_ascii=False,
@@ -158,7 +159,7 @@ class CapitatedBatchProcessor:
         except Exception as exc:
             if batch.status != CapitatedBatchLog.STATUS_FAILED:
                 batch.status = CapitatedBatchLog.STATUS_FAILED
-                batch.processed_at = datetime.now(timezone.utc)
+                batch.processed_at = datetime.utcnow()
                 batch.summary_json = json.dumps(
                     {"error_summary": str(exc)[:1000]},
                     ensure_ascii=False,
@@ -192,7 +193,7 @@ class CapitatedBatchProcessor:
             batch.total_duplicated = 0
             batch.total_incongruences = 0
             batch.total_rolled_back = 0
-            batch.processed_at = datetime.now(timezone.utc)
+            batch.processed_at = datetime.utcnow()
             batch.summary_json = json.dumps(
                 {
                     "error_summary": "Errores de estructura/plan impiden procesar el archivo.",
@@ -428,7 +429,7 @@ class CapitatedBatchProcessor:
                                             and existing_contract.status == CapitatedContract.STATUS_ACTIVE
                                         ):
                                             existing_contract.status = CapitatedContract.STATUS_EXPIRED
-                                            existing_contract.terminated_at = datetime.now(timezone.utc)
+                                            existing_contract.terminated_at = datetime.utcnow()
                                             existing_contract.termination_reason = (
                                                 f"Quiebre de continuidad al cargar el mes {coverage_month.strftime('%Y-%m')}."
                                             )
@@ -604,7 +605,7 @@ class CapitatedBatchProcessor:
             if total_applied > 0
             else CapitatedBatchLog.STATUS_PROCESSED_ZERO
         )
-        batch.processed_at = datetime.now(timezone.utc)
+        batch.processed_at = datetime.utcnow()
         batch.total_rows = total_rows
         batch.total_applied = total_applied
         batch.total_rejected = total_rejected
@@ -673,7 +674,13 @@ class CapitatedBatchProcessor:
 
             # Buscar version activa
             r = await self._db.execute(
-                select(PlanVersion).where(
+                select(PlanVersion)
+                .options(
+                    selectinload(PlanVersion.countries),
+                    selectinload(PlanVersion.repatriation_countries),
+                    selectinload(PlanVersion.age_surcharges),
+                )
+                .where(
                     PlanVersion.product_id == product.id,
                     PlanVersion.status == "active",
                 )
@@ -910,7 +917,7 @@ class CapitatedBatchProcessor:
 
         # Marcar como rolled_back
         record.status = CapitatedMonthlyRecord.STATUS_ROLLED_BACK
-        record.rolled_back_at = datetime.now(timezone.utc)
+        record.rolled_back_at = datetime.utcnow()
         record.rolled_back_by_user_id = user_id
 
         # Ajustar contrato
@@ -954,7 +961,7 @@ class CapitatedBatchProcessor:
             return
 
         contract.status = CapitatedContract.STATUS_ROLLED_BACK
-        contract.terminated_at = datetime.now(timezone.utc)
+        contract.terminated_at = datetime.utcnow()
         contract.termination_reason = "Rollback: sin registros mensuales activos."
 
         # Verificar si quedan otros contratos activos para esta persona/producto
@@ -989,7 +996,7 @@ class CapitatedBatchProcessor:
             return
 
         person.status = CapitatedProductInsured.STATUS_ROLLED_BACK
-        person.rolled_back_at = datetime.now(timezone.utc)
+        person.rolled_back_at = datetime.utcnow()
         person.rolled_back_by_user_id = user_id
 
     async def _recalculate_batch_stats(
@@ -1022,7 +1029,7 @@ class CapitatedBatchProcessor:
 
         if total_active == 0 and total_rolled_back > 0:
             batch.status = CapitatedBatchLog.STATUS_ROLLED_BACK
-            batch.rolled_back_at = datetime.now(timezone.utc)
+            batch.rolled_back_at = datetime.utcnow()
             batch.rolled_back_by_user_id = user_id
 
     async def _refresh_contracts_status(self, company: Company) -> int:

@@ -29,6 +29,7 @@ from common.middleware.auth import get_current_user
 from common.middleware.permission import require_permission
 from common.models.subscription import ReferralCommission, Subscription
 from common.models.user import User
+from common.services.zoho_crm_service import ZohoCrmService
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
@@ -197,6 +198,14 @@ async def create_subscription(
         commission.status = "pending"
         db.add(commission)
         await db.commit()
+
+    # ── Zoho CRM sync (fire-and-forget) ──
+    try:
+        crm = ZohoCrmService(db)
+        await crm.sync_subscription_to_contact_deal(sub, current_user)
+    except Exception:
+        import logging
+        logging.getLogger("zoho_sync").exception("Sync failed for sub %s", sub.id)
 
     return SubscriptionStatusOut(
         id=sub.id,

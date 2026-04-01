@@ -58,7 +58,7 @@ class AuthService:
             raise ValueError("Credenciales inválidas o cuenta no activa.")
 
         # Actualizar último acceso
-        user.last_login_at = datetime.now(timezone.utc)
+        user.last_login_at = datetime.utcnow()
         user.last_login_ip = ip
         self._db.add(user)
         await self._db.flush()

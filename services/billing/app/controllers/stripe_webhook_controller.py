@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.database import AsyncSessionLocal
 from common.models.subscription import Subscription
+from common.services.zoho_crm_service import ZohoCrmService
 from common.support.audit import Audit
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
@@ -95,6 +96,13 @@ async def _handle_invoice_paid(db: AsyncSession, invoice: dict) -> None:
         },
     )
 
+    # Zoho: update deal stage → Closed Won
+    try:
+        crm = ZohoCrmService(db)
+        await crm.update_deal_stage(sub.id, "active")
+    except Exception:
+        pass
+
 
 async def _handle_payment_failed(db: AsyncSession, invoice: dict) -> None:
     """Pago fallido — marcar como morosa."""
@@ -117,6 +125,13 @@ async def _handle_payment_failed(db: AsyncSession, invoice: dict) -> None:
         },
     )
 
+    # Zoho: update deal stage → Negotiation/Review
+    try:
+        crm = ZohoCrmService(db)
+        await crm.update_deal_stage(sub.id, "past_due")
+    except Exception:
+        pass
+
 
 async def _handle_subscription_deleted(db: AsyncSession, stripe_sub: dict) -> None:
     """Suscripción cancelada en Stripe."""
@@ -135,6 +150,13 @@ async def _handle_subscription_deleted(db: AsyncSession, stripe_sub: dict) -> No
             "user_id": sub.user_id,
         },
     )
+
+    # Zoho: update deal stage → Closed Lost
+    try:
+        crm = ZohoCrmService(db)
+        await crm.update_deal_stage(sub.id, "cancelled")
+    except Exception:
+        pass
 
 
 async def _handle_subscription_updated(db: AsyncSession, stripe_sub: dict) -> None:
