@@ -1,11 +1,15 @@
 # Arquitectura del sistema
 
+> Todos los diagramas estan disponibles como imagenes en [`docs/images/`](images/).
+
 ## Vista general
 
 Yastubo Python es un backend compuesto por **7 microservicios** independientes
 (Modulos A-G) que se despliegan como contenedores Docker. Todos comparten una
 base de datos MariaDB y una instancia Redis, y se exponen al exterior a traves
 de un unico API Gateway Nginx en el puerto 80.
+
+![Vista general del sistema](images/01_vista_general.png)
 
 ```
     Clientes (Browser / Mobile / n8n)
@@ -66,6 +70,8 @@ de un unico API Gateway Nginx en el puerto 80.
 ---
 
 ## Division de modulos
+
+![Division de modulos A-G](images/02_modulos.png)
 
 Cada modulo es un servicio FastAPI independiente con su propio `Dockerfile`,
 `main.py` y conjunto de controllers. Todos comparten el paquete `common/`
@@ -262,6 +268,8 @@ Integracion con n8n/SofIA para chatbot de atencion al cliente.
 
 ## Flujo de una peticion HTTP
 
+![Flujo de una peticion HTTP](images/03_flujo_http.png)
+
 ```
   Cliente
     |
@@ -322,6 +330,8 @@ Integracion con n8n/SofIA para chatbot de atencion al cliente.
 
 ## Comunicacion entre servicios
 
+![Patron Shared Database](images/04_shared_database.png)
+
 Los servicios **NO se comunican entre si directamente**. Estan desacoplados
 siguiendo el patron "shared database":
 
@@ -380,6 +390,8 @@ siguiendo el patron "shared database":
 
 ## Flujo RBAC (control de acceso)
 
+![Flujo RBAC](images/05_rbac.png)
+
 ```
   Peticion entrante con JWT
         |
@@ -430,6 +442,8 @@ siguiendo el patron "shared database":
 ---
 
 ## Stack de infraestructura Docker
+
+![Stack Docker](images/06_docker_stack.png)
 
 ```
 docker-compose.yml
@@ -482,6 +496,8 @@ Todos los servicios comparten la misma estructura de imagen:
 ---
 
 ## Ruteo del API Gateway (Nginx)
+
+![Tabla de ruteo Nginx](images/07_nginx_routing.png)
 
 El gateway Nginx rutea por patron de URL al servicio correspondiente:
 
