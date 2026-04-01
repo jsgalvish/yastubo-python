@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     chatbot_api_key: str = ""
 
     # Zoho CRM
-    zoho_org_url: str = "https://crm.zoho.com/crm/org20113056937"
+    zoho_org_url: str = "https://crm.zoho.eu/crm/org20113056937/tab/Home/begin"
 
     @property
     def db_url(self) -> str:
