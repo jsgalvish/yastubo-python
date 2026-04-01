@@ -325,6 +325,7 @@ async def batch_upload(
         cutoff_day=15,
         user_id=_current_user.id,
     )
+    await db.commit()
 
     return {"batch": _batch_out(batch).model_dump()}
 

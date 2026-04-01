@@ -67,8 +67,13 @@ class Settings(BaseSettings):
     company_name: str = "Global Funeral Assistance"
     company_short_name: str = "GFA"
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_price_id: str = ""
+
     # Chatbot (n8n / SofIA)
     chatbot_api_key: str = ""
+    anthropic_api_key: str = ""
 
     # Zoho CRM
     zoho_org_url: str = "https://crm.zoho.eu/crm/org20113056937/tab/Home/begin"
